@@ -25,8 +25,7 @@
  */
 
 #include <sr_grasp_moving_object/analyse_moving_object.hpp>
-
-#include "tf/transform_datatypes.h"
+#include <sr_grasp_moving_object/utils.hpp>
 
 namespace sr_taco
 {
@@ -61,7 +60,7 @@ namespace sr_taco
       //TODO: compute angular twist
 
       //compute the velocity
-      data.velocity = compute_distance(pose->pose.position, last_pose_.pose.position);
+      data.velocity = sr_utils::compute_distance(pose->pose.position, last_pose_.pose.position);
       data.velocity /= dt;
     }
 
@@ -70,18 +69,6 @@ namespace sr_taco
     last_pose_.header = pose->header;
     last_pose_.pose = pose->pose;
     return data;
-  }
-
-  double AnalyseMovingObject::compute_distance(geometry_msgs::Point a, geometry_msgs::Point b)
-  {
-
-    tf::Vector3 pt1, pt2;
-    pointMsgToTF(a, pt1);
-    pointMsgToTF(b, pt2);
-
-    double distance = pt1.distance(pt2);
-
-    return distance;
   }
 
 ////////////////

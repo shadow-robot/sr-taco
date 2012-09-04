@@ -55,8 +55,6 @@ namespace sr_taco
   protected:
     geometry_msgs::PoseStamped last_pose_;
     bool is_first_;
-
-    double compute_distance(geometry_msgs::Point a, geometry_msgs::Point b);
   };
 
   class AnalyseMovingObjectNode
