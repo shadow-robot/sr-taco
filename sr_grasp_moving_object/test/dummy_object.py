@@ -52,7 +52,7 @@ class DummyMovingObject(object):
         if self.going_back:
             self.msg.pose.position.x -= 0.005
             self.msg.pose.position.y -= 0.005
-            if self.msg.pose.position.x < 0.0 or self.msg.pose.position.y < 0.0:
+            if self.msg.pose.position.x < 0.1 or self.msg.pose.position.y < 0.1:
                 self.going_back = False
         else:
             self.msg.pose.position.x += 0.005

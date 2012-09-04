@@ -114,7 +114,7 @@ namespace sr_taco
     visualization_msgs::Marker marker;
     marker.header.frame_id = "desk_support";
     marker.header.stamp = ros::Time();
-    marker.ns = "my_namespace";
+    marker.ns = "analyse_moving_object";
     marker.id = 0;
     marker.type = visualization_msgs::Marker::ARROW;
     marker.action = visualization_msgs::Marker::ADD;
@@ -122,15 +122,15 @@ namespace sr_taco
     marker.points.resize(2);
     marker.points[0] = data.pose.position;
     marker.points[1] = data.pose.position;
-    marker.points[1].x += 20.0*data.twist.linear.x;
-    marker.points[1].y += 20.0*data.twist.linear.y;
-    marker.points[1].z += 20.0*data.twist.linear.z;
+    marker.points[1].x += 4.0*data.twist.linear.x;
+    marker.points[1].y += 4.0*data.twist.linear.y;
+    marker.points[1].z += 4.0*data.twist.linear.z;
 
     marker.scale.x = 0.05;
     if( fabs(data.velocity) < 0.03)
       marker.scale.y = 0.03;
     else
-      marker.scale.y = fabs(data.velocity);
+      marker.scale.y = 2.0*fabs(data.velocity);
 
     marker.color.a = 1.0;
     marker.color.r = 1.0;
