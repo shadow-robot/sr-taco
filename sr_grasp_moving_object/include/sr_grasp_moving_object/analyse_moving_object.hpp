@@ -32,7 +32,7 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose.h>
 #include <nav_msgs/Odometry.h>
-#include <sr_utilities/sr_math_utils.hpp>
+#include <visualization_msgs/Marker.h>
 
 namespace sr_taco
 {
@@ -40,6 +40,8 @@ namespace sr_taco
   {
     geometry_msgs::Pose pose;
     geometry_msgs::Twist twist;
+
+    double velocity;
   };
 
   class AnalyseMovingObject
@@ -52,8 +54,9 @@ namespace sr_taco
 
   protected:
     geometry_msgs::PoseStamped last_pose_;
-
     bool is_first_;
+
+    double compute_distance(geometry_msgs::Point a, geometry_msgs::Point b);
   };
 
   class AnalyseMovingObjectNode
@@ -70,6 +73,9 @@ namespace sr_taco
     ///publishes an odometry message (pose and twist)
     ros::Publisher odometry_pub_;
     nav_msgs::Odometry odom_msg_;
+
+    ///publishes rviz markers
+    ros::Publisher marker_pub_;
 
     void new_measurement_cb_(const geometry_msgs::PoseStampedConstPtr& msg);
   };

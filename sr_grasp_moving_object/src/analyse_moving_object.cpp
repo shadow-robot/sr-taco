@@ -26,6 +26,7 @@
 
 #include <sr_grasp_moving_object/analyse_moving_object.hpp>
 
+#include "tf/transform_datatypes.h"
 
 namespace sr_taco
 {
@@ -47,16 +48,21 @@ namespace sr_taco
     else
     {
       //compute twist from pose and last pose
+      double dt = (pose->header.stamp - last_pose_.header.stamp).toSec();
       data.twist.linear.x = pose->pose.position.x - last_pose_.pose.position.x;
-      data.twist.linear.x /= (pose->header.stamp - last_pose_.header.stamp).toSec();
+      data.twist.linear.x /= dt;
 
       data.twist.linear.y = pose->pose.position.y - last_pose_.pose.position.y;
-      data.twist.linear.y /= (pose->header.stamp - last_pose_.header.stamp).toSec();
+      data.twist.linear.y /= dt;
 
       data.twist.linear.z = pose->pose.position.z - last_pose_.pose.position.z;
-      data.twist.linear.z /= (pose->header.stamp - last_pose_.header.stamp).toSec();
+      data.twist.linear.z /= dt;
 
       //TODO: compute angular twist
+
+      //compute the velocity
+      data.velocity = compute_distance(pose->pose.position, last_pose_.pose.position);
+      data.velocity /= dt;
     }
 
     data.pose = pose->pose;
@@ -66,14 +72,28 @@ namespace sr_taco
     return data;
   }
 
+  double AnalyseMovingObject::compute_distance(geometry_msgs::Point a, geometry_msgs::Point b)
+  {
+
+    tf::Vector3 pt1, pt2;
+    pointMsgToTF(a, pt1);
+    pointMsgToTF(b, pt2);
+
+    double distance = pt1.distance(pt2);
+
+    return distance;
+  }
+
 ////////////////
 // AnalyseMovingObjectNode
   AnalyseMovingObjectNode::AnalyseMovingObjectNode()
     : nh_tilde_("~")
   {
-    odom_msg_.header.frame_id = "/base_link";
+    odom_msg_.header.frame_id = "/camera_link";
     odom_msg_.child_frame_id = "/tracked_object";
     odometry_pub_ = nh_tilde_.advertise<nav_msgs::Odometry>("odometry", 2);
+
+    marker_pub_ = nh_tilde_.advertise<visualization_msgs::Marker>("visualisation", 0);
 
     moving_object_sub_ = nh_tilde_.subscribe("/object/position", 2, &AnalyseMovingObjectNode::new_measurement_cb_, this);
   }
@@ -85,10 +105,39 @@ namespace sr_taco
   {
     AnalysedData data = analyser_.new_measurement(msg);
 
-    odom_msg_.header.stamp = ros::Time::now();
+    //publish the odometry message
     odom_msg_.pose.pose = data.pose;
     odom_msg_.twist.twist = data.twist;
     odometry_pub_.publish(odom_msg_);
+
+    //publish the markers
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "camera_link";
+    marker.header.stamp = ros::Time();
+    marker.ns = "my_namespace";
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::ARROW;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.pose.position.x = data.pose.position.x;
+    marker.pose.position.y = data.pose.position.y;
+    marker.pose.position.z = data.pose.position.z;
+    marker.pose.orientation.x = 0.0;
+    marker.pose.orientation.y = 0.0;
+    marker.pose.orientation.z = 0.0;
+    marker.pose.orientation.w = 1.0;
+
+    if( data.velocity == 0.0 )
+      marker.scale.x = 0.01;
+    else
+      marker.scale.x = data.velocity;
+
+    marker.scale.y = 0.1;
+    marker.scale.z = 0.1;
+    marker.color.a = 1.0;
+    marker.color.r = 1.0;
+    marker.color.g = 0.0;
+    marker.color.b = 0.0;
+    marker_pub_.publish(marker);
   }
 }
 

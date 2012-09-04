@@ -14,6 +14,7 @@
   <depend package="geometry_msgs"/>
   <depend package="visualization_msgs"/>
   <depend package="sr_utilities"/>
+  <depend package="tf"/>
 
 </package>
 
