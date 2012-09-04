@@ -1,0 +1,12 @@
+<stack>
+  <description brief="sr_taco">
+
+  This stack contains the implementation for our use case in TACO.
+
+  </description>
+  <author>Maintained by software@shadowrobot.com</author>
+  <license>GPL</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/sr_taco</url>
+  <depend stack="common_msgs" />
+</stack>

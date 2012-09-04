@@ -1,0 +1,16 @@
+<package>
+  <description brief="sr_grasp_moving_object">
+
+    Grasps a moving object.
+
+  </description>
+  <author>Ugo Cupcic / ugo@shadowrobot.com</author>
+  <license>GPL</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/sr_grasp_moving_object</url>
+  <depend package="roscpp"/>
+  <depend package="std_msgs"/>
+
+</package>
+
+
