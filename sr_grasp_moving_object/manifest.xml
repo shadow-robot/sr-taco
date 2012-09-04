@@ -9,7 +9,11 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/sr_grasp_moving_object</url>
   <depend package="roscpp"/>
+  <depend package="rospy"/>
   <depend package="std_msgs"/>
+  <depend package="geometry_msgs"/>
+  <depend package="visualization_msgs"/>
+  <depend package="sr_utilities"/>
 
 </package>
 
