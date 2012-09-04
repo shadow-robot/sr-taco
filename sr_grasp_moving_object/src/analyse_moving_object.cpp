@@ -89,7 +89,7 @@ namespace sr_taco
   AnalyseMovingObjectNode::AnalyseMovingObjectNode()
     : nh_tilde_("~")
   {
-    odom_msg_.header.frame_id = "/camera_link";
+    odom_msg_.header.frame_id = "/desk_support";
     odom_msg_.child_frame_id = "/tracked_object";
     odometry_pub_ = nh_tilde_.advertise<nav_msgs::Odometry>("odometry", 2);
 
@@ -112,27 +112,26 @@ namespace sr_taco
 
     //publish the markers
     visualization_msgs::Marker marker;
-    marker.header.frame_id = "camera_link";
+    marker.header.frame_id = "desk_support";
     marker.header.stamp = ros::Time();
     marker.ns = "my_namespace";
     marker.id = 0;
     marker.type = visualization_msgs::Marker::ARROW;
     marker.action = visualization_msgs::Marker::ADD;
-    marker.pose.position.x = data.pose.position.x;
-    marker.pose.position.y = data.pose.position.y;
-    marker.pose.position.z = data.pose.position.z;
-    marker.pose.orientation.x = 0.0;
-    marker.pose.orientation.y = 0.0;
-    marker.pose.orientation.z = 0.0;
-    marker.pose.orientation.w = 1.0;
 
-    if( data.velocity == 0.0 )
-      marker.scale.x = 0.01;
+    marker.points.resize(2);
+    marker.points[0] = data.pose.position;
+    marker.points[1] = data.pose.position;
+    marker.points[1].x += 20.0*data.twist.linear.x;
+    marker.points[1].y += 20.0*data.twist.linear.y;
+    marker.points[1].z += 20.0*data.twist.linear.z;
+
+    marker.scale.x = 0.05;
+    if( fabs(data.velocity) < 0.03)
+      marker.scale.y = 0.03;
     else
-      marker.scale.x = data.velocity;
+      marker.scale.y = fabs(data.velocity);
 
-    marker.scale.y = 0.1;
-    marker.scale.z = 0.1;
     marker.color.a = 1.0;
     marker.color.r = 1.0;
     marker.color.g = 0.0;
