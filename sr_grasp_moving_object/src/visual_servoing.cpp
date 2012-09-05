@@ -31,11 +31,18 @@
 #include <sr_grasp_moving_object/visual_servoing.hpp>
 #include <sr_grasp_moving_object/utils.hpp>
 
+#include <std_msgs/Float64.h>
+
 namespace sr_taco
 {
   VisualServoing::VisualServoing()
-    : nh_tilde_("~"), msg_received_(false)
+    : nh_tilde_("~"), object_msg_received_(false),
+      joint_states_msg_received_(false)
   {
+    init_robot_publishers_();
+
+    joint_states_sub_ = nh_tilde_.subscribe("/joint_states", 2, &VisualServoing::joint_states_cb_, this);
+
     odom_sub_ = nh_tilde_.subscribe("/analyse_moving_object/odometry", 2, &VisualServoing::new_odom_cb_, this);
     timer_ = nh_tilde_.createTimer(ros::Rate(100.0), &VisualServoing::get_closer_, this);
   }
@@ -46,27 +53,109 @@ namespace sr_taco
 
   void VisualServoing::new_odom_cb_(const nav_msgs::OdometryConstPtr& msg)
   {
-    msg_received_ = true;
-
     //update the target
-    target_.pose = msg->pose;
-    target_.twist = msg->twist;
-    target_.child_frame_id = msg->child_frame_id;
-    target_.header = msg->header;
+    tracked_object_.pose = msg->pose;
+    tracked_object_.twist = msg->twist;
+    tracked_object_.child_frame_id = msg->child_frame_id;
+    tracked_object_.header = msg->header;
+
+    object_msg_received_ = true;
   }
 
-  ///Timer callback, will servo the arm to the current target
+  ///Timer callback, will servo the arm to the current tracked_object
   void VisualServoing::get_closer_(const ros::TimerEvent& event)
   {
-    //don't do anything if we haven't received the first target
-    if(!msg_received_)
+    //don't do anything if we haven't received the first tracked_object
+    // or the first joint_states msg.
+    if(!object_msg_received_)
+      return;
+    if(!joint_states_msg_received_)
       return;
 
-    //get theoretic grasping point position (palm + offsets)
-
-    //compute a target that'll get us closer to the target
+    //generate different solutions aroung the current position
+    // and keep the one closest to object position + twist
+    // (the object is moving toward this point)
+    generate_best_solution_();
 
     //send it to the joints
+    send_robot_targets_();
+  }
+
+  void VisualServoing::generate_best_solution_()
+  {
+    std::vector<double> best_solution(current_positions_);
+
+    //TODO: generate the best solution using fk
+
+    for (unsigned int i=0; i < joint_names_.size(); ++i)
+    {
+      robot_targets_[i] = best_solution[i];
+    }
+  }
+
+  void VisualServoing::send_robot_targets_()
+  {
+    if( joint_states_msg_received_ )
+    {
+      ROS_ASSERT(joint_names_.size() == robot_targets_.size());
+      std_msgs::Float64 msg;
+      for (unsigned int i = 0; i < joint_names_.size(); ++i)
+      {
+        msg.data = robot_targets_[i];
+        robot_publishers_[joint_names_[i]].publish( msg );
+      }
+    }
+  }
+
+  void VisualServoing::joint_states_cb_(const sensor_msgs::JointStateConstPtr& msg)
+  {
+    current_positions_ = msg->position;
+
+    if( !joint_states_msg_received_ )
+    {
+      joint_names_ = msg->name;
+
+      joint_states_msg_received_ = true;
+    }
+  }
+
+  void VisualServoing::init_robot_publishers_()
+  {
+    //initialises the map of publishers
+    //TODO: really ugly, replace by a service call etc...
+
+    //for the hand
+    robot_publishers_["FFJ0"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_ffj0_mixed_position_velocity_controller/command", 1);
+    robot_publishers_["FFJ3"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_ffj3_mixed_position_velocity_controller/command", 1);
+    robot_publishers_["FFJ4"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_ffj4_mixed_position_velocity_controller/command", 1);
+
+    robot_publishers_["MFJ0"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_mfj0_mixed_position_velocity_controller/command", 1);
+    robot_publishers_["MFJ3"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_mfj3_mixed_position_velocity_controller/command", 1);
+    robot_publishers_["MFJ4"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_mfj4_mixed_position_velocity_controller/command", 1);
+
+    robot_publishers_["RFJ0"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_rfj0_mixed_position_velocity_controller/command", 1);
+    robot_publishers_["RFJ3"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_rfj3_mixed_position_velocity_controller/command", 1);
+    robot_publishers_["RFJ4"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_rfj4_mixed_position_velocity_controller/command", 1);
+
+    robot_publishers_["LFJ0"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_lfj0_mixed_position_velocity_controller/command", 1);
+    robot_publishers_["LFJ3"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_lfj3_mixed_position_velocity_controller/command", 1);
+    robot_publishers_["LFJ4"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_lfj4_mixed_position_velocity_controller/command", 1);
+    robot_publishers_["LFJ5"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_lfj5_mixed_position_velocity_controller/command", 1);
+
+    robot_publishers_["THJ1"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_thj1_mixed_position_velocity_controller/command", 1);
+    robot_publishers_["THJ2"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_thj2_mixed_position_velocity_controller/command", 1);
+    robot_publishers_["THJ3"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_thj3_mixed_position_velocity_controller/command", 1);
+    robot_publishers_["THJ4"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_thj4_mixed_position_velocity_controller/command", 1);
+    robot_publishers_["THJ5"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_thj5_mixed_position_velocity_controller/command", 1);
+
+    robot_publishers_["WRJ1"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_wrj1_mixed_position_velocity_controller/command", 1);
+    robot_publishers_["WRJ2"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_wrj2_mixed_position_velocity_controller/command", 1);
+
+    // for the arm
+    robot_publishers_["ShoulderJRotate"] = nh_tilde_.advertise<std_msgs::Float64>("/sa_sr_position_controller/command", 1);
+    robot_publishers_["ShoulderJSwing"] = nh_tilde_.advertise<std_msgs::Float64>("/sa_ss_position_controller/command", 1);
+    robot_publishers_["ElbowJRotate"] = nh_tilde_.advertise<std_msgs::Float64>("/sa_er_position_controller/command", 1);
+    robot_publishers_["ElbowJSwing"] = nh_tilde_.advertise<std_msgs::Float64>("/sa_es_position_controller/command", 1);
   }
 }
 

@@ -33,6 +33,9 @@
 
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/Pose.h>
+#include <sensor_msgs/JointState.h>
+#include <map>
 
 namespace sr_taco
 {
@@ -45,6 +48,12 @@ namespace sr_taco
   protected:
     ros::NodeHandle nh_tilde_;
 
+    ///subscribes to the joint_states, updating the vector of current_positions_
+    ros::Subscriber joint_states_sub_;
+    std::vector<double> current_positions_;
+    std::vector<std::string> joint_names_;
+    void joint_states_cb_(const sensor_msgs::JointStateConstPtr& msg);
+
     ///subscribes to the odometry messages coming from the object analyser
     ros::Subscriber odom_sub_;
     void new_odom_cb_(const nav_msgs::OdometryConstPtr& msg);
@@ -54,10 +63,34 @@ namespace sr_taco
     ///Timer callback, will servo the arm to the current target
     void get_closer_(const ros::TimerEvent& event);
 
-    nav_msgs::Odometry target_;
+    /**
+     * Generate different solutions aroung the current position
+     *  and keep the one closest to object position + twist
+     *  (the object is moving toward this point)
+     *
+     *  Updates the robot_targets_ vector.
+     */
+    void generate_best_solution_();
+
+    /**
+     * Send the current robot_targets_ to the robot.
+     */
+    void send_robot_targets_();
+    /**
+     * map containing the publishers for sending targets to the robot
+     */
+    std::map<std::string, ros::Publisher> robot_publishers_;
+    void init_robot_publishers_();
+
+    ///The latest object position and twist
+    nav_msgs::Odometry tracked_object_;
+
+    ///The targets we'll send to the robot
+    std::vector<double> robot_targets_;
 
     ///Set to true once we've received a msg
-    bool msg_received_;
+    bool object_msg_received_;
+    bool joint_states_msg_received_;
   };
 }
 /* For the emacs weenies in the crowd.
