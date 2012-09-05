@@ -32,10 +32,17 @@
 #define _VISUAL_SERVOING_HPP_
 
 #include <ros/ros.h>
+
+#include <boost/smart_ptr.hpp>
+#include <map>
+
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose.h>
 #include <sensor_msgs/JointState.h>
-#include <map>
+
+#include <kdl_parser/kdl_parser.hpp>
+#include <kdl/chainfksolver.hpp>
+#include <kdl/chainfksolverpos_recursive.hpp>
 
 namespace sr_taco
 {
@@ -65,6 +72,9 @@ namespace sr_taco
 
     ///The increment we'll use for computing the best solution
     static const double epsilon_;
+    ///The vector containing -epsilon, 0, +epsilon
+    std::vector<double> epsilons_;
+
     /**
      * Generate different solutions aroung the current position
      *  and keep the one closest to object position + twist
@@ -73,6 +83,12 @@ namespace sr_taco
      *  Updates the robot_targets_ vector.
      */
     void generate_best_solution_();
+
+    KDL::Tree kdl_arm_tree_;
+    KDL::Chain kdl_arm_chain_;
+    KDL::JntArray kdl_joint_positions_;
+    KDL::Frame kdl_cartesian_position_;
+    boost::shared_ptr<KDL::ChainFkSolverPos_recursive> fksolver_;
 
     /**
      * Send the current robot_targets_ to the robot.

@@ -7,7 +7,8 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 #  Release        : w/o debug symbols, w/ optimization
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
+
+set(ROS_BUILD_TYPE Debug)
 
 rosbuild_init()
 
@@ -29,5 +30,5 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 rosbuild_add_executable(analyse_moving_object src/analyse_moving_object.cpp)
 
 rosbuild_add_executable(visual_servoing src/visual_servoing.cpp)
-rosbuild_add_openmp_flags(visual_servoing)
+#rosbuild_add_openmp_flags(visual_servoing)
 #target_link_libraries(example ${PROJECT_NAME})

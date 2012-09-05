@@ -15,6 +15,7 @@
   <depend package="visualization_msgs"/>
   <depend package="sr_utilities"/>
   <depend package="tf"/>
+  <depend package="kdl_parser"/>
 
 </package>
 

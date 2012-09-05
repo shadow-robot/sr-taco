@@ -33,19 +33,37 @@
 
 #include <std_msgs/Float64.h>
 
-#include <omp.h>
+//#include <omp.h>
 
 namespace sr_taco
 {
-  //using 2 degrees increments
+  //using 4 degrees increments
   const double VisualServoing::epsilon_ = 0.035;
 
   VisualServoing::VisualServoing()
     : nh_tilde_("~"), object_msg_received_(false),
       joint_states_msg_received_(false)
   {
+    epsilons_.push_back(- epsilon_);
+    epsilons_.push_back(0.0);
+    epsilons_.push_back(epsilon_);
+
     init_robot_publishers_();
 
+    //initialises the forward kinematics solver
+    // and other kdl stuffs
+    if( !kdl_parser::treeFromParam("/robot_description", kdl_arm_tree_) )
+    {
+      ROS_FATAL_STREAM("Failed to construct the kdl tree from the robot_description.");
+      ROS_BREAK();
+    }
+    kdl_arm_tree_.getChain("shadowarm_trunk", "palm", kdl_arm_chain_);
+
+    fksolver_.reset( new KDL::ChainFkSolverPos_recursive(kdl_arm_chain_) );
+    unsigned int nj = kdl_arm_chain_.getNrOfJoints();
+    kdl_joint_positions_ = KDL::JntArray(nj);
+
+    //initialises subscribers and timer
     joint_states_sub_ = nh_tilde_.subscribe("/joint_states", 2, &VisualServoing::joint_states_cb_, this);
 
     odom_sub_ = nh_tilde_.subscribe("/analyse_moving_object/odometry", 2, &VisualServoing::new_odom_cb_, this);
@@ -88,28 +106,105 @@ namespace sr_taco
 
   void VisualServoing::generate_best_solution_()
   {
-    std::vector<double> best_solution(9);
-
     //TODO: generate the best solution using fk
     // combines current_pos, current_pos + epsilon and current_pos - epsilon
     // for all the joints from arm_base to palm.
-    int nthreads, tid;
-#pragma omp parallel shared(best_solution) private(tid)
+    //TODO: use openmp for loop (https://computing.llnl.gov/tutorials/openMP/#DO)
+    bool kinematic_status;
+    geometry_msgs::Pose pose;
+    double best_distance = -1.0;
+    double distance = 0.0;
+
+    double eps_sr, eps_ss, eps_es, eps_er, eps_wrj1, eps_wrj2;
+
+    int indx = 0;
+    for(unsigned int i=0; i < epsilons_.size(); ++i)
     {
-      tid = omp_get_thread_num();
-      ROS_ERROR_STREAM("Hello from " << tid);
-      if (tid == 0)
+      eps_sr = epsilons_[i];
+      for(unsigned int j=0; j < epsilons_.size(); ++j)
       {
-        nthreads = omp_get_num_threads();
-        ROS_ERROR("Number of threads = %d\n", nthreads);
-      }
-    } //end of the parallel computation
+        eps_ss = epsilons_[j];
+        for(unsigned int k=0; k < epsilons_.size(); ++k)
+        {
+          eps_er = epsilons_[k];
+          for(unsigned int l=0; l < epsilons_.size(); ++l)
+          {
+            eps_es = epsilons_[l];
+            for(unsigned int m=0; m < epsilons_.size(); ++m)
+            {
+              eps_wrj1 = epsilons_[m];
+              for(unsigned int n=0; n < epsilons_.size(); ++n)
+              {
+                ++indx;
 
+                eps_wrj2 = epsilons_[n];
 
-    for (unsigned int i=0; i < target_names_.size(); ++i)
-    {
-      robot_targets_[i] = best_solution[i];
-    }
+                kdl_joint_positions_(0) = current_positions_["ShoulderJRotate"] + eps_sr;
+                kdl_joint_positions_(1) = current_positions_["ShoulderJSwing"] + eps_ss;
+                kdl_joint_positions_(2) = current_positions_["ElbowJSwing"] + eps_es;
+                kdl_joint_positions_(3) = current_positions_["ElbowJRotate"] + eps_er;
+                //joint[4] in the solution is ignored: it's the static link between arm and hand
+                kdl_joint_positions_(4) = 0.0;
+                kdl_joint_positions_(5) = current_positions_["WRJ2"] + eps_wrj2;
+                kdl_joint_positions_(6) = current_positions_["WRJ1"] + eps_wrj1;
+
+                kinematic_status = fksolver_->JntToCart(kdl_joint_positions_, kdl_cartesian_position_);
+
+                if( kinematic_status < 0 )
+                {
+                  ROS_ERROR_STREAM("Error computing fk for the robot.");
+                  return;
+                }
+
+                pose.position.x = kdl_cartesian_position_.p.x();
+                pose.position.y = kdl_cartesian_position_.p.y();
+                pose.position.z = kdl_cartesian_position_.p.z();
+
+                //TODO, compute position + twist in object callback
+                distance = sr_utils::compute_distance(pose.position, tracked_object_.pose.pose.position);
+
+                if( best_distance == -1.0 )
+                {
+                  best_distance = distance;
+
+                  //same order as target_names_ NOT A MISTAKE!!
+                  robot_targets_[0] = current_positions_["ShoulderJRotate"] + eps_sr;
+                  robot_targets_[1] = current_positions_["ShoulderJSwing"] + eps_ss;
+                  robot_targets_[2] = current_positions_["ElbowJRotate"] + eps_er;
+                  robot_targets_[3] = current_positions_["ElbowJSwing"] + eps_es;
+                  robot_targets_[4] = current_positions_["WRJ1"] + eps_wrj1;
+                  robot_targets_[5] = current_positions_["WRJ2"] + eps_wrj2;
+                }
+                else
+                {
+                  if( distance < best_distance )
+                  {
+                    best_distance = distance;
+
+                    //same order as target_names_ NOT A MISTAKE!!
+                    robot_targets_[0] = current_positions_["ShoulderJRotate"] + eps_sr;
+                    robot_targets_[1] = current_positions_["ShoulderJSwing"] + eps_ss;
+                    robot_targets_[2] = current_positions_["ElbowJRotate"] + eps_er;
+                    robot_targets_[3] = current_positions_["ElbowJSwing"] + eps_es;
+                    robot_targets_[4] = current_positions_["WRJ1"] + eps_wrj1;
+                    robot_targets_[5] = current_positions_["WRJ2"] + eps_wrj2;
+                  }
+                }
+              }//end wrj2
+            } //end wrj1
+          }//end es
+        }//end er
+      }//end ss
+    }//end sr
+
+    ROS_INFO_STREAM("computing: ["<< robot_targets_[0] << ", "
+                    << robot_targets_[1] << ", "
+                    << robot_targets_[2] << ", "
+                    << robot_targets_[3] << ", "
+                    << robot_targets_[4] << ", "
+                    << robot_targets_[5] << ", "
+                    << "]  -> " <<
+                    " (best distance = " << best_distance << ") id = " << indx );
   }
 
   void VisualServoing::send_robot_targets_()
@@ -147,11 +242,17 @@ namespace sr_taco
     //Those are the targets to which we'll publish for
     // moving the arm (we also include the wrist in the arm)
     target_names_.push_back("ShoulderJRotate");
+    robot_targets_.push_back(0.0);
     target_names_.push_back("ShoulderJSwing");
+    robot_targets_.push_back(0.0);
     target_names_.push_back("ElbowJRotate");
+    robot_targets_.push_back(0.0);
     target_names_.push_back("EblowJSwing");
+    robot_targets_.push_back(0.0);
     target_names_.push_back("WRJ1");
+    robot_targets_.push_back(0.0);
     target_names_.push_back("WRJ2");
+    robot_targets_.push_back(0.0);
 
     //initialises the map of publishers
     //TODO: really ugly, replace by a service call etc...
