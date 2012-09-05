@@ -33,8 +33,13 @@
 
 #include <std_msgs/Float64.h>
 
+#include <omp.h>
+
 namespace sr_taco
 {
+  //using 2 degrees increments
+  const double VisualServoing::epsilon_ = 0.035;
+
   VisualServoing::VisualServoing()
     : nh_tilde_("~"), object_msg_received_(false),
       joint_states_msg_received_(false)
@@ -83,11 +88,25 @@ namespace sr_taco
 
   void VisualServoing::generate_best_solution_()
   {
-    std::vector<double> best_solution(current_positions_);
+    std::vector<double> best_solution(9);
 
     //TODO: generate the best solution using fk
+    // combines current_pos, current_pos + epsilon and current_pos - epsilon
+    // for all the joints from arm_base to palm.
+    int nthreads, tid;
+#pragma omp parallel shared(best_solution) private(tid)
+    {
+      tid = omp_get_thread_num();
+      ROS_ERROR_STREAM("Hello from " << tid);
+      if (tid == 0)
+      {
+        nthreads = omp_get_num_threads();
+        ROS_ERROR("Number of threads = %d\n", nthreads);
+      }
+    } //end of the parallel computation
 
-    for (unsigned int i=0; i < joint_names_.size(); ++i)
+
+    for (unsigned int i=0; i < target_names_.size(); ++i)
     {
       robot_targets_[i] = best_solution[i];
     }
@@ -97,9 +116,9 @@ namespace sr_taco
   {
     if( joint_states_msg_received_ )
     {
-      ROS_ASSERT(joint_names_.size() == robot_targets_.size());
+      ROS_ASSERT(target_names_.size() == robot_targets_.size());
       std_msgs::Float64 msg;
-      for (unsigned int i = 0; i < joint_names_.size(); ++i)
+      for (unsigned int i = 0; i < target_names_.size(); ++i)
       {
         msg.data = robot_targets_[i];
         robot_publishers_[joint_names_[i]].publish( msg );
@@ -109,21 +128,33 @@ namespace sr_taco
 
   void VisualServoing::joint_states_cb_(const sensor_msgs::JointStateConstPtr& msg)
   {
-    current_positions_ = msg->position;
-
     if( !joint_states_msg_received_ )
     {
       joint_names_ = msg->name;
 
       joint_states_msg_received_ = true;
     }
+
+    ROS_ASSERT( msg->position.size() == joint_names_.size() );
+    for(unsigned int i=0; i < joint_names_.size(); ++i)
+    {
+      current_positions_[ joint_names_[i] ] = msg->position[i];
+    }
   }
 
   void VisualServoing::init_robot_publishers_()
   {
+    //Those are the targets to which we'll publish for
+    // moving the arm (we also include the wrist in the arm)
+    target_names_.push_back("ShoulderJRotate");
+    target_names_.push_back("ShoulderJSwing");
+    target_names_.push_back("ElbowJRotate");
+    target_names_.push_back("EblowJSwing");
+    target_names_.push_back("WRJ1");
+    target_names_.push_back("WRJ2");
+
     //initialises the map of publishers
     //TODO: really ugly, replace by a service call etc...
-
     //for the hand
     robot_publishers_["FFJ0"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_ffj0_mixed_position_velocity_controller/command", 1);
     robot_publishers_["FFJ3"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_ffj3_mixed_position_velocity_controller/command", 1);

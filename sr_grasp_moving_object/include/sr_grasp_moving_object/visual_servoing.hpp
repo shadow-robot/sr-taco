@@ -50,7 +50,7 @@ namespace sr_taco
 
     ///subscribes to the joint_states, updating the vector of current_positions_
     ros::Subscriber joint_states_sub_;
-    std::vector<double> current_positions_;
+    std::map<std::string, double> current_positions_;
     std::vector<std::string> joint_names_;
     void joint_states_cb_(const sensor_msgs::JointStateConstPtr& msg);
 
@@ -63,6 +63,8 @@ namespace sr_taco
     ///Timer callback, will servo the arm to the current target
     void get_closer_(const ros::TimerEvent& event);
 
+    ///The increment we'll use for computing the best solution
+    static const double epsilon_;
     /**
      * Generate different solutions aroung the current position
      *  and keep the one closest to object position + twist
@@ -87,6 +89,8 @@ namespace sr_taco
 
     ///The targets we'll send to the robot
     std::vector<double> robot_targets_;
+    ///The names of the joints we're sending targets to
+    std::vector<std::string> target_names_;
 
     ///Set to true once we've received a msg
     bool object_msg_received_;

@@ -27,5 +27,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_add_boost_directories()
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 rosbuild_add_executable(analyse_moving_object src/analyse_moving_object.cpp)
+
 rosbuild_add_executable(visual_servoing src/visual_servoing.cpp)
+rosbuild_add_openmp_flags(visual_servoing)
 #target_link_libraries(example ${PROJECT_NAME})
