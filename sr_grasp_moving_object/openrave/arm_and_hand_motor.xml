@@ -1,0 +1,8 @@
+<Robot name="arm_and_hand_motor" file="arm_and_hand_motor.dae">
+  <Manipulator name="arm_and_hand_motor">
+    <base>shadowarm_base</base>
+    <effector>palm</effector>
+    <direction>1 0 0</direction>
+    <translation>0 0 0</translation>
+  </Manipulator>
+</Robot>
