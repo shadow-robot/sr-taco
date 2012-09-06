@@ -38,7 +38,7 @@
 namespace sr_taco
 {
   //using 4 degrees increments
-  const double VisualServoing::epsilon_ = 0.035;
+  const double VisualServoing::epsilon_ = 0.07;
 
   VisualServoing::VisualServoing()
     : nh_tilde_("~"), object_msg_received_(false),
@@ -118,6 +118,7 @@ namespace sr_taco
     double eps_sr, eps_ss, eps_es, eps_er, eps_wrj1, eps_wrj2;
 
     int indx = 0;
+    int best_idx = 0;
     for(unsigned int i=0; i < epsilons_.size(); ++i)
     {
       eps_sr = epsilons_[i];
@@ -126,18 +127,20 @@ namespace sr_taco
         eps_ss = epsilons_[j];
         for(unsigned int k=0; k < epsilons_.size(); ++k)
         {
-          eps_er = epsilons_[k];
+          eps_es = epsilons_[k];
           for(unsigned int l=0; l < epsilons_.size(); ++l)
           {
-            eps_es = epsilons_[l];
+            eps_er = epsilons_[l];
             for(unsigned int m=0; m < epsilons_.size(); ++m)
             {
-              eps_wrj1 = epsilons_[m];
+              eps_wrj2 = epsilons_[m];
               for(unsigned int n=0; n < epsilons_.size(); ++n)
               {
                 ++indx;
 
-                eps_wrj2 = epsilons_[n];
+                eps_wrj1 = epsilons_[n];
+
+                ROS_DEBUG_STREAM("sr="<<eps_sr << ", ss="<<eps_ss <<", es="<<eps_es<<", er=" << eps_er);
 
                 kdl_joint_positions_(0) = current_positions_["ShoulderJRotate"] + eps_sr;
                 kdl_joint_positions_(1) = current_positions_["ShoulderJSwing"] + eps_ss;
@@ -167,29 +170,43 @@ namespace sr_taco
                 {
                   best_distance = distance;
 
-                  //same order as target_names_ NOT A MISTAKE!!
+                  //same order as target_names_
                   robot_targets_[0] = current_positions_["ShoulderJRotate"] + eps_sr;
                   robot_targets_[1] = current_positions_["ShoulderJSwing"] + eps_ss;
-                  robot_targets_[2] = current_positions_["ElbowJRotate"] + eps_er;
-                  robot_targets_[3] = current_positions_["ElbowJSwing"] + eps_es;
-                  robot_targets_[4] = current_positions_["WRJ1"] + eps_wrj1;
-                  robot_targets_[5] = current_positions_["WRJ2"] + eps_wrj2;
+                  robot_targets_[2] = current_positions_["ElbowJSwing"] + eps_es;
+                  robot_targets_[3] = current_positions_["ElbowJRotate"] + eps_er;
+                  robot_targets_[4] = current_positions_["WRJ2"] + eps_wrj2;
+                  robot_targets_[5] = current_positions_["WRJ1"] + eps_wrj1;
                 }
                 else
                 {
                   if( distance < best_distance )
                   {
                     best_distance = distance;
+                    best_idx = indx;
 
                     //same order as target_names_ NOT A MISTAKE!!
                     robot_targets_[0] = current_positions_["ShoulderJRotate"] + eps_sr;
                     robot_targets_[1] = current_positions_["ShoulderJSwing"] + eps_ss;
-                    robot_targets_[2] = current_positions_["ElbowJRotate"] + eps_er;
-                    robot_targets_[3] = current_positions_["ElbowJSwing"] + eps_es;
-                    robot_targets_[4] = current_positions_["WRJ1"] + eps_wrj1;
-                    robot_targets_[5] = current_positions_["WRJ2"] + eps_wrj2;
+                    robot_targets_[2] = current_positions_["ElbowJSwing"] + eps_es;
+                    robot_targets_[3] = current_positions_["ElbowJRotate"] + eps_er;
+                    robot_targets_[4] = current_positions_["WRJ2"] + eps_wrj2;
+                    robot_targets_[5] = current_positions_["WRJ1"] + eps_wrj1;
                   }
                 }
+
+
+                ROS_DEBUG_STREAM("computing: [\n"
+                                 << "ShoulderJRotate: " << (current_positions_["ShoulderJRotate"] + eps_sr) * 57.295779513082323 << ",\n"
+                                 << "ShoulderJSwing: " << (current_positions_["ShoulderJSwing"] + eps_ss)* 57.295779513082323 << ",\n "
+                                 << "ElbowJSwing: " << (current_positions_["ElbowJSwing"] + eps_es)* 57.295779513082323 << ",\n "
+                                 << "ElbowJRotate: " << (current_positions_["ElbowJRotate"] + eps_er)* 57.295779513082323 << ",\n "
+                                 << "WRJ2: " << (current_positions_["WRJ2"] + eps_wrj2)* 57.295779513082323 << ",\n "
+                                 << "WRJ1: " << (current_positions_["WRJ1"] + eps_wrj1)* 57.295779513082323 << ",\n "
+                                 << "]  -> "
+                                 << "POSE= "<<pose.position << " / TRACKED POSE: " << tracked_object_.pose.pose.position
+                                 << " (distance = " << distance << " / "<< best_distance << ") id = " << indx );
+
               }//end wrj2
             } //end wrj1
           }//end es
@@ -197,14 +214,15 @@ namespace sr_taco
       }//end ss
     }//end sr
 
-    ROS_INFO_STREAM("computing: ["<< robot_targets_[0] << ", "
-                    << robot_targets_[1] << ", "
-                    << robot_targets_[2] << ", "
-                    << robot_targets_[3] << ", "
-                    << robot_targets_[4] << ", "
-                    << robot_targets_[5] << ", "
-                    << "]  -> " <<
-                    " (best distance = " << best_distance << ") id = " << indx );
+    ROS_DEBUG_STREAM("solution: [\n"
+                     << "ShoulderJRotate: " << robot_targets_[0]* 57.295779513082323 << ",\n"
+                     << "ShoulderJSwing: " << robot_targets_[1]* 57.295779513082323 << ",\n "
+                     << "ElbowJSwing: " << robot_targets_[2]* 57.295779513082323 << ",\n "
+                     << "ElbowJRotate: " << robot_targets_[3]* 57.295779513082323 << ",\n "
+                     << "WRJ2: " << robot_targets_[4]* 57.295779513082323 << ",\n "
+                     << "WRJ1: " << robot_targets_[5]* 57.295779513082323 << ",\n "
+                     << "]  -> " <<
+                     " (best distance = " << best_distance << ") id = " << best_idx );
   }
 
   void VisualServoing::send_robot_targets_()
@@ -245,13 +263,13 @@ namespace sr_taco
     robot_targets_.push_back(0.0);
     target_names_.push_back("ShoulderJSwing");
     robot_targets_.push_back(0.0);
-    target_names_.push_back("ElbowJRotate");
-    robot_targets_.push_back(0.0);
     target_names_.push_back("EblowJSwing");
     robot_targets_.push_back(0.0);
-    target_names_.push_back("WRJ1");
+    target_names_.push_back("ElbowJRotate");
     robot_targets_.push_back(0.0);
     target_names_.push_back("WRJ2");
+    robot_targets_.push_back(0.0);
+    target_names_.push_back("WRJ1");
     robot_targets_.push_back(0.0);
 
     //initialises the map of publishers

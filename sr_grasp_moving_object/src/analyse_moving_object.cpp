@@ -76,7 +76,7 @@ namespace sr_taco
   AnalyseMovingObjectNode::AnalyseMovingObjectNode()
     : nh_tilde_("~")
   {
-    odom_msg_.header.frame_id = "/desk_support";
+    odom_msg_.header.frame_id = "/shadowarm_base";
     odom_msg_.child_frame_id = "/tracked_object";
     odometry_pub_ = nh_tilde_.advertise<nav_msgs::Odometry>("odometry", 2);
 
@@ -99,7 +99,7 @@ namespace sr_taco
 
     //publish the markers
     visualization_msgs::Marker marker;
-    marker.header.frame_id = "desk_support";
+    marker.header.frame_id = "/shadowarm_base";
     marker.header.stamp = ros::Time();
     marker.ns = "analyse_moving_object";
     marker.id = 0;
