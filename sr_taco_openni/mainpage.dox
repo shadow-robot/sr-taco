@@ -1,0 +1,14 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b sr_taco_openni
+
+<!-- 
+sr_taco_openni - a mock TACO sensor node using an openni depth camera (e.g. Kinect, Xtion).
+-->
+
+-->
+
+
+*/

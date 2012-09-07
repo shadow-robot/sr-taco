@@ -1,0 +1,17 @@
+<package>
+  <description brief="sr_taco_openni">
+
+     sr_taco_openni - a mock TACO sensor node using an openni depth camera (e.g. Kinect, Xtion).
+
+  </description>
+  <author>Shadow Robot Company</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/sr_taco_openni</url>
+  <depend package="roscpp"/>
+  <depend package="sensor_msgs"/>
+  <depend package="openni_camera"/>
+  <depend package="openni_launch"/>
+
+</package>
+
