@@ -37,11 +37,10 @@ class TacoOpenNI {
         // Namespace to find the camera in.
         string camera;
 
-        Subscriber pclSub;
+        vector<Subscriber> subs;
         void pclIn(const sensor_msgs::PointCloud2::ConstPtr& msg);
-
-        Subscriber cameraInfoSub;
         void cameraInfoIn(const sensor_msgs::CameraInfo::ConstPtr& msg);
+        void depthImageIn(const sensor_msgs::Image::ConstPtr& msg);
 
         TacoOpenNIPubs foveated;
         TacoOpenNIPubs unfoveated;
