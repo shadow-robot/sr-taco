@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ros/ros.h"
+#include <boost/smart_ptr.hpp>
 #include "sensor_msgs/PointCloud2.h"
 #include "sensor_msgs/CameraInfo.h"
 #include "sensor_msgs/Image.h"
@@ -44,6 +45,15 @@ class TacoOpenNI {
 
         TacoOpenNIPubs foveated;
         TacoOpenNIPubs unfoveated;
+
+        boost::shared_ptr<sensor_msgs::Image> saliency_map_spatial;
+        Publisher saliency_map_spatial_pub;
+        
+        //const width/height for our point cloud and image.
+        //Should match the camera we are faking the taco with, not the actual
+        //taco cam. e.g. 640*480 works for a kinect.
+        static const unsigned int taco_width;
+        static const unsigned int taco_height;
 };
 
 } // sr_taco_openni::
