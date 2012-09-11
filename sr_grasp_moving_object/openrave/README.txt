@@ -4,6 +4,7 @@
   > rosrun collada_urdf urdf_to_collada /tmp/arm_and_hand_motor.urdf /tmp/arm_and_hand_motor.dae
 
 3. created the xml scene file arm_and_hand_motor.xml
+   -> The translation in the xml file is for the grasping point.
 
 4. you can view it in openrave:
  > roscd openrave/bin

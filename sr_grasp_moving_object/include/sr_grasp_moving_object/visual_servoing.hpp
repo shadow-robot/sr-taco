@@ -34,15 +34,18 @@
 #include <ros/ros.h>
 
 #include <boost/smart_ptr.hpp>
+#include <boost/iostreams/device/file_descriptor.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/format.hpp>
 #include <map>
+
+#include <openrave-core.h>
 
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose.h>
 #include <sensor_msgs/JointState.h>
 
-#include <kdl_parser/kdl_parser.hpp>
-#include <kdl/chainfksolver.hpp>
-#include <kdl/chainfksolverpos_recursive.hpp>
+//#include "sr_grasp_moving_object/kinematics/ik_fast.h"
 
 namespace sr_taco
 {
@@ -70,11 +73,6 @@ namespace sr_taco
     ///Timer callback, will servo the arm to the current target
     void get_closer_(const ros::TimerEvent& event);
 
-    ///The increment we'll use for computing the best solution
-    static const double epsilon_;
-    ///The vector containing -epsilon, 0, +epsilon
-    std::vector<double> epsilons_;
-
     /**
      * Generate different solutions aroung the current position
      *  and keep the one closest to object position + twist
@@ -83,12 +81,6 @@ namespace sr_taco
      *  Updates the robot_targets_ vector.
      */
     void generate_best_solution_();
-
-    KDL::Tree kdl_arm_tree_;
-    KDL::Chain kdl_arm_chain_;
-    KDL::JntArray kdl_joint_positions_;
-    KDL::Frame kdl_cartesian_position_;
-    boost::shared_ptr<KDL::ChainFkSolverPos_recursive> fksolver_;
 
     /**
      * Send the current robot_targets_ to the robot.
@@ -99,6 +91,17 @@ namespace sr_taco
      */
     std::map<std::string, ros::Publisher> robot_publishers_;
     void init_robot_publishers_();
+
+    /**
+     * Initialises OpenRAVE tools for computing IK.
+     */
+    void init_openrave_();
+    OpenRAVE::EnvironmentBasePtr rave_env_;
+    OpenRAVE::RobotBasePtr rave_robot_;
+    OpenRAVE::ModuleBasePtr rave_ikfast_;
+    OpenRAVE::RobotBase::ManipulatorPtr rave_manipulator_;
+    OpenRAVE::ViewerBasePtr rave_viewer_;
+    OpenRAVE::IkSolverBasePtr rave_ik_solver_;
 
     ///The latest object position and twist
     nav_msgs::Odometry tracked_object_;

@@ -30,6 +30,7 @@
 
 #include <sr_grasp_moving_object/visual_servoing.hpp>
 #include <sr_grasp_moving_object/utils.hpp>
+#include <ros/package.h>
 
 #include <std_msgs/Float64.h>
 
@@ -37,34 +38,16 @@
 
 namespace sr_taco
 {
-  //using 4 degrees increments
-  const double VisualServoing::epsilon_ = 0.07;
-
   VisualServoing::VisualServoing()
     : nh_tilde_("~"), object_msg_received_(false),
       joint_states_msg_received_(false)
   {
-    epsilons_.push_back(- epsilon_);
-    epsilons_.push_back(0.0);
-    epsilons_.push_back(epsilon_);
+    init_openrave_();
 
     init_robot_publishers_();
 
-    //initialises the forward kinematics solver
-    // and other kdl stuffs
-    if( !kdl_parser::treeFromParam("/robot_description", kdl_arm_tree_) )
-    {
-      ROS_FATAL_STREAM("Failed to construct the kdl tree from the robot_description.");
-      ROS_BREAK();
-    }
-    kdl_arm_tree_.getChain("shadowarm_trunk", "palm", kdl_arm_chain_);
-
-    fksolver_.reset( new KDL::ChainFkSolverPos_recursive(kdl_arm_chain_) );
-    unsigned int nj = kdl_arm_chain_.getNrOfJoints();
-    kdl_joint_positions_ = KDL::JntArray(nj);
-
     //initialises subscribers and timer
-    joint_states_sub_ = nh_tilde_.subscribe("/joint_states", 2, &VisualServoing::joint_states_cb_, this);
+    joint_states_sub_ = nh_tilde_.subscribe("/gazebo/joint_states", 2, &VisualServoing::joint_states_cb_, this);
 
     odom_sub_ = nh_tilde_.subscribe("/analyse_moving_object/odometry", 2, &VisualServoing::new_odom_cb_, this);
     timer_ = nh_tilde_.createTimer(ros::Rate(100.0), &VisualServoing::get_closer_, this);
@@ -72,6 +55,7 @@ namespace sr_taco
 
   VisualServoing::~VisualServoing()
   {
+    OpenRAVE::RaveDestroy();
   }
 
   void VisualServoing::new_odom_cb_(const nav_msgs::OdometryConstPtr& msg)
@@ -107,122 +91,87 @@ namespace sr_taco
   void VisualServoing::generate_best_solution_()
   {
     //TODO: generate the best solution using fk
-    // combines current_pos, current_pos + epsilon and current_pos - epsilon
     // for all the joints from arm_base to palm.
     //TODO: use openmp for loop (https://computing.llnl.gov/tutorials/openMP/#DO)
-    bool kinematic_status;
-    geometry_msgs::Pose pose;
-    double best_distance = -1.0;
-    double distance = 0.0;
 
-    double eps_sr, eps_ss, eps_es, eps_er, eps_wrj1, eps_wrj2;
+    OpenRAVE::Transform trans;
+    /*trans.rot = OpenRAVE::geometry::quatFromAxisAngle(OpenRAVE::Vector(OpenRAVE::RaveRandomFloat() - 0.5,
+                                                                       OpenRAVE::RaveRandomFloat() - 0.5,
+                                                                       OpenRAVE::RaveRandomFloat() - 0.5));
+    trans.trans = OpenRAVE::Vector(OpenRAVE::RaveRandomFloat() - 0.5,
+                                   OpenRAVE::RaveRandomFloat() - 0.5,
+                                   OpenRAVE::RaveRandomFloat() - 0.5) * 2;
+                                   */
+    trans.rot.w = 0.317;
+    trans.rot.x = 0.519;
+    trans.rot.y = 0.215;
+    trans.rot.z = 0.764;
 
-    int indx = 0;
-    int best_idx = 0;
-    for(unsigned int i=0; i < epsilons_.size(); ++i)
+    trans.trans.x = 0.608;
+    trans.trans.y = -0.127;
+    trans.trans.z = 0.3;
+
+    std::vector<OpenRAVE::dReal> ik_solution;
+    if( rave_manipulator_->FindIKSolution(OpenRAVE::IkParameterization(trans), ik_solution, OpenRAVE::IKFO_IgnoreEndEffectorCollisions) )
     {
-      eps_sr = epsilons_[i];
-      for(unsigned int j=0; j < epsilons_.size(); ++j)
+      std::stringstream ss;
+      for(size_t i = 0; i < ik_solution.size(); ++i)
       {
-        eps_ss = epsilons_[j];
-        for(unsigned int k=0; k < epsilons_.size(); ++k)
-        {
-          eps_es = epsilons_[k];
-          for(unsigned int l=0; l < epsilons_.size(); ++l)
-          {
-            eps_er = epsilons_[l];
-            for(unsigned int m=0; m < epsilons_.size(); ++m)
-            {
-              eps_wrj2 = epsilons_[m];
-              for(unsigned int n=0; n < epsilons_.size(); ++n)
-              {
-                ++indx;
+        ss << ik_solution[i] << " ";
+      }
+      ROS_WARN_STREAM("The solution is: " << ss.str());
+    }
+    else
+    {
+      ROS_ERROR_STREAM("No solution found for " << trans);
+    }
 
-                eps_wrj1 = epsilons_[n];
+    /*
+    ROS_ERROR("\nUsage: ./ik r00 r01 r02 t0 r10 r11 r12 t1 r20 r21 r22 t2 free0 ...\n\n"
+              "Returns the ik solutions given the transformation of the end effector specified by\n"
+              "a 3x3 rotation R (rXX), and a 3x1 translation (tX).\n"
+              "There are %d free parameters that have to be specified.\n\n",
+              IKFAST_NAMESPACE::GetNumFreeParameters());
+     */
 
-                ROS_DEBUG_STREAM("sr="<<eps_sr << ", ss="<<eps_ss <<", es="<<eps_es<<", er=" << eps_er);
+    /*
+    ik_fast::IkSolutionList<IkReal> solutions;
+    std::vector<ik_fast::IkReal> vfree(ik_fast::GetNumFreeParameters());
+    ik_fast::IkReal eerot[9],eetrans[3];
 
-                kdl_joint_positions_(0) = current_positions_["ShoulderJRotate"] + eps_sr;
-                kdl_joint_positions_(1) = current_positions_["ShoulderJSwing"] + eps_ss;
-                kdl_joint_positions_(2) = current_positions_["ElbowJSwing"] + eps_es;
-                kdl_joint_positions_(3) = current_positions_["ElbowJRotate"] + eps_er;
-                //joint[4] in the solution is ignored: it's the static link between arm and hand
-                kdl_joint_positions_(4) = 0.0;
-                kdl_joint_positions_(5) = current_positions_["WRJ2"] + eps_wrj2;
-                kdl_joint_positions_(6) = current_positions_["WRJ1"] + eps_wrj1;
+    tf::Matrix3x3 test(tracked_object_.pose.pose.orientation);
 
-                kinematic_status = fksolver_->JntToCart(kdl_joint_positions_, kdl_cartesian_position_);
+    for (unsigned int i=0; i < 9; ++i)
+      eerot[i] = test.m_el[i];
 
-                if( kinematic_status < 0 )
-                {
-                  ROS_ERROR_STREAM("Error computing fk for the robot.");
-                  return;
-                }
+    eetrans[0] = tracked_object_.pose.pose.position.x;
+    eetrans[1] = tracked_object_.pose.pose.position.y;
+    eetrans[2] = tracked_object_.pose.pose.position.z;
 
-                pose.position.x = kdl_cartesian_position_.p.x();
-                pose.position.y = kdl_cartesian_position_.p.y();
-                pose.position.z = kdl_cartesian_position_.p.z();
+    for(std::size_t i = 0; i < vfree.size(); ++i)
+      vfree[i] = 0.0;
 
-                //TODO, compute position + twist in object callback
-                distance = sr_utils::compute_distance(pose.position, tracked_object_.pose.pose.position);
+    bool bSuccess = ComputeIk(eetrans, eerot, vfree.size() > 0 ? &vfree[0] : NULL, solutions);
 
-                if( best_distance == -1.0 )
-                {
-                  best_distance = distance;
+    if( !bSuccess )
+    {
+      ROS_WARN("Failed to get ik solution");
+      return;
+    }
 
-                  //same order as target_names_
-                  robot_targets_[0] = current_positions_["ShoulderJRotate"] + eps_sr;
-                  robot_targets_[1] = current_positions_["ShoulderJSwing"] + eps_ss;
-                  robot_targets_[2] = current_positions_["ElbowJSwing"] + eps_es;
-                  robot_targets_[3] = current_positions_["ElbowJRotate"] + eps_er;
-                  robot_targets_[4] = current_positions_["WRJ2"] + eps_wrj2;
-                  robot_targets_[5] = current_positions_["WRJ1"] + eps_wrj1;
-                }
-                else
-                {
-                  if( distance < best_distance )
-                  {
-                    best_distance = distance;
-                    best_idx = indx;
-
-                    //same order as target_names_ NOT A MISTAKE!!
-                    robot_targets_[0] = current_positions_["ShoulderJRotate"] + eps_sr;
-                    robot_targets_[1] = current_positions_["ShoulderJSwing"] + eps_ss;
-                    robot_targets_[2] = current_positions_["ElbowJSwing"] + eps_es;
-                    robot_targets_[3] = current_positions_["ElbowJRotate"] + eps_er;
-                    robot_targets_[4] = current_positions_["WRJ2"] + eps_wrj2;
-                    robot_targets_[5] = current_positions_["WRJ1"] + eps_wrj1;
-                  }
-                }
-
-
-                ROS_DEBUG_STREAM("computing: [\n"
-                                 << "ShoulderJRotate: " << (current_positions_["ShoulderJRotate"] + eps_sr) * 57.295779513082323 << ",\n"
-                                 << "ShoulderJSwing: " << (current_positions_["ShoulderJSwing"] + eps_ss)* 57.295779513082323 << ",\n "
-                                 << "ElbowJSwing: " << (current_positions_["ElbowJSwing"] + eps_es)* 57.295779513082323 << ",\n "
-                                 << "ElbowJRotate: " << (current_positions_["ElbowJRotate"] + eps_er)* 57.295779513082323 << ",\n "
-                                 << "WRJ2: " << (current_positions_["WRJ2"] + eps_wrj2)* 57.295779513082323 << ",\n "
-                                 << "WRJ1: " << (current_positions_["WRJ1"] + eps_wrj1)* 57.295779513082323 << ",\n "
-                                 << "]  -> "
-                                 << "POSE= "<<pose.position << " / TRACKED POSE: " << tracked_object_.pose.pose.position
-                                 << " (distance = " << distance << " / "<< best_distance << ") id = " << indx );
-
-              }//end wrj2
-            } //end wrj1
-          }//end es
-        }//end er
-      }//end ss
-    }//end sr
-
-    ROS_DEBUG_STREAM("solution: [\n"
-                     << "ShoulderJRotate: " << robot_targets_[0]* 57.295779513082323 << ",\n"
-                     << "ShoulderJSwing: " << robot_targets_[1]* 57.295779513082323 << ",\n "
-                     << "ElbowJSwing: " << robot_targets_[2]* 57.295779513082323 << ",\n "
-                     << "ElbowJRotate: " << robot_targets_[3]* 57.295779513082323 << ",\n "
-                     << "WRJ2: " << robot_targets_[4]* 57.295779513082323 << ",\n "
-                     << "WRJ1: " << robot_targets_[5]* 57.295779513082323 << ",\n "
-                     << "]  -> " <<
-                     " (best distance = " << best_distance << ") id = " << best_idx );
+    ROS_ERROR("Found %d ik solutions:\n", (int)solutions.GetNumSolutions());
+    std::vector<ik_fast::IkReal> solvalues(ik_fast::GetNumJoints());
+    for(std::size_t i = 0; i < solutions.GetNumSolutions(); ++i)
+    {
+      const ik_fast::IkSolutionBase<ik_fast::IkReal>& sol = solutions.GetSolution(i);
+      ROS_ERROR("sol%d (free=%d): ", (int)i, (int)sol.GetFree().size());
+      std::vector<ik_fast::IkReal> vsolfree(sol.GetFree().size());
+      sol.GetSolution(&solvalues[0],vsolfree.size()>0?&vsolfree[0]:NULL);
+      for( std::size_t j = 0; j < solvalues.size(); ++j)
+        ROS_ERROR("%.15f, ", solvalues[j]);
+      ROS_ERROR("\n");
+    }
+    */
   }
 
   void VisualServoing::send_robot_targets_()
@@ -255,6 +204,41 @@ namespace sr_taco
     }
   }
 
+  void VisualServoing::init_openrave_()
+  {
+    OpenRAVE::RaveInitialize(true);
+    rave_env_ = OpenRAVE::RaveCreateEnvironment();
+
+    //lock the environment to prevent changes
+    OpenRAVE::EnvironmentMutex::scoped_lock lock(rave_env_->GetMutex());
+    //load the scene from the xml file
+    // the file is in sr_grasp_moving_object/openrave/arm_and_hand_motor.xml
+    std::string path = ros::package::getPath("sr_grasp_moving_object");
+    path += "/openrave/arm_and_hand_motor.xml";
+    rave_robot_ = rave_env_->ReadRobotXMLFile(path);
+    if( !rave_robot_ )
+    {
+      rave_env_->Destroy();
+      ROS_FATAL("Couldn't create the robot for OpenRAVE");
+      ROS_BREAK();
+    }
+
+    rave_env_->Add(rave_robot_);
+    rave_ikfast_ = OpenRAVE::RaveCreateModule(rave_env_, "ikfast");
+    rave_env_->Add(rave_ikfast_, true, "");
+    //rave_robot_->SetActiveManipulator("arm_and_hand_motor");
+
+    std::stringstream ssin,ssout;
+    ssin << "LoadIKFastSolver " << rave_robot_->GetName() << " " << OpenRAVE::IKP_Transform6D;
+    rave_manipulator_ = rave_robot_->GetActiveManipulator();
+    if( !rave_ikfast_->SendCommand(ssout, ssin) )
+    {
+      ROS_FATAL_STREAM( "failed to load the ik solver for " << rave_robot_->GetName() << ssout.str() );
+      rave_env_->Destroy();
+      ROS_BREAK();
+    }
+  }
+
   void VisualServoing::init_robot_publishers_()
   {
     //Those are the targets to which we'll publish for
@@ -263,7 +247,7 @@ namespace sr_taco
     robot_targets_.push_back(0.0);
     target_names_.push_back("ShoulderJSwing");
     robot_targets_.push_back(0.0);
-    target_names_.push_back("EblowJSwing");
+    target_names_.push_back("ElbowJSwing");
     robot_targets_.push_back(0.0);
     target_names_.push_back("ElbowJRotate");
     robot_targets_.push_back(0.0);
