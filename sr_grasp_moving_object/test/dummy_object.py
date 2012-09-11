@@ -35,9 +35,9 @@ class DummyMovingObject(object):
         self.msg = PoseStamped()
         self.msg.header.frame_id="/shadowarm_base"
         self.msg.pose.orientation.w = 1.0
-        self.msg.pose.position.z = 0.2
-        self.msg.pose.position.x = 0.4
-        self.msg.pose.position.y = 0.4
+        self.msg.pose.position.z = 0.1
+        self.msg.pose.position.x = 0.3
+        self.msg.pose.position.y = -0.1
         self.going_back = True
 
     def activate(self, rate = 10):

@@ -94,22 +94,34 @@ namespace sr_taco
     // for all the joints from arm_base to palm.
     //TODO: use openmp for loop (https://computing.llnl.gov/tutorials/openMP/#DO)
 
-    OpenRAVE::Transform trans;
-    /*trans.rot = OpenRAVE::geometry::quatFromAxisAngle(OpenRAVE::Vector(OpenRAVE::RaveRandomFloat() - 0.5,
-                                                                       OpenRAVE::RaveRandomFloat() - 0.5,
-                                                                       OpenRAVE::RaveRandomFloat() - 0.5));
-    trans.trans = OpenRAVE::Vector(OpenRAVE::RaveRandomFloat() - 0.5,
-                                   OpenRAVE::RaveRandomFloat() - 0.5,
-                                   OpenRAVE::RaveRandomFloat() - 0.5) * 2;
-                                   */
-    trans.rot.w = 0.317;
-    trans.rot.x = 0.519;
-    trans.rot.y = 0.215;
-    trans.rot.z = 0.764;
+    OpenRAVE::Transform trans;// = rave_manipulator_->GetEndEffectorTransform();
 
-    trans.trans.x = 0.608;
-    trans.trans.y = -0.127;
-    trans.trans.z = 0.3;
+    /*
+    trans.trans.x = 0.521232;
+    trans.trans.y = -0.134005 - 0.04;
+    trans.trans.z = 1.1698 + 0.07;
+    */
+
+    trans.rot.w = 0.5599;
+    trans.rot.x = 0.4320;
+    trans.rot.y = 0.4320;
+    trans.rot.z = 0.5599;
+
+    trans.trans.x = tracked_object_.pose.pose.position.x;
+    trans.trans.y = tracked_object_.pose.pose.position.y;
+    trans.trans.z = tracked_object_.pose.pose.position.z + 1.02;
+
+    trans.trans.x += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
+    trans.trans.y += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
+    trans.trans.z += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
+
+    trans.rot.x += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
+    trans.rot.y += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
+    trans.rot.z += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
+    trans.rot.w += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
+
+
+    trans.rot.normalize();
 
     std::vector<OpenRAVE::dReal> ik_solution;
     if( rave_manipulator_->FindIKSolution(OpenRAVE::IkParameterization(trans), ik_solution, OpenRAVE::IKFO_IgnoreEndEffectorCollisions) )
@@ -117,14 +129,18 @@ namespace sr_taco
       std::stringstream ss;
       for(size_t i = 0; i < ik_solution.size(); ++i)
       {
+    	robot_targets_[i] = ik_solution[i];
         ss << ik_solution[i] << " ";
       }
-      ROS_WARN_STREAM("The solution is: " << ss.str());
+      ROS_DEBUG_STREAM("The solution for: " << trans << " \n  is: " << ss.str());
     }
     else
     {
-      ROS_ERROR_STREAM("No solution found for " << trans);
+      ROS_DEBUG_STREAM("No solution found for " << trans
+    		  << " \n current pos: " << rave_manipulator_->GetEndEffectorTransform());
     }
+
+
 
     /*
     ROS_ERROR("\nUsage: ./ik r00 r01 r02 t0 r10 r11 r12 t1 r20 r21 r22 t2 free0 ...\n\n"
