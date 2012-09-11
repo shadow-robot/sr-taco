@@ -60,7 +60,7 @@ class DummyMovingObject(object):
         self.msg.pose.position.y = max(-0.4, self.msg.pose.position.y)
         
         self.msg.pose.position.z -= (random.random() - 0.5) / 50.0
-        self.msg.pose.position.z = min(0.5, self.msg.pose.position.z)
+        self.msg.pose.position.z = min(0.3, self.msg.pose.position.z)
         self.msg.pose.position.z = max(-0.1, self.msg.pose.position.z)
             
 
