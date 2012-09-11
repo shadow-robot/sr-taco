@@ -1,2 +1,10 @@
 sr_grasp_moving_object/bin
 sr_grasp_moving_object/build
+./.idea
+./sr_grasp_moving_object/.cproject
+./sr_grasp_moving_object/.project
+./sr_grasp_moving_object/.pydevproject
+./sr_grasp_moving_object/.settings
+./sr_grasp_moving_object/CMakeCache.txt
+./sr_grasp_moving_object/CMakeFiles
+./sr_grasp_moving_object/cmake_install.cmake
