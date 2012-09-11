@@ -109,9 +109,9 @@ namespace sr_taco
     marker.points.resize(2);
     marker.points[0] = data.pose.position;
     marker.points[1] = data.pose.position;
-    marker.points[1].x += 4.0*data.twist.linear.x;
-    marker.points[1].y += 4.0*data.twist.linear.y;
-    marker.points[1].z += 4.0*data.twist.linear.z;
+    marker.points[1].x += 1.5*data.twist.linear.x;
+    marker.points[1].y += 1.5*data.twist.linear.y;
+    marker.points[1].z += 1.5*data.twist.linear.z;
 
     marker.scale.x = 0.05;
     if( fabs(data.velocity) < 0.03)

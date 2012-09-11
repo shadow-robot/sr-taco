@@ -111,9 +111,9 @@ namespace sr_taco
     trans.trans.y = tracked_object_.pose.pose.position.y;
     trans.trans.z = tracked_object_.pose.pose.position.z + 1.02;
 
-    trans.trans.x += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
-    trans.trans.y += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
-    trans.trans.z += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
+    trans.trans.x += (OpenRAVE::RaveRandomFloat() - 0.5) / 20.0;
+    trans.trans.y += (OpenRAVE::RaveRandomFloat() - 0.5) / 20.0;
+    trans.trans.z += (OpenRAVE::RaveRandomFloat() - 0.5) / 20.0;
 
     trans.rot.x += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
     trans.rot.y += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
