@@ -1,0 +1,95 @@
+#!/usr/bin/env python
+
+import optparse
+import roslib
+roslib.load_manifest('sr_taco_openni_bag')
+import rosbag;
+import cv
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge, CvBridgeError
+
+"""
+Create a bag file with the depth data in and anything else that is needed.
+
+ rosbag record -l 12 /tf /camera/depth/camera_info /camera/depth/image /camera/depth/image_raw /camera/depth/points /camera/rgb/camera_info /camera/rgb/image_color
+
+Then:
+
+ sr_taco_openni_bag export 2012-09-13-17-31-10.bag
+
+Which writes the images to out/ (needs an option for that!). Then you can edit them
+into saliency maps and rebuild the bag file with:
+
+ sr_taco_openni_bag rebuild 2012-09-13-17-31-10.bag out/ out.bag
+
+Which should create new bad with all the origional topics included and the the
+images added as /tacoSensor/saliency_map_spatial/image messages.
+
+Some usefull docs:
+
+http://www.ros.org/wiki/cv_bridge/Tutorials/ConvertingBetweenROSImagesAndOpenCVImagesPython
+http://www.ros.org/wiki/rosbag/Cookbook
+"""
+
+class SrTacoOpenNIBag(object):
+    def __init__(self):
+        self.bridge = CvBridge()
+        #self.image_topic = "/camera/rgb/image_color"
+        self.image_topic = "/camera/depth/image"
+
+    def export_images(self,bagfile):
+        """Read a bag file and export the images"""
+        bag = rosbag.Bag(bagfile)
+        for topic, msg, t in bag.read_messages(topics=[self.image_topic]):
+            outname = "out/image-%s.png"%(t)
+            try:
+                cv_image = self.bridge.imgmsg_to_cv(msg)
+            except CvBridgeError, e:
+                print "ERROR: e"
+                continue
+            #print type(cv_image), "type:{i.type} channels:{i.channels}".format(i=cv_image)
+            out_image = cv.CreateImage((640,480),8,3)
+            # Convert to a saveable image. Needed when reading the depth img.
+            cv.ConvertImage(cv_image, out_image)
+            cv.SaveImage(outname, out_image)
+            print "{topic} time:{t} wh: {msg.width}x{msg.height} encoding:{msg.encoding} -> {outname}".format(**locals())
+
+
+    def rebuild_bag(self, in_file, img_dir, out_file):
+        with rosbag.Bag(out_file, "w") as out_bag:
+            for topic, msg, t in rosbag.Bag(in_file).read_messages():
+                if topic == self.image_topic:
+                    # Insert the saliency img
+                    file_name = "%s/image-%s.png"%(img_dir,t)
+                    print "Loading %s"%file_name
+                    in_image = cv.LoadImage(file_name)
+                    saliency_msg = self.bridge.cv_to_imgmsg(in_image, "bgr8")
+                    out_bag.write( "/tacoSensor/saliency_map_spatial/image", saliency_msg, t )
+                out_bag.write(topic, msg, t)
+
+
+usage = """
+    %prog COMMAND OPTIONS
+
+    %prog export BAGFILE
+
+    %prog rebuild BAGFILE IMGDIR OUTBAGFILE
+"""
+if __name__ == "__main__":
+    optp = optparse.OptionParser(usage)
+    (opts,args) = optp.parse_args()
+    if len(args) < 1:
+        optp.error("Need a command")
+    cmd = args[0]
+
+    tacobag = SrTacoOpenNIBag();
+    if cmd == "export":
+        if len(args) != 2:
+            optp.error("Need a bagfile")
+        tacobag.export_images(args[1])
+    elif cmd == "rebuild":
+        if len(args) != 4:
+            optp.error("Need a bagfile, img_directory and out_file")
+        tacobag.rebuild_bag(args[1],args[2],args[3])
+    else:
+        optp.error("Unknown command: %s"%cmd)

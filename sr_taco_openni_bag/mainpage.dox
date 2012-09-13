@@ -1,0 +1,14 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b sr_taco_openni_bag - Tools to create annoted bag files from openni data to simulate the taco sensor.
+ 
+<!-- 
+Provide an overview of your package.
+-->
+
+-->
+
+
+*/
