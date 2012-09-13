@@ -31,6 +31,6 @@ rosbuild_add_executable(analyse_moving_object src/analyse_moving_object.cpp)
 
 SET( CMAKE_CXX_FLAGS "-D IKFAST_NO_MAIN -D IKFAST_CLIBRARY -D IKFAST_NAMESPACE=ik_fast")
 #rosbuild_add_executable(visual_servoing src/kinematics/ikfast60.Direction3D.0_1_f2_3_4_5.cpp src/visual_servoing.cpp)
-rosbuild_add_executable(visual_servoing src/visual_servoing.cpp)
+rosbuild_add_executable(visual_servoing src/visual_servoing.cpp src/prediction_model.cpp)
 #rosbuild_add_openmp_flags(visual_servoing)
 #target_link_libraries(example ${PROJECT_NAME})

@@ -17,6 +17,7 @@
   <depend package="tf"/>
   <depend package="kdl_parser"/>
   <depend package="openrave"/>
+  <depend package="bfl"/>
 
 </package>
 
