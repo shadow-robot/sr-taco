@@ -11,7 +11,7 @@ from cv_bridge import CvBridge, CvBridgeError
 """
 Create a bag file with the depth data in and anything else that is needed.
 
- rosbag record -l 12 /tf /camera/depth/camera_info /camera/depth/image /camera/depth/image_raw /camera/depth/points /camera/rgb/camera_info /camera/rgb/image_color
+ rosbag record -l 12 /tf /camera/depth/camera_info /camera/depth/image /camera/depth/image_raw /camera/depth/points
 
 Then:
 
@@ -22,8 +22,11 @@ into saliency maps and rebuild the bag file with:
 
  sr_taco_openni_bag rebuild 2012-09-13-17-31-10.bag out/ out.bag
 
-Which should create new bad with all the origional topics included and the the
-images added as /tacoSensor/saliency_map_spatial/image messages.
+Which should create new bag with all the origional topics included and the
+images added as /tacoSensor/saliency_map_spatial/image messages. Also the
+camera msgs are copied to the /tacoSensor msgs in tha same way that
+sr_taco_openni does. Therefore playing the bag should give you a fake TACO
+sensor.
 
 Some usefull docs:
 
@@ -34,8 +37,10 @@ http://www.ros.org/wiki/rosbag/Cookbook
 class SrTacoOpenNIBag(object):
     def __init__(self):
         self.bridge = CvBridge()
-        #self.image_topic = "/camera/rgb/image_color"
         self.image_topic = "/camera/depth/image"
+        self.camera = "/camera"
+        # Topic root to add the fake sensor topics under
+        self.taco_sensor = "/tacoSensor"
 
     def export_images(self,bagfile):
         """Read a bag file and export the images"""
@@ -48,7 +53,7 @@ class SrTacoOpenNIBag(object):
                 print "ERROR: e"
                 continue
             #print type(cv_image), "type:{i.type} channels:{i.channels}".format(i=cv_image)
-            out_image = cv.CreateImage((640,480),8,3)
+            out_image = cv.CreateImage((msg.width,msg.height),8,3)
             # Convert to a saveable image. Needed when reading the depth img.
             cv.ConvertImage(cv_image, out_image)
             cv.SaveImage(outname, out_image)
@@ -65,7 +70,27 @@ class SrTacoOpenNIBag(object):
                     in_image = cv.LoadImage(file_name)
                     saliency_msg = self.bridge.cv_to_imgmsg(in_image, "bgr8")
                     out_bag.write( "/tacoSensor/saliency_map_spatial/image", saliency_msg, t )
+                self.copy_to_taco_sensor(out_bag, topic, msg, t)
+                # Copy orig msg back into the bag
                 out_bag.write(topic, msg, t)
+
+    def copy_to_taco_sensor(self, out_bag, topic, msg, t):
+        """
+        Copy the camera msgs into the Taco sensor topics. IE fake the
+        sensor. This is what the sr_taco_openni node does.
+        TODO: This is not an ideal approach, would be better for the node to
+        have a mode where it reads the saliency and camera data from the bag
+        and uses that to publish the data.
+        """
+        if topic == self.camera + "/depth/image":
+            out_bag.write( self.taco_sensor + "/foveated/image", msg, t )
+            out_bag.write( self.taco_sensor + "/unfoveated/image", msg, t )
+        elif topic == self.camera + "/depth/camera_info":
+            out_bag.write( self.taco_sensor + "/foveated/camera_info", msg, t )
+            out_bag.write( self.taco_sensor + "/unfoveated/camera_info", msg, t )
+        elif topic == self.camera + "/depth/points":
+            out_bag.write( self.taco_sensor + "/foveated/pointcloud2", msg, t )
+            out_bag.write( self.taco_sensor + "/unfoveated/pointcloud2", msg, t )
 
 
 usage = """
