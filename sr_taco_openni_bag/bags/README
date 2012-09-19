@@ -1,0 +1,3 @@
+Note that these bag files have been compressed using rosbag compress to save
+space in the repo.. This means they will not play back smoothly, you will want
+to rosbag decpress them first.
