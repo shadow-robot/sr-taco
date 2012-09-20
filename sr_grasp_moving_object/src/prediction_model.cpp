@@ -50,9 +50,9 @@ const double PredictionModel::prior_mu_y_const_ = 0.0;
 const double PredictionModel::prior_mu_z_const_ = 0.0;
 
 //TODO: choose sigmas so that the initial Gaussian covers the whole image
-const double PredictionModel::prior_sigma_x_const_ = 10.0;
-const double PredictionModel::prior_sigma_y_const_ = 10.0;
-const double PredictionModel::prior_sigma_z_const_ = 10.0;
+const double PredictionModel::prior_sigma_x_const_ = 150.0;
+const double PredictionModel::prior_sigma_y_const_ = 150.0;
+const double PredictionModel::prior_sigma_z_const_ = 150.0;
 
   PredictionModel::PredictionModel()
   {
@@ -100,11 +100,14 @@ const double PredictionModel::prior_sigma_z_const_ = 10.0;
     sys_noise_cov(3,2) = 0.0;
     sys_noise_cov(3,3) = sigma_noise_z_const_;
 
-
     system_uncertainty_.reset( new BFL::Gaussian(sys_noise_mu, sys_noise_cov) );
 
     system_pdf_.reset(new BFL::LinearAnalyticConditionalGaussian(matrix_pos, *system_uncertainty_.get()));
     system_model_.reset(new BFL::LinearAnalyticSystemModelGaussianUncertainty(system_pdf_.get()));
+
+
+    measurement_pdf_.reset( new BFL::LinearAnalyticConditionalGaussian(matrix_pos, *system_uncertainty_.get()) );
+    measurement_model_.reset(new BFL::LinearAnalyticMeasurementModelGaussianUncertainty(measurement_pdf_.get()));
 
     //Initialising the prior knowledge
     // (we don't know where the object is so using a really flat
@@ -142,10 +145,10 @@ const double PredictionModel::prior_sigma_z_const_ = 10.0;
     measurement(2) = y;
     measurement(3) = z;
 
-    kalman_filter_->Update( system_model_.get(),
-                            measurement);
+    ROS_ERROR_STREAM("Updating filter with new measurement = " << x << " " << y << " " << z);
 
-    ROS_ERROR_STREAM(" new measurement = " << x << " " << y << " " << z);
+    kalman_filter_->Update( measurement_model_.get(),
+                            measurement );
 
     //get the result
     //TODO: this could probably go in a different function called at a

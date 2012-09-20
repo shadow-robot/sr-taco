@@ -74,6 +74,10 @@ protected:
   boost::shared_ptr<BFL::LinearAnalyticConditionalGaussian> system_pdf_;
   boost::shared_ptr<BFL::LinearAnalyticSystemModelGaussianUncertainty> system_model_;
 
+  //The measurement model
+  boost::shared_ptr<BFL::LinearAnalyticConditionalGaussian> measurement_pdf_;
+  boost::shared_ptr<BFL::LinearAnalyticMeasurementModelGaussianUncertainty> measurement_model_;
+
   //The prior knowledge (-> where is the object at the beginning)
   boost::shared_ptr<BFL::Gaussian> prior_;
   ///center of prior knowledge
