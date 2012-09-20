@@ -37,6 +37,8 @@
 
 #include <boost/smart_ptr.hpp>
 
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
+
 /**
  * Our model:
  *  x_k = x_{k-1} + twist_x{k-1} * delta_t
@@ -58,9 +60,10 @@ namespace sr_taco
     /**
      * regularly updates the model:
      *  - disperses the object position
-     *  - returns the current object pose estimation
+     *
+     * @return the current object position estimation with a covariance matrix
      */
-    void update();
+    geometry_msgs::PoseWithCovarianceStamped update();
 
   protected:
     boost::shared_ptr<std::vector<MatrixWrapper::Matrix> > system_matrices_;
@@ -102,6 +105,9 @@ namespace sr_taco
 
     ///The result
     BFL::Pdf<MatrixWrapper::ColumnVector>* posterior_;
+
+    ///The result to be sent back to the ROS node
+    geometry_msgs::PoseWithCovarianceStamped results_;
   };
 }
 

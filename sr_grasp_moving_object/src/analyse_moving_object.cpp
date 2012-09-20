@@ -33,16 +33,13 @@ namespace sr_taco
     : is_first_(true)
   {
     model_.reset( new PredictionModel() );
-
-    update_timer_ = nh_.createTimer(ros::Duration(0.01), &AnalyseMovingObject::update_model_, this);
   }
 
   AnalyseMovingObject::~AnalyseMovingObject()
   {}
 
-  AnalysedData AnalyseMovingObject::new_measurement(const geometry_msgs::PoseStampedConstPtr& pose)
+  void AnalyseMovingObject::new_measurement(const geometry_msgs::PoseStampedConstPtr& pose)
   {
-    AnalysedData data;
     if( is_first_ )
     {
       //we ignore the first message for the twist as we don't have enough data
@@ -52,35 +49,37 @@ namespace sr_taco
     {
       //compute twist from pose and last pose
       double dt = (pose->header.stamp - last_pose_.header.stamp).toSec();
-      data.twist.linear.x = pose->pose.position.x - last_pose_.pose.position.x;
-      data.twist.linear.x /= dt;
+      data_.twist.linear.x = pose->pose.position.x - last_pose_.pose.position.x;
+      data_.twist.linear.x /= dt;
 
-      data.twist.linear.y = pose->pose.position.y - last_pose_.pose.position.y;
-      data.twist.linear.y /= dt;
+      data_.twist.linear.y = pose->pose.position.y - last_pose_.pose.position.y;
+      data_.twist.linear.y /= dt;
 
-      data.twist.linear.z = pose->pose.position.z - last_pose_.pose.position.z;
-      data.twist.linear.z /= dt;
+      data_.twist.linear.z = pose->pose.position.z - last_pose_.pose.position.z;
+      data_.twist.linear.z /= dt;
 
       //TODO: compute angular twist
 
       //compute the velocity
-      data.velocity = sr_utils::compute_distance(pose->pose.position, last_pose_.pose.position);
-      data.velocity /= dt;
+      data_.velocity = sr_utils::compute_distance(pose->pose.position, last_pose_.pose.position);
+      data_.velocity /= dt;
     }
 
-    data.pose = pose->pose;
+    data_.pose.pose.pose = pose->pose;
 
     last_pose_.header = pose->header;
     last_pose_.pose = pose->pose;
 
-    model_->new_measurement(data.pose.position.x, data.pose.position.y, data.pose.position.z);
-
-    return data;
+    model_->new_measurement(data_.pose.pose.pose.position.x, data_.pose.pose.pose.position.y, data_.pose.pose.pose.position.z);
   }
 
-  void AnalyseMovingObject::update_model_(const ros::TimerEvent& e)
+  AnalysedData AnalyseMovingObject::update_model()
   {
-    model_->update();
+    geometry_msgs::PoseWithCovarianceStamped result = model_->update();
+
+    data_.pose = result;
+
+    return data_;
   }
 
 ////////////////
@@ -95,6 +94,8 @@ namespace sr_taco
     marker_pub_ = nh_tilde_.advertise<visualization_msgs::Marker>("visualisation", 0);
 
     moving_object_sub_ = nh_tilde_.subscribe("/object/position", 2, &AnalyseMovingObjectNode::new_measurement_cb_, this);
+
+    update_timer_ = nh_tilde_.createTimer(ros::Duration(0.01), &AnalyseMovingObjectNode::update_model_, this);
   }
 
   AnalyseMovingObjectNode::~AnalyseMovingObjectNode()
@@ -102,10 +103,15 @@ namespace sr_taco
 
   void AnalyseMovingObjectNode::new_measurement_cb_(const geometry_msgs::PoseStampedConstPtr& msg)
   {
-    AnalysedData data = analyser_.new_measurement(msg);
+    analyser_.new_measurement(msg);
+  }
+
+  void AnalyseMovingObjectNode::update_model_(const ros::TimerEvent& e)
+  {
+    AnalysedData data = analyser_.update_model();
 
     //publish the odometry message
-    odom_msg_.pose.pose = data.pose;
+    odom_msg_.pose.pose = data.pose.pose.pose;
     odom_msg_.twist.twist = data.twist;
     odometry_pub_.publish(odom_msg_);
 
@@ -119,17 +125,20 @@ namespace sr_taco
     marker.action = visualization_msgs::Marker::ADD;
 
     marker.points.resize(2);
-    marker.points[0] = data.pose.position;
-    marker.points[1] = data.pose.position;
+    marker.points[0] = data.pose.pose.pose.position;
+    marker.points[1] = data.pose.pose.pose.position;
     marker.points[1].x += 1.5*data.twist.linear.x;
     marker.points[1].y += 1.5*data.twist.linear.y;
     marker.points[1].z += 1.5*data.twist.linear.z;
 
+    //scale of the arrow based on the covariance
+    // The covariance is symetric as we have the same
+    // incertitudes along x, y and z
     marker.scale.x = 0.05;
-    if( fabs(data.velocity) < 0.03)
+    if( data.pose.pose.covariance[0] / 50.0 < 0.03)
       marker.scale.y = 0.03;
     else
-      marker.scale.y = 2.0*fabs(data.velocity);
+      marker.scale.y = data.pose.pose.covariance[0] / 50.0;
 
     marker.color.a = 1.0;
     marker.color.r = 1.0;

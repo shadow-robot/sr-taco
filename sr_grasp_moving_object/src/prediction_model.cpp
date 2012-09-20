@@ -154,7 +154,7 @@ const double PredictionModel::prior_sigma_z_const_ = 150.0;
                             measurement );
   }
 
-  void PredictionModel::update()
+  geometry_msgs::PoseWithCovarianceStamped PredictionModel::update()
   {
     //add system noise for dispersing the model if no value was received.
     MatrixWrapper::ColumnVector vel(3); vel = 0;
@@ -164,6 +164,24 @@ const double PredictionModel::prior_sigma_z_const_ = 150.0;
     posterior_ = kalman_filter_->PostGet();
     ROS_DEBUG_STREAM("Object is probably at: " << posterior_->ExpectedValueGet() << " \n"
                      << "  -> Covariance of: " << posterior_->CovarianceGet());
+
+    results_.pose.pose.position.x = posterior_->ExpectedValueGet()(1);
+    results_.pose.pose.position.y = posterior_->ExpectedValueGet()(2);
+    results_.pose.pose.position.z = posterior_->ExpectedValueGet()(3);
+
+    //The covariance from the pose is a 6x6 matrix
+    // but we've only got a 3x3 matrix as we're estimating the position only
+    results_.pose.covariance[0] = posterior_->CovarianceGet()(1,1);
+    results_.pose.covariance[1] = posterior_->CovarianceGet()(1,2);
+    results_.pose.covariance[2] = posterior_->CovarianceGet()(1,3);
+    results_.pose.covariance[6] = posterior_->CovarianceGet()(2,1);
+    results_.pose.covariance[7] = posterior_->CovarianceGet()(2,2);
+    results_.pose.covariance[8] = posterior_->CovarianceGet()(2,3);
+    results_.pose.covariance[12] = posterior_->CovarianceGet()(3,1);
+    results_.pose.covariance[13] = posterior_->CovarianceGet()(3,2);
+    results_.pose.covariance[14] = posterior_->CovarianceGet()(3,3);
+
+    return results_;
   }
 }
 
