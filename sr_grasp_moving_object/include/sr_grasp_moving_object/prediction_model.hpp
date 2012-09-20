@@ -59,11 +59,12 @@ namespace sr_taco
 
     /**
      * regularly updates the model:
-     *  - disperses the object position
+     *  disperses the object position based on the current
+     *  linear twist of the object
      *
      * @return the current object position estimation with a covariance matrix
      */
-    geometry_msgs::PoseWithCovarianceStamped update();
+    geometry_msgs::PoseWithCovarianceStamped update(double twist_x, double twist_y, double twist_z);
 
   protected:
     boost::shared_ptr<std::vector<MatrixWrapper::Matrix> > system_matrices_;

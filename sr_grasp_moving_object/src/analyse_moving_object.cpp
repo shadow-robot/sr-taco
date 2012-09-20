@@ -75,7 +75,9 @@ namespace sr_taco
 
   AnalysedData AnalyseMovingObject::update_model()
   {
-    geometry_msgs::PoseWithCovarianceStamped result = model_->update();
+    geometry_msgs::PoseWithCovarianceStamped result = model_->update( data_.twist.linear.x,
+                                                                      data_.twist.linear.y,
+                                                                      data_.twist.linear.z );
 
     data_.pose = result;
 

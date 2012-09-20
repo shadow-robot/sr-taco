@@ -154,10 +154,14 @@ const double PredictionModel::prior_sigma_z_const_ = 150.0;
                             measurement );
   }
 
-  geometry_msgs::PoseWithCovarianceStamped PredictionModel::update()
+  geometry_msgs::PoseWithCovarianceStamped PredictionModel::update( double twist_x, double twist_y, double twist_z )
   {
     //add system noise for dispersing the model if no value was received.
+    // base the predicted movement of the model on the current linear twist
     MatrixWrapper::ColumnVector vel(3); vel = 0;
+    vel(1) = twist_x;
+    vel(2) = twist_y;
+    vel(3) = twist_z;
     kalman_filter_->Update(system_model_.get(), vel);
 
     //get the result
