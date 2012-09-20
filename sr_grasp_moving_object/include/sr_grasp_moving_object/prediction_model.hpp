@@ -47,55 +47,62 @@
 
 namespace sr_taco
 {
-class PredictionModel
-{
-public:
-  PredictionModel();
-  ~PredictionModel();
+  class PredictionModel
+  {
+  public:
+    PredictionModel();
+    ~PredictionModel();
 
-  void new_measurement(double x, double y, double z);
+    void new_measurement(double x, double y, double z);
 
-protected:
-  boost::shared_ptr<std::vector<MatrixWrapper::Matrix> > system_matrices_;
+    /**
+     * regularly updates the model:
+     *  - disperses the object position
+     *  - returns the current object pose estimation
+     */
+    void update();
 
-  //the system model
-  boost::shared_ptr<BFL::Gaussian> system_uncertainty_;
-  ///average noise around x, y and z
-  static const double mu_noise_x_const_;
-  static const double mu_noise_y_const_;
-  static const double mu_noise_z_const_;
+  protected:
+    boost::shared_ptr<std::vector<MatrixWrapper::Matrix> > system_matrices_;
 
-  ///standard deviation of the noise around x, y and z
-  static const double sigma_noise_x_const_;
-  static const double sigma_noise_y_const_;
-  static const double sigma_noise_z_const_;
+    //the system model
+    boost::shared_ptr<BFL::Gaussian> system_uncertainty_;
+    ///average noise around x, y and z
+    static const double mu_noise_x_const_;
+    static const double mu_noise_y_const_;
+    static const double mu_noise_z_const_;
 
-  //The model of the system (proba of the object being somewhere)
-  boost::shared_ptr<BFL::LinearAnalyticConditionalGaussian> system_pdf_;
-  boost::shared_ptr<BFL::LinearAnalyticSystemModelGaussianUncertainty> system_model_;
+    ///standard deviation of the noise around x, y and z
+    static const double sigma_noise_x_const_;
+    static const double sigma_noise_y_const_;
+    static const double sigma_noise_z_const_;
 
-  //The measurement model
-  boost::shared_ptr<BFL::LinearAnalyticConditionalGaussian> measurement_pdf_;
-  boost::shared_ptr<BFL::LinearAnalyticMeasurementModelGaussianUncertainty> measurement_model_;
+    //The model of the system (proba of the object being somewhere)
+    boost::shared_ptr<BFL::LinearAnalyticConditionalGaussian> system_pdf_;
+    boost::shared_ptr<BFL::LinearAnalyticSystemModelGaussianUncertainty> system_model_;
 
-  //The prior knowledge (-> where is the object at the beginning)
-  boost::shared_ptr<BFL::Gaussian> prior_;
-  ///center of prior knowledge
-  static const double prior_mu_x_const_;
-  static const double prior_mu_y_const_;
-  static const double prior_mu_z_const_;
+    //The measurement model
+    boost::shared_ptr<BFL::LinearAnalyticConditionalGaussian> measurement_pdf_;
+    boost::shared_ptr<BFL::LinearAnalyticMeasurementModelGaussianUncertainty> measurement_model_;
 
-  ///standard deviation of prior knowledge
-  static const double prior_sigma_x_const_;
-  static const double prior_sigma_y_const_;
-  static const double prior_sigma_z_const_;
+    //The prior knowledge (-> where is the object at the beginning)
+    boost::shared_ptr<BFL::Gaussian> prior_;
+    ///center of prior knowledge
+    static const double prior_mu_x_const_;
+    static const double prior_mu_y_const_;
+    static const double prior_mu_z_const_;
 
-  ///The Kalman filter
-  boost::shared_ptr<BFL::ExtendedKalmanFilter> kalman_filter_;
+    ///standard deviation of prior knowledge
+    static const double prior_sigma_x_const_;
+    static const double prior_sigma_y_const_;
+    static const double prior_sigma_z_const_;
 
-  ///The result
-  BFL::Pdf<MatrixWrapper::ColumnVector>* posterior_;
-};
+    ///The Kalman filter
+    boost::shared_ptr<BFL::ExtendedKalmanFilter> kalman_filter_;
+
+    ///The result
+    BFL::Pdf<MatrixWrapper::ColumnVector>* posterior_;
+  };
 }
 
 

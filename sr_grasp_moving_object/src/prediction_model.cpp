@@ -106,6 +106,8 @@ const double PredictionModel::prior_sigma_z_const_ = 150.0;
     system_model_.reset(new BFL::LinearAnalyticSystemModelGaussianUncertainty(system_pdf_.get()));
 
 
+    //The measurement model and system model are the same in this case as we're getting
+    // a 3d position for the object.
     measurement_pdf_.reset( new BFL::LinearAnalyticConditionalGaussian(matrix_pos, *system_uncertainty_.get()) );
     measurement_model_.reset(new BFL::LinearAnalyticMeasurementModelGaussianUncertainty(measurement_pdf_.get()));
 
@@ -140,21 +142,27 @@ const double PredictionModel::prior_sigma_z_const_ = 150.0;
 
   void PredictionModel::new_measurement(double x, double y, double z)
   {
+
     MatrixWrapper::ColumnVector measurement(3);
     measurement(1) = x;
     measurement(2) = y;
     measurement(3) = z;
 
-    ROS_ERROR_STREAM("Updating filter with new measurement = " << x << " " << y << " " << z);
+    ROS_DEBUG_STREAM("Updating filter with new measurement = " << x << " " << y << " " << z);
 
     kalman_filter_->Update( measurement_model_.get(),
                             measurement );
+  }
+
+  void PredictionModel::update()
+  {
+    //add system noise for dispersing the model if no value was received.
+    MatrixWrapper::ColumnVector vel(3); vel = 0;
+    kalman_filter_->Update(system_model_.get(), vel);
 
     //get the result
-    //TODO: this could probably go in a different function called at a
-    // regular interval
     posterior_ = kalman_filter_->PostGet();
-    ROS_ERROR_STREAM("Object is probably at: " << posterior_->ExpectedValueGet() << " \n"
+    ROS_DEBUG_STREAM("Object is probably at: " << posterior_->ExpectedValueGet() << " \n"
                      << "  -> Covariance of: " << posterior_->CovarianceGet());
   }
 }

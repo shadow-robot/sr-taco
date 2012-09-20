@@ -59,6 +59,16 @@ namespace sr_taco
     bool is_first_;
 
     boost::shared_ptr<PredictionModel> model_;
+
+    /**
+     * regularly updates the model:
+     *  - disperses the object position
+     *  - returns the current object pose estimation
+     */
+    void update_model_(const ros::TimerEvent& e);
+
+    ros::Timer update_timer_;
+    ros::NodeHandle nh_;
   };
 
   class AnalyseMovingObjectNode

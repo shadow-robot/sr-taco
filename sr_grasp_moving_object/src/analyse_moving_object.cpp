@@ -33,6 +33,8 @@ namespace sr_taco
     : is_first_(true)
   {
     model_.reset( new PredictionModel() );
+
+    update_timer_ = nh_.createTimer(ros::Duration(0.01), &AnalyseMovingObject::update_model_, this);
   }
 
   AnalyseMovingObject::~AnalyseMovingObject()
@@ -74,6 +76,11 @@ namespace sr_taco
     model_->new_measurement(data.pose.position.x, data.pose.position.y, data.pose.position.z);
 
     return data;
+  }
+
+  void AnalyseMovingObject::update_model_(const ros::TimerEvent& e)
+  {
+    model_->update();
   }
 
 ////////////////
