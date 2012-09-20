@@ -34,6 +34,8 @@
 #include <nav_msgs/Odometry.h>
 #include <visualization_msgs/Marker.h>
 
+#include <sr_grasp_moving_object/prediction_model.hpp>
+
 namespace sr_taco
 {
   struct AnalysedData
@@ -55,6 +57,8 @@ namespace sr_taco
   protected:
     geometry_msgs::PoseStamped last_pose_;
     bool is_first_;
+
+    boost::shared_ptr<PredictionModel> model_;
   };
 
   class AnalyseMovingObjectNode

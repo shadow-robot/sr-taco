@@ -50,19 +50,21 @@ class DummyMovingObject(object):
         self.publisher.publish(self.msg)
 
         self.msg.header.stamp = rospy.Time.now()
-        
+
+        """
         self.msg.pose.position.x -= (random.random() - 0.5) / 50.0
         self.msg.pose.position.x = min(0.7, self.msg.pose.position.x)
         self.msg.pose.position.x = max(0.3, self.msg.pose.position.x)
-        
+
         self.msg.pose.position.y -= (random.random() - 0.5) / 50.0
         self.msg.pose.position.y = min(0.4, self.msg.pose.position.y)
         self.msg.pose.position.y = max(-0.4, self.msg.pose.position.y)
-        
+
         self.msg.pose.position.z -= (random.random() - 0.5) / 50.0
         self.msg.pose.position.z = min(0.3, self.msg.pose.position.z)
         self.msg.pose.position.z = max(-0.1, self.msg.pose.position.z)
-            
+        """
+
 
 if __name__ == "__main__":
     rospy.init_node("object")

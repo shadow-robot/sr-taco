@@ -50,9 +50,9 @@ const double PredictionModel::prior_mu_y_const_ = 0.0;
 const double PredictionModel::prior_mu_z_const_ = 0.0;
 
 //TODO: choose sigmas so that the initial Gaussian covers the whole image
-const double PredictionModel::prior_sigma_x_const_ = 150.0;
-const double PredictionModel::prior_sigma_y_const_ = 150.0;
-const double PredictionModel::prior_sigma_z_const_ = 150.0;
+const double PredictionModel::prior_sigma_x_const_ = 10.0;
+const double PredictionModel::prior_sigma_y_const_ = 10.0;
+const double PredictionModel::prior_sigma_z_const_ = 10.0;
 
   PredictionModel::PredictionModel()
   {
@@ -106,30 +106,6 @@ const double PredictionModel::prior_sigma_z_const_ = 150.0;
     system_pdf_.reset(new BFL::LinearAnalyticConditionalGaussian(matrix_pos, *system_uncertainty_.get()));
     system_model_.reset(new BFL::LinearAnalyticSystemModelGaussianUncertainty(system_pdf_.get()));
 
-    //TODO: add measurement model (specific to the sensor
-    // will be different depending on if we're using a pose
-    // or the saliency map)
-    /*
-    // create matrix H for linear measurement model
-    Matrix H(1,2);
-    double wall_ct = 2/(sqrt(pow(RICO_WALL,2.0) + 1));
-    H = 0.0;
-    H(1,1) = wall_ct * RICO_WALL;
-    H(1,2) = 0 - wall_ct;
-
-    // Construct the measurement noise (a scalar in this case)
-    ColumnVector measNoise_Mu(1);
-    measNoise_Mu(1) = MU_MEAS_NOISE;
-
-    SymmetricMatrix measNoise_Cov(1);
-    measNoise_Cov(1,1) = SIGMA_MEAS_NOISE;
-    Gaussian measurement_Uncertainty(measNoise_Mu, measNoise_Cov);
-
-    // create the model
-    LinearAnalyticConditionalGaussian meas_pdf(H, measurement_Uncertainty);
-    LinearAnalyticMeasurementModelGaussianUncertainty meas_model(&meas_pdf);
-    */
-
     //Initialising the prior knowledge
     // (we don't know where the object is so using a really flat
     // centered Gaussian)
@@ -159,21 +135,26 @@ const double PredictionModel::prior_sigma_z_const_ = 150.0;
 
   };
 
-  void PredictionModel::new_measurement(MatrixWrapper::ColumnVector measurement)
+  void PredictionModel::new_measurement(double x, double y, double z)
   {
+    MatrixWrapper::ColumnVector measurement(3);
+    measurement(1) = x;
+    measurement(2) = y;
+    measurement(3) = z;
+
     kalman_filter_->Update( system_model_.get(),
-                            measurement_model_.get(),
                             measurement);
+
+    ROS_ERROR_STREAM(" new measurement = " << x << " " << y << " " << z);
 
     //get the result
     //TODO: this could probably go in a different function called at a
     // regular interval
-    posterior_.reset( kalman_filter_->PostGet() );
+    posterior_ = kalman_filter_->PostGet();
     ROS_ERROR_STREAM("Object is probably at: " << posterior_->ExpectedValueGet() << " \n"
                      << "  -> Covariance of: " << posterior_->CovarianceGet());
   }
 }
-
 
 
 /* For the emacs weenies in the crowd.

@@ -53,13 +53,13 @@ public:
   PredictionModel();
   ~PredictionModel();
 
-  void new_measurement(MatrixWrapper::ColumnVector measurement);
+  void new_measurement(double x, double y, double z);
 
 protected:
   boost::shared_ptr<std::vector<MatrixWrapper::Matrix> > system_matrices_;
 
+  //the system model
   boost::shared_ptr<BFL::Gaussian> system_uncertainty_;
-
   ///average noise around x, y and z
   static const double mu_noise_x_const_;
   static const double mu_noise_y_const_;
@@ -73,10 +73,6 @@ protected:
   //The model of the system (proba of the object being somewhere)
   boost::shared_ptr<BFL::LinearAnalyticConditionalGaussian> system_pdf_;
   boost::shared_ptr<BFL::LinearAnalyticSystemModelGaussianUncertainty> system_model_;
-
-  //The measurement model (proba of the measurement being accurate?)
-  boost::shared_ptr<BFL::LinearAnalyticConditionalGaussian> measurement_pdf_;
-  boost::shared_ptr<BFL::LinearAnalyticMeasurementModelGaussianUncertainty> measurement_model_;
 
   //The prior knowledge (-> where is the object at the beginning)
   boost::shared_ptr<BFL::Gaussian> prior_;
@@ -94,7 +90,7 @@ protected:
   boost::shared_ptr<BFL::ExtendedKalmanFilter> kalman_filter_;
 
   ///The result
-  boost::shared_ptr< BFL::Pdf<MatrixWrapper::ColumnVector> > posterior_;
+  BFL::Pdf<MatrixWrapper::ColumnVector>* posterior_;
 };
 }
 

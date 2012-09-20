@@ -31,7 +31,9 @@ namespace sr_taco
 {
   AnalyseMovingObject::AnalyseMovingObject()
     : is_first_(true)
-  {}
+  {
+    model_.reset( new PredictionModel() );
+  }
 
   AnalyseMovingObject::~AnalyseMovingObject()
   {}
@@ -68,6 +70,9 @@ namespace sr_taco
 
     last_pose_.header = pose->header;
     last_pose_.pose = pose->pose;
+
+    model_->new_measurement(data.pose.position.x, data.pose.position.y, data.pose.position.z);
+
     return data;
   }
 
