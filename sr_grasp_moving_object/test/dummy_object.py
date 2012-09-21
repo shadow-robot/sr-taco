@@ -22,6 +22,7 @@ import rospy
 import random
 
 from geometry_msgs.msg import PoseStamped
+from std_srvs.srv import Empty
 
 class DummyMovingObject(object):
     """
@@ -46,6 +47,9 @@ class DummyMovingObject(object):
 
         self.timestep = 0.0
 
+        self.publish_msg = True
+        self.set_publish_srv = rospy.Service("~set_publish", Empty, self.set_publish_cb)
+
     def activate(self, rate = 10):
         self.timestep = 1.0 / rate
         rate = rospy.Rate(rate)
@@ -54,7 +58,8 @@ class DummyMovingObject(object):
             rate.sleep()
 
     def publish(self):
-        self.publisher.publish(self.msg)
+        if self.publish_msg:
+            self.publisher.publish(self.msg)
 
         self.msg.header.stamp = rospy.Time.now()
 
@@ -78,6 +83,9 @@ class DummyMovingObject(object):
         if self.msg.pose.position.z > 0.3 or self.msg.pose.position.z < -0.1:
             self.velocity_z = - self.velocity_z
 
+    def set_publish_cb(self, req):
+        self.publish_msg = not self.publish_msg
+        return True
 
 if __name__ == "__main__":
     rospy.init_node("object")
