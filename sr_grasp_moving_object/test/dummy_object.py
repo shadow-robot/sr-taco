@@ -100,4 +100,4 @@ class DummyMovingObject(object):
 if __name__ == "__main__":
     rospy.init_node("object")
     dmo = DummyMovingObject()
-    dmo.activate( 10 )
+    dmo.activate( 1 )
