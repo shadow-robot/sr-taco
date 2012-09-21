@@ -118,35 +118,60 @@ namespace sr_taco
     odometry_pub_.publish(odom_msg_);
 
     //publish the markers
-    visualization_msgs::Marker marker;
-    marker.header.frame_id = "/shadowarm_base";
-    marker.header.stamp = ros::Time();
-    marker.ns = "analyse_moving_object";
-    marker.id = 0;
-    marker.type = visualization_msgs::Marker::ARROW;
-    marker.action = visualization_msgs::Marker::ADD;
+    visualization_msgs::Marker marker_arrow, marker_sphere;
+    marker_arrow.header.frame_id = "/shadowarm_base";
+    marker_arrow.header.stamp = ros::Time();
+    marker_arrow.ns = "analyse_moving_object_a";
+    marker_arrow.id = 0;
+    marker_arrow.type = visualization_msgs::Marker::ARROW;
+    marker_arrow.action = visualization_msgs::Marker::ADD;
 
-    marker.points.resize(2);
-    marker.points[0] = data.pose.pose.pose.position;
-    marker.points[1] = data.pose.pose.pose.position;
-    marker.points[1].x += 1.5*data.twist.linear.x;
-    marker.points[1].y += 1.5*data.twist.linear.y;
-    marker.points[1].z += 1.5*data.twist.linear.z;
+    marker_arrow.points.resize(2);
+    marker_arrow.points[0] = data.pose.pose.pose.position;
+    marker_arrow.points[1] = data.pose.pose.pose.position;
+    marker_arrow.points[1].x += 1.5*data.twist.linear.x;
+    marker_arrow.points[1].y += 1.5*data.twist.linear.y;
+    marker_arrow.points[1].z += 1.5*data.twist.linear.z;
 
-    //scale of the arrow based on the covariance
-    // The covariance is symetric as we have the same
-    // incertitudes along x, y and z
-    marker.scale.x = 0.05;
+    marker_arrow.scale.x = 0.05;
+    if( fabs(data.velocity) < 0.03)
+      marker_arrow.scale.y = 0.03;
+    else
+      marker_arrow.scale.y = 2.0*fabs(data.velocity);
+
+    marker_arrow.color.a = 1.0;
+    marker_arrow.color.r = 0.34;
+    marker_arrow.color.g = 0.86;
+    marker_arrow.color.b = 0.0;
+    marker_pub_.publish(marker_arrow);
+
+    marker_sphere.header.frame_id = "/shadowarm_base";
+    marker_sphere.header.stamp = ros::Time();
+    marker_sphere.ns = "analyse_moving_object_s";
+    marker_sphere.id = 1;
+    marker_sphere.type = visualization_msgs::Marker::SPHERE;
+    marker_sphere.action = visualization_msgs::Marker::ADD;
+
+    marker_sphere.pose = data.pose.pose.pose;
+
+    //scale of the sphere based on the covariance
+    marker_sphere.scale.x = data.pose.pose.covariance[0]/10.0;
+    marker_sphere.scale.y = data.pose.pose.covariance[7]/10.0;
+    marker_sphere.scale.z = data.pose.pose.covariance[14]/10.0;
+
+    marker_sphere.color.a = 0.5;
+    marker_sphere.color.r = 0.34;
+    marker_sphere.color.g = 0.86;
+    marker_sphere.color.b = 0.0;
+    marker_pub_.publish(marker_sphere);
+
+
+    /*
     if( data.pose.pose.covariance[0] / 50.0 < 0.03)
       marker.scale.y = 0.03;
     else
       marker.scale.y = data.pose.pose.covariance[0] / 50.0;
-
-    marker.color.a = 1.0;
-    marker.color.r = 1.0;
-    marker.color.g = 0.0;
-    marker.color.b = 0.0;
-    marker_pub_.publish(marker);
+    */
   }
 }
 
