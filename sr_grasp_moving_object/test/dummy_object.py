@@ -40,7 +40,14 @@ class DummyMovingObject(object):
         self.msg.pose.position.x = 0.5
         self.msg.pose.position.y = 0.0
 
+        self.velocity_x = 0.0
+        self.velocity_y = 0.0
+        self.velocity_z = 0.0
+
+        self.timestep = 0.0
+
     def activate(self, rate = 10):
+        self.timestep = 1.0 / rate
         rate = rospy.Rate(rate)
         while not rospy.is_shutdown():
             self.publish()
@@ -51,20 +58,28 @@ class DummyMovingObject(object):
 
         self.msg.header.stamp = rospy.Time.now()
 
-        self.msg.pose.position.x -= (random.random() - 0.5) / 50.0
-        self.msg.pose.position.x = min(0.7, self.msg.pose.position.x)
-        self.msg.pose.position.x = max(0.3, self.msg.pose.position.x)
+        #we randomize the velocity a bit
+        self.velocity_x += (random.random() - 0.5) / 150.0
+        self.velocity_y += (random.random() - 0.5) / 150.0
+        self.velocity_z += (random.random() - 0.5) / 150.0
 
-        self.msg.pose.position.y -= (random.random() - 0.5) / 50.0
-        self.msg.pose.position.y = min(0.4, self.msg.pose.position.y)
-        self.msg.pose.position.y = max(-0.4, self.msg.pose.position.y)
+        self.msg.pose.position.x = self.msg.pose.position.x + self.velocity_x * self.timestep
+        #reverse the speed if we're out of a reasonable box
+        if self.msg.pose.position.x > 0.7 or self.msg.pose.position.x < 0.3:
+            self.velocity_x = - self.velocity_x
 
-        self.msg.pose.position.z -= (random.random() - 0.5) / 50.0
-        self.msg.pose.position.z = min(0.3, self.msg.pose.position.z)
-        self.msg.pose.position.z = max(-0.1, self.msg.pose.position.z)
+        self.msg.pose.position.y = self.msg.pose.position.y + self.velocity_y * self.timestep
+        #reverse the speed if we're out of a reasonable box
+        if self.msg.pose.position.y > 0.4 or self.msg.pose.position.y < -0.4:
+            self.velocity_y = - self.velocity_y
+
+        self.msg.pose.position.z = self.msg.pose.position.z + self.velocity_z * self.timestep
+        #reverse the speed if we're out of a reasonable box
+        if self.msg.pose.position.z > 0.3 or self.msg.pose.position.z < -0.1:
+            self.velocity_z = - self.velocity_z
 
 
 if __name__ == "__main__":
     rospy.init_node("object")
     dmo = DummyMovingObject()
-    dmo.activate( 1 )
+    dmo.activate( 10 )
