@@ -36,26 +36,12 @@
 
 namespace sr_taco
 {
-const double PredictionModel::mu_noise_x_const_ = 0.0;
-const double PredictionModel::mu_noise_y_const_ = 0.0;
-const double PredictionModel::mu_noise_z_const_ = 0.0;
-
-//TODO: select realistic noise value
-const double PredictionModel::sigma_noise_x_const_ = 0.1;
-const double PredictionModel::sigma_noise_y_const_ = 0.1;
-const double PredictionModel::sigma_noise_z_const_ = 0.1;
-
-const double PredictionModel::prior_mu_x_const_ = 0.0;
-const double PredictionModel::prior_mu_y_const_ = 0.0;
-const double PredictionModel::prior_mu_z_const_ = 0.0;
-
-//TODO: choose sigmas so that the initial Gaussian covers the whole image
-const double PredictionModel::prior_sigma_x_const_ = 150.0;
-const double PredictionModel::prior_sigma_y_const_ = 150.0;
-const double PredictionModel::prior_sigma_z_const_ = 150.0;
-
   PredictionModel::PredictionModel()
   {
+    ros::NodeHandle nh("~");
+
+    nh.param<double>("refresh_frequency", refresh_frequency_, 100.0);
+
     MatrixWrapper::Matrix matrix_pos(3,3);
     matrix_pos(1,1) = 1.0;
     matrix_pos(1,2) = 0.0;
@@ -78,56 +64,92 @@ const double PredictionModel::prior_sigma_z_const_ = 150.0;
     matrix_vel(3,2) = 0.0;
     matrix_vel(3,3) = 1.0;
 
-
-    system_matrices_.reset(new std::vector<MatrixWrapper::Matrix>(2));
-    (*system_matrices_.get())[0] = matrix_pos;
-    (*system_matrices_.get())[0] = matrix_vel;
+    std::vector<MatrixWrapper::Matrix> system_matrices(2);
+    system_matrices[0] = matrix_pos;
+    system_matrices[1] = matrix_vel;
 
     MatrixWrapper::ColumnVector sys_noise_mu(3);
-    sys_noise_mu(1) = mu_noise_x_const_;
-    sys_noise_mu(2) = mu_noise_y_const_;
-    sys_noise_mu(3) = mu_noise_z_const_;
+    sys_noise_mu(1) = 0.0;
+    sys_noise_mu(2) = 0.0;
+    sys_noise_mu(3) = 0.0;
 
+    // the std dev is dependent on the system
+    //  refresh rate (otherwise, the faster we
+    //  update the system, the more dispersed the
+    //  data would be)
+    double param;
     MatrixWrapper::SymmetricMatrix sys_noise_cov(3);
     sys_noise_cov = 0.0;
-    sys_noise_cov(1,1) = sigma_noise_x_const_;
+    nh.param<double>("prediction_model/system/sigma/x", param, 0.2);
+    sys_noise_cov(1,1) = param / refresh_frequency_;
     sys_noise_cov(1,2) = 0.0;
     sys_noise_cov(1,3) = 0.0;
     sys_noise_cov(2,1) = 0.0;
-    sys_noise_cov(2,2) = sigma_noise_y_const_;
+    nh.param<double>("prediction_model/system/sigma/y", param, 0.2);
+    sys_noise_cov(2,2) = param / refresh_frequency_;
     sys_noise_cov(2,3) = 0.0;
     sys_noise_cov(3,1) = 0.0;
     sys_noise_cov(3,2) = 0.0;
-    sys_noise_cov(3,3) = sigma_noise_z_const_;
+    nh.param<double>("prediction_model/system/sigma/z", param, 0.2);
+    sys_noise_cov(3,3) = param / refresh_frequency_;
 
     system_uncertainty_.reset( new BFL::Gaussian(sys_noise_mu, sys_noise_cov) );
 
-    system_pdf_.reset(new BFL::LinearAnalyticConditionalGaussian(matrix_pos, *system_uncertainty_.get()));
+    system_pdf_.reset(new BFL::LinearAnalyticConditionalGaussian(system_matrices, *system_uncertainty_.get()));
     system_model_.reset(new BFL::LinearAnalyticSystemModelGaussianUncertainty(system_pdf_.get()));
 
 
     //The measurement model and system model are the same in this case as we're getting
     // a 3d position for the object.
-    measurement_pdf_.reset( new BFL::LinearAnalyticConditionalGaussian(matrix_pos, *system_uncertainty_.get()) );
+    MatrixWrapper::ColumnVector meas_noise_mu(3);
+    sys_noise_mu(1) = 0.0;
+    sys_noise_mu(2) = 0.0;
+    sys_noise_mu(3) = 0.0;
+
+    MatrixWrapper::SymmetricMatrix meas_noise_cov(3);
+    meas_noise_cov = 0.0;
+    nh.param<double>("prediction_model/measurement/sigma/x", param, 0.2);
+    meas_noise_cov(1,1) = param;
+    meas_noise_cov(1,2) = 0.0;
+    meas_noise_cov(1,3) = 0.0;
+    meas_noise_cov(2,1) = 0.0;
+    nh.param<double>("prediction_model/measurement/sigma/y", param, 0.2);
+    meas_noise_cov(2,2) = param;
+    meas_noise_cov(2,3) = 0.0;
+    meas_noise_cov(3,1) = 0.0;
+    meas_noise_cov(3,2) = 0.0;
+    nh.param<double>("prediction_model/measurement/sigma/z", param, 0.2);
+    meas_noise_cov(3,3) = param;
+
+    measurement_uncertainty_.reset( new BFL::Gaussian(meas_noise_mu, meas_noise_cov) );
+
+    measurement_pdf_.reset( new BFL::LinearAnalyticConditionalGaussian(matrix_pos, *measurement_uncertainty_.get()) );
     measurement_model_.reset(new BFL::LinearAnalyticMeasurementModelGaussianUncertainty(measurement_pdf_.get()));
 
     //Initialising the prior knowledge
     // (we don't know where the object is so using a really flat
     // centered Gaussian)
     MatrixWrapper::ColumnVector prior_mu(3);
-    prior_mu(1) = prior_mu_x_const_;
-    prior_mu(2) = prior_mu_y_const_;
-    prior_mu(3) = prior_mu_z_const_;
+    nh.param<double>("prediction_model/prior/mu/x", param, 0.0);
+    prior_mu(1) = param;
+    nh.param<double>("prediction_model/prior/mu/y", param, 0.0);
+    prior_mu(2) = param;
+    nh.param<double>("prediction_model/prior/mu/z", param, 0.0);
+    prior_mu(3) = param;
+
     MatrixWrapper::SymmetricMatrix prior_cov(3);
-    prior_cov(1,1) = prior_sigma_x_const_;
+    nh.param<double>("prediction_model/prior/sigma/x", param, 50.0);
+    prior_cov(1,1) = param;
     prior_cov(1,2) = 0.0;
     prior_cov(1,3) = 0.0;
     prior_cov(2,1) = 0.0;
-    prior_cov(2,2) = prior_sigma_y_const_;
+    nh.param<double>("prediction_model/prior/sigma/y", param, 50.0);
+    prior_cov(2,2) = param;
     prior_cov(2,3) = 0.0;
     prior_cov(3,1) = 0.0;
     prior_cov(3,2) = 0.0;
-    prior_cov(3,3) = prior_sigma_z_const_;
+    nh.param<double>("prediction_model/prior/sigma/z", param, 50.0);
+    prior_cov(3,3) = param;
 
     prior_.reset(new BFL::Gaussian(prior_mu, prior_cov));
 
@@ -142,7 +164,6 @@ const double PredictionModel::prior_sigma_z_const_ = 150.0;
 
   void PredictionModel::new_measurement(double x, double y, double z)
   {
-
     MatrixWrapper::ColumnVector measurement(3);
     measurement(1) = x;
     measurement(2) = y;
@@ -158,10 +179,14 @@ const double PredictionModel::prior_sigma_z_const_ = 150.0;
   {
     //add system noise for dispersing the model if no value was received.
     // base the predicted movement of the model on the current linear twist
+    // the velocity is devided by the refresh frequency as the velocity
+    // is expressed in m.s-1
     MatrixWrapper::ColumnVector vel(3); vel = 0;
-    vel(1) = twist_x;
-    vel(2) = twist_y;
-    vel(3) = twist_z;
+    vel(1) = twist_x / refresh_frequency_;
+    vel(2) = twist_y / refresh_frequency_;
+    vel(3) = twist_z / refresh_frequency_;
+
+    ROS_DEBUG_STREAM("Updating model with velocities: " << vel);
     kalman_filter_->Update(system_model_.get(), vel);
 
     //get the result

@@ -67,39 +67,18 @@ namespace sr_taco
     geometry_msgs::PoseWithCovarianceStamped update(double twist_x, double twist_y, double twist_z);
 
   protected:
-    boost::shared_ptr<std::vector<MatrixWrapper::Matrix> > system_matrices_;
-
     //the system model
     boost::shared_ptr<BFL::Gaussian> system_uncertainty_;
-    ///average noise around x, y and z
-    static const double mu_noise_x_const_;
-    static const double mu_noise_y_const_;
-    static const double mu_noise_z_const_;
-
-    ///standard deviation of the noise around x, y and z
-    static const double sigma_noise_x_const_;
-    static const double sigma_noise_y_const_;
-    static const double sigma_noise_z_const_;
-
-    //The model of the system (proba of the object being somewhere)
     boost::shared_ptr<BFL::LinearAnalyticConditionalGaussian> system_pdf_;
     boost::shared_ptr<BFL::LinearAnalyticSystemModelGaussianUncertainty> system_model_;
 
     //The measurement model
+    boost::shared_ptr<BFL::Gaussian> measurement_uncertainty_;
     boost::shared_ptr<BFL::LinearAnalyticConditionalGaussian> measurement_pdf_;
     boost::shared_ptr<BFL::LinearAnalyticMeasurementModelGaussianUncertainty> measurement_model_;
 
     //The prior knowledge (-> where is the object at the beginning)
     boost::shared_ptr<BFL::Gaussian> prior_;
-    ///center of prior knowledge
-    static const double prior_mu_x_const_;
-    static const double prior_mu_y_const_;
-    static const double prior_mu_z_const_;
-
-    ///standard deviation of prior knowledge
-    static const double prior_sigma_x_const_;
-    static const double prior_sigma_y_const_;
-    static const double prior_sigma_z_const_;
 
     ///The Kalman filter
     boost::shared_ptr<BFL::ExtendedKalmanFilter> kalman_filter_;
@@ -109,6 +88,9 @@ namespace sr_taco
 
     ///The result to be sent back to the ROS node
     geometry_msgs::PoseWithCovarianceStamped results_;
+
+    ///Frequency at which the model is refreshed (as an inpact when updating the model due to the velocity)
+    double refresh_frequency_;
   };
 }
 

@@ -97,7 +97,9 @@ namespace sr_taco
 
     moving_object_sub_ = nh_tilde_.subscribe("/object/position", 2, &AnalyseMovingObjectNode::new_measurement_cb_, this);
 
-    update_timer_ = nh_tilde_.createTimer(ros::Duration(0.01), &AnalyseMovingObjectNode::update_model_, this);
+    double refresh_freq = 0.0;
+    nh_tilde_.param<double>("refresh_frequency", refresh_freq, 100.0);
+    update_timer_ = nh_tilde_.createTimer(ros::Duration(1.0/refresh_freq), &AnalyseMovingObjectNode::update_model_, this);
   }
 
   AnalyseMovingObjectNode::~AnalyseMovingObjectNode()
@@ -140,8 +142,8 @@ namespace sr_taco
       marker_arrow.scale.y = 2.0*fabs(data.velocity);
 
     marker_arrow.color.a = 1.0;
-    marker_arrow.color.r = 0.34;
-    marker_arrow.color.g = 0.86;
+    marker_arrow.color.r = 0.86;
+    marker_arrow.color.g = 0.34;
     marker_arrow.color.b = 0.0;
     marker_pub_.publish(marker_arrow);
 
@@ -164,14 +166,6 @@ namespace sr_taco
     marker_sphere.color.g = 0.86;
     marker_sphere.color.b = 0.0;
     marker_pub_.publish(marker_sphere);
-
-
-    /*
-    if( data.pose.pose.covariance[0] / 50.0 < 0.03)
-      marker.scale.y = 0.03;
-    else
-      marker.scale.y = data.pose.pose.covariance[0] / 50.0;
-    */
   }
 }
 
