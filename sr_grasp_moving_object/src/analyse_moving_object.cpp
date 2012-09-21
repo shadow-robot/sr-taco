@@ -31,14 +31,15 @@ namespace sr_taco
 {
   AnalyseMovingObject::AnalyseMovingObject()
     : is_first_(true)
-  {}
+  {
+    model_.reset( new PredictionModel() );
+  }
 
   AnalyseMovingObject::~AnalyseMovingObject()
   {}
 
-  AnalysedData AnalyseMovingObject::new_measurement(const geometry_msgs::PoseStampedConstPtr& pose)
+  void AnalyseMovingObject::new_measurement(const geometry_msgs::PoseStampedConstPtr& pose)
   {
-    AnalysedData data;
     if( is_first_ )
     {
       //we ignore the first message for the twist as we don't have enough data
@@ -48,27 +49,39 @@ namespace sr_taco
     {
       //compute twist from pose and last pose
       double dt = (pose->header.stamp - last_pose_.header.stamp).toSec();
-      data.twist.linear.x = pose->pose.position.x - last_pose_.pose.position.x;
-      data.twist.linear.x /= dt;
+      data_.twist.linear.x = pose->pose.position.x - last_pose_.pose.position.x;
+      data_.twist.linear.x /= dt;
 
-      data.twist.linear.y = pose->pose.position.y - last_pose_.pose.position.y;
-      data.twist.linear.y /= dt;
+      data_.twist.linear.y = pose->pose.position.y - last_pose_.pose.position.y;
+      data_.twist.linear.y /= dt;
 
-      data.twist.linear.z = pose->pose.position.z - last_pose_.pose.position.z;
-      data.twist.linear.z /= dt;
+      data_.twist.linear.z = pose->pose.position.z - last_pose_.pose.position.z;
+      data_.twist.linear.z /= dt;
 
       //TODO: compute angular twist
 
       //compute the velocity
-      data.velocity = sr_utils::compute_distance(pose->pose.position, last_pose_.pose.position);
-      data.velocity /= dt;
+      data_.velocity = sr_utils::compute_distance(pose->pose.position, last_pose_.pose.position);
+      data_.velocity /= dt;
     }
 
-    data.pose = pose->pose;
+    data_.pose.pose.pose = pose->pose;
 
     last_pose_.header = pose->header;
     last_pose_.pose = pose->pose;
-    return data;
+
+    model_->new_measurement(data_.pose.pose.pose.position.x, data_.pose.pose.pose.position.y, data_.pose.pose.pose.position.z);
+  }
+
+  AnalysedData AnalyseMovingObject::update_model()
+  {
+    geometry_msgs::PoseWithCovarianceStamped result = model_->update( data_.twist.linear.x,
+                                                                      data_.twist.linear.y,
+                                                                      data_.twist.linear.z );
+
+    data_.pose = result;
+
+    return data_;
   }
 
 ////////////////
@@ -83,6 +96,10 @@ namespace sr_taco
     marker_pub_ = nh_tilde_.advertise<visualization_msgs::Marker>("visualisation", 0);
 
     moving_object_sub_ = nh_tilde_.subscribe("/object/position", 2, &AnalyseMovingObjectNode::new_measurement_cb_, this);
+
+    double refresh_freq = 0.0;
+    nh_tilde_.param<double>("refresh_frequency", refresh_freq, 100.0);
+    update_timer_ = nh_tilde_.createTimer(ros::Duration(1.0/refresh_freq), &AnalyseMovingObjectNode::update_model_, this);
   }
 
   AnalyseMovingObjectNode::~AnalyseMovingObjectNode()
@@ -90,40 +107,65 @@ namespace sr_taco
 
   void AnalyseMovingObjectNode::new_measurement_cb_(const geometry_msgs::PoseStampedConstPtr& msg)
   {
-    AnalysedData data = analyser_.new_measurement(msg);
+    analyser_.new_measurement(msg);
+  }
+
+  void AnalyseMovingObjectNode::update_model_(const ros::TimerEvent& e)
+  {
+    AnalysedData data = analyser_.update_model();
 
     //publish the odometry message
-    odom_msg_.pose.pose = data.pose;
+    odom_msg_.pose.pose = data.pose.pose.pose;
     odom_msg_.twist.twist = data.twist;
     odometry_pub_.publish(odom_msg_);
 
     //publish the markers
-    visualization_msgs::Marker marker;
-    marker.header.frame_id = "/shadowarm_base";
-    marker.header.stamp = ros::Time();
-    marker.ns = "analyse_moving_object";
-    marker.id = 0;
-    marker.type = visualization_msgs::Marker::ARROW;
-    marker.action = visualization_msgs::Marker::ADD;
+    visualization_msgs::Marker marker_arrow, marker_sphere;
+    marker_arrow.header.frame_id = "/shadowarm_base";
+    marker_arrow.header.stamp = ros::Time();
+    marker_arrow.ns = "analyse_moving_object_a";
+    marker_arrow.id = 0;
+    marker_arrow.type = visualization_msgs::Marker::ARROW;
+    marker_arrow.action = visualization_msgs::Marker::ADD;
 
-    marker.points.resize(2);
-    marker.points[0] = data.pose.position;
-    marker.points[1] = data.pose.position;
-    marker.points[1].x += 1.5*data.twist.linear.x;
-    marker.points[1].y += 1.5*data.twist.linear.y;
-    marker.points[1].z += 1.5*data.twist.linear.z;
+    marker_arrow.points.resize(2);
+    marker_arrow.points[0] = data.pose.pose.pose.position;
+    marker_arrow.points[1] = data.pose.pose.pose.position;
+    marker_arrow.points[1].x += 1.5*data.twist.linear.x;
+    marker_arrow.points[1].y += 1.5*data.twist.linear.y;
+    marker_arrow.points[1].z += 1.5*data.twist.linear.z;
 
-    marker.scale.x = 0.05;
+    marker_arrow.scale.x = 0.05;
     if( fabs(data.velocity) < 0.03)
-      marker.scale.y = 0.03;
+      marker_arrow.scale.y = 0.03;
     else
-      marker.scale.y = 2.0*fabs(data.velocity);
+      marker_arrow.scale.y = 2.0*fabs(data.velocity);
 
-    marker.color.a = 1.0;
-    marker.color.r = 1.0;
-    marker.color.g = 0.0;
-    marker.color.b = 0.0;
-    marker_pub_.publish(marker);
+    marker_arrow.color.a = 1.0;
+    marker_arrow.color.r = 0.86;
+    marker_arrow.color.g = 0.34;
+    marker_arrow.color.b = 0.0;
+    marker_pub_.publish(marker_arrow);
+
+    marker_sphere.header.frame_id = "/shadowarm_base";
+    marker_sphere.header.stamp = ros::Time();
+    marker_sphere.ns = "analyse_moving_object_s";
+    marker_sphere.id = 1;
+    marker_sphere.type = visualization_msgs::Marker::SPHERE;
+    marker_sphere.action = visualization_msgs::Marker::ADD;
+
+    marker_sphere.pose = data.pose.pose.pose;
+
+    //scale of the sphere based on the covariance
+    marker_sphere.scale.x = data.pose.pose.covariance[0]/10.0;
+    marker_sphere.scale.y = data.pose.pose.covariance[7]/10.0;
+    marker_sphere.scale.z = data.pose.pose.covariance[14]/10.0;
+
+    marker_sphere.color.a = 0.5;
+    marker_sphere.color.r = 0.34;
+    marker_sphere.color.g = 0.86;
+    marker_sphere.color.b = 0.0;
+    marker_pub_.publish(marker_sphere);
   }
 }
 

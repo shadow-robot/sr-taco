@@ -27,7 +27,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #target_link_libraries(${PROJECT_NAME} another_library)
 #rosbuild_add_boost_directories()
 #rosbuild_link_boost(${PROJECT_NAME} thread)
-rosbuild_add_executable(analyse_moving_object src/analyse_moving_object.cpp)
+rosbuild_add_executable(analyse_moving_object src/analyse_moving_object.cpp src/prediction_model.cpp)
 
 SET( CMAKE_CXX_FLAGS "-D IKFAST_NO_MAIN -D IKFAST_CLIBRARY -D IKFAST_NAMESPACE=ik_fast")
 #rosbuild_add_executable(visual_servoing src/kinematics/ikfast60.Direction3D.0_1_f2_3_4_5.cpp src/visual_servoing.cpp)

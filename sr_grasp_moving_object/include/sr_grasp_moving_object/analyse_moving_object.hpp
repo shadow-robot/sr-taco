@@ -28,17 +28,20 @@
 #define _ANALYSE_MOVING_OBJECT_HPP_
 
 #include <ros/ros.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose.h>
 #include <nav_msgs/Odometry.h>
 #include <visualization_msgs/Marker.h>
 
+#include <sr_grasp_moving_object/prediction_model.hpp>
+
 namespace sr_taco
 {
   struct AnalysedData
   {
-    geometry_msgs::Pose pose;
+    geometry_msgs::PoseWithCovarianceStamped pose;
     geometry_msgs::Twist twist;
 
     double velocity;
@@ -50,11 +53,22 @@ namespace sr_taco
     AnalyseMovingObject();
     ~AnalyseMovingObject();
 
-    AnalysedData new_measurement(const geometry_msgs::PoseStampedConstPtr& pose);
+    void new_measurement(const geometry_msgs::PoseStampedConstPtr& pose);
+
+    /**
+     * regularly updates the model:
+     *  - disperses the object position
+     *  @return the current object pose estimation
+     */
+    AnalysedData update_model();
 
   protected:
     geometry_msgs::PoseStamped last_pose_;
     bool is_first_;
+
+    AnalysedData data_;
+
+    boost::shared_ptr<PredictionModel> model_;
   };
 
   class AnalyseMovingObjectNode
@@ -74,6 +88,14 @@ namespace sr_taco
 
     ///publishes rviz markers
     ros::Publisher marker_pub_;
+
+    ros::Timer update_timer_;
+    /**
+     * regularly updates the model:
+     *  - disperses the object position
+     *  - returns the current object pose estimation
+     */
+    void update_model_(const ros::TimerEvent& e);
 
     void new_measurement_cb_(const geometry_msgs::PoseStampedConstPtr& msg);
   };

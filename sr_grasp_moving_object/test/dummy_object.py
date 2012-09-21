@@ -22,6 +22,11 @@ import rospy
 import random
 
 from geometry_msgs.msg import PoseStamped
+from std_srvs.srv import Empty
+
+#This is the number of times the data is not published when calling the service
+# useful for testing occlusions
+NB_TURNS_WITHOUT_PUB = 10
 
 class DummyMovingObject(object):
     """
@@ -40,31 +45,59 @@ class DummyMovingObject(object):
         self.msg.pose.position.x = 0.5
         self.msg.pose.position.y = 0.0
 
+        self.velocity_x = 0.0
+        self.velocity_y = 0.0
+        self.velocity_z = 0.0
+
+        self.timestep = 0.0
+
+        self.turns_without_pub_id = 0
+        self.publish_msg = True
+        self.set_publish_srv = rospy.Service("~set_publish", Empty, self.set_publish_cb)
+
     def activate(self, rate = 10):
+        self.timestep = 1.0 / rate
         rate = rospy.Rate(rate)
         while not rospy.is_shutdown():
             self.publish()
             rate.sleep()
 
     def publish(self):
-        self.publisher.publish(self.msg)
+        if self.publish_msg:
+            self.publisher.publish(self.msg)
+        else:
+            self.turns_without_pub_id += 1
+            if self.turns_without_pub_id == NB_TURNS_WITHOUT_PUB:
+                self.publish_msg = True
 
         self.msg.header.stamp = rospy.Time.now()
-        
-        self.msg.pose.position.x -= (random.random() - 0.5) / 50.0
-        self.msg.pose.position.x = min(0.7, self.msg.pose.position.x)
-        self.msg.pose.position.x = max(0.3, self.msg.pose.position.x)
-        
-        self.msg.pose.position.y -= (random.random() - 0.5) / 50.0
-        self.msg.pose.position.y = min(0.4, self.msg.pose.position.y)
-        self.msg.pose.position.y = max(-0.4, self.msg.pose.position.y)
-        
-        self.msg.pose.position.z -= (random.random() - 0.5) / 50.0
-        self.msg.pose.position.z = min(0.3, self.msg.pose.position.z)
-        self.msg.pose.position.z = max(-0.1, self.msg.pose.position.z)
-            
+
+        #we randomize the velocity a bit
+        self.velocity_x += (random.random() - 0.5) / 500.0
+        self.velocity_y += (random.random() - 0.5) / 500.0
+        self.velocity_z += (random.random() - 0.5) / 500.0
+
+        self.msg.pose.position.x = self.msg.pose.position.x + self.velocity_x * self.timestep
+        #reverse the speed if we're out of a reasonable box
+        if self.msg.pose.position.x > 0.7 or self.msg.pose.position.x < 0.3:
+            self.velocity_x = - self.velocity_x
+
+        self.msg.pose.position.y = self.msg.pose.position.y + self.velocity_y * self.timestep
+        #reverse the speed if we're out of a reasonable box
+        if self.msg.pose.position.y > 0.4 or self.msg.pose.position.y < -0.4:
+            self.velocity_y = - self.velocity_y
+
+        self.msg.pose.position.z = self.msg.pose.position.z + self.velocity_z * self.timestep
+        #reverse the speed if we're out of a reasonable box
+        if self.msg.pose.position.z > 0.3 or self.msg.pose.position.z < -0.1:
+            self.velocity_z = - self.velocity_z
+
+    def set_publish_cb(self, req):
+        self.turns_without_pub_id = 0
+        self.publish_msg = False
+
 
 if __name__ == "__main__":
     rospy.init_node("object")
     dmo = DummyMovingObject()
-    dmo.activate()
+    dmo.activate( 1 )
