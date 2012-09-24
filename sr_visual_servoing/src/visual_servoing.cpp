@@ -28,8 +28,8 @@
  *
  */
 
-#include <sr_grasp_moving_object/visual_servoing.hpp>
-#include <sr_grasp_moving_object/utils.hpp>
+#include <sr_visual_servoing/visual_servoing.hpp>
+#include <sr_visual_servoing/utils.hpp>
 #include <ros/package.h>
 
 #include <std_msgs/Float64.h>
@@ -96,12 +96,6 @@ namespace sr_taco
 
     OpenRAVE::Transform trans;// = rave_manipulator_->GetEndEffectorTransform();
 
-    /*
-    trans.trans.x = 0.521232;
-    trans.trans.y = -0.134005 - 0.04;
-    trans.trans.z = 1.1698 + 0.07;
-    */
-
     trans.rot.w = 0.5599;
     trans.rot.x = 0.4320;
     trans.rot.y = 0.4320;
@@ -143,54 +137,6 @@ namespace sr_taco
     		  << " \n current pos: " << rave_manipulator_->GetEndEffectorTransform());
     }
 
-
-
-    /*
-    ROS_ERROR("\nUsage: ./ik r00 r01 r02 t0 r10 r11 r12 t1 r20 r21 r22 t2 free0 ...\n\n"
-              "Returns the ik solutions given the transformation of the end effector specified by\n"
-              "a 3x3 rotation R (rXX), and a 3x1 translation (tX).\n"
-              "There are %d free parameters that have to be specified.\n\n",
-              IKFAST_NAMESPACE::GetNumFreeParameters());
-     */
-
-    /*
-    ik_fast::IkSolutionList<IkReal> solutions;
-    std::vector<ik_fast::IkReal> vfree(ik_fast::GetNumFreeParameters());
-    ik_fast::IkReal eerot[9],eetrans[3];
-
-    tf::Matrix3x3 test(tracked_object_.pose.pose.orientation);
-
-    for (unsigned int i=0; i < 9; ++i)
-      eerot[i] = test.m_el[i];
-
-    eetrans[0] = tracked_object_.pose.pose.position.x;
-    eetrans[1] = tracked_object_.pose.pose.position.y;
-    eetrans[2] = tracked_object_.pose.pose.position.z;
-
-    for(std::size_t i = 0; i < vfree.size(); ++i)
-      vfree[i] = 0.0;
-
-    bool bSuccess = ComputeIk(eetrans, eerot, vfree.size() > 0 ? &vfree[0] : NULL, solutions);
-
-    if( !bSuccess )
-    {
-      ROS_WARN("Failed to get ik solution");
-      return;
-    }
-
-    ROS_ERROR("Found %d ik solutions:\n", (int)solutions.GetNumSolutions());
-    std::vector<ik_fast::IkReal> solvalues(ik_fast::GetNumJoints());
-    for(std::size_t i = 0; i < solutions.GetNumSolutions(); ++i)
-    {
-      const ik_fast::IkSolutionBase<ik_fast::IkReal>& sol = solutions.GetSolution(i);
-      ROS_ERROR("sol%d (free=%d): ", (int)i, (int)sol.GetFree().size());
-      std::vector<ik_fast::IkReal> vsolfree(sol.GetFree().size());
-      sol.GetSolution(&solvalues[0],vsolfree.size()>0?&vsolfree[0]:NULL);
-      for( std::size_t j = 0; j < solvalues.size(); ++j)
-        ROS_ERROR("%.15f, ", solvalues[j]);
-      ROS_ERROR("\n");
-    }
-    */
   }
 
   void VisualServoing::send_robot_targets_()
@@ -231,8 +177,8 @@ namespace sr_taco
     //lock the environment to prevent changes
     OpenRAVE::EnvironmentMutex::scoped_lock lock(rave_env_->GetMutex());
     //load the scene from the xml file
-    // the file is in sr_grasp_moving_object/openrave/arm_and_hand_motor.xml
-    std::string path = ros::package::getPath("sr_grasp_moving_object");
+    // the file is in sr_visual_servoing/openrave/arm_and_hand_motor.xml
+    std::string path = ros::package::getPath("sr_visual_servoing");
     path += "/openrave/arm_and_hand_motor.xml";
     rave_robot_ = rave_env_->ReadRobotXMLFile(path);
     if( !rave_robot_ )

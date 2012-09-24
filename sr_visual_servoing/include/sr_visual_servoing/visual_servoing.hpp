@@ -45,7 +45,7 @@
 #include <geometry_msgs/Pose.h>
 #include <sensor_msgs/JointState.h>
 
-//#include "sr_grasp_moving_object/kinematics/ik_fast.h"
+//#include "sr_visual_servoing/kinematics/ik_fast.h"
 
 namespace sr_taco
 {

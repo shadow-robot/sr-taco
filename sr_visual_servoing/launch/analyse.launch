@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="sr_visual_servoing" name="analyse_moving_object" type="analyse_moving_object">
+    <rosparam command="load" file="$(find sr_visual_servoing)/param/prediction_model.yaml"/>
+  </node>
+</launch>

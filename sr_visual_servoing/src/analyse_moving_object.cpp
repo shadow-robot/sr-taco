@@ -24,8 +24,8 @@
  *
  */
 
-#include <sr_grasp_moving_object/analyse_moving_object.hpp>
-#include <sr_grasp_moving_object/utils.hpp>
+#include <sr_visual_servoing/analyse_moving_object.hpp>
+#include <sr_visual_servoing/utils.hpp>
 
 namespace sr_taco
 {
