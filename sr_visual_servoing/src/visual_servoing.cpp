@@ -50,7 +50,6 @@ namespace sr_taco
     joint_states_sub_ = nh_tilde_.subscribe("/gazebo/joint_states", 2, &VisualServoing::joint_states_cb_, this);
 
     odom_sub_ = nh_tilde_.subscribe("/analyse_moving_object/odometry", 2, &VisualServoing::new_odom_cb_, this);
-    timer_ = nh_tilde_.createTimer(ros::Rate(100.0), &VisualServoing::get_closer_, this);
   }
 
   VisualServoing::~VisualServoing()
@@ -58,19 +57,8 @@ namespace sr_taco
     OpenRAVE::RaveDestroy();
   }
 
-  void VisualServoing::new_odom_cb_(const nav_msgs::OdometryConstPtr& msg)
-  {
-    //update the target
-    tracked_object_.pose = msg->pose;
-    tracked_object_.twist = msg->twist;
-    tracked_object_.child_frame_id = msg->child_frame_id;
-    tracked_object_.header = msg->header;
-
-    object_msg_received_ = true;
-  }
-
   ///Timer callback, will servo the arm to the current tracked_object
-  void VisualServoing::get_closer_(const ros::TimerEvent& event)
+  void VisualServoing::get_closer()
   {
     //don't do anything if we haven't received the first tracked_object
     // or the first joint_states msg.
@@ -86,6 +74,17 @@ namespace sr_taco
 
     //send it to the joints
     send_robot_targets_();
+  }
+
+  void VisualServoing::new_odom_cb_(const nav_msgs::OdometryConstPtr& msg)
+  {
+    //update the target
+    tracked_object_.pose = msg->pose;
+    tracked_object_.twist = msg->twist;
+    tracked_object_.child_frame_id = msg->child_frame_id;
+    tracked_object_.header = msg->header;
+
+    object_msg_received_ = true;
   }
 
   void VisualServoing::generate_best_solution_()
@@ -256,13 +255,64 @@ namespace sr_taco
     robot_publishers_["ElbowJRotate"] = nh_tilde_.advertise<std_msgs::Float64>("/sa_er_position_controller/command", 1);
     robot_publishers_["ElbowJSwing"] = nh_tilde_.advertise<std_msgs::Float64>("/sa_es_position_controller/command", 1);
   }
-}
+
+  //////////
+  // ACTION SERVER
+
+
+  VisualServoingActionServer::VisualServoingActionServer()
+  {
+    visual_servo_.reset( new VisualServoing() );
+
+    servo_server_.reset( new VisualServoServer(nh_, "visual_servo", boost::bind(&VisualServoingActionServer::execute, this, _1), false) );
+    servo_server_->registerPreemptCallback(boost::bind(&VisualServoingActionServer::preempt, this));
+
+    servo_server_->start();
+  }
+
+  VisualServoingActionServer::~VisualServoingActionServer()
+  {
+  }
+
+  void VisualServoingActionServer::preempt()
+  {
+    ROS_DEBUG("GOAL PREEMPTED");
+
+    servo_server_->setPreempted();
+  }
+
+  void VisualServoingActionServer::execute(const sr_visual_servoing::VisualServoingGoalConstPtr& goal)
+  {
+    ROS_DEBUG("NEW GOAL RECEIVED");
+
+    while( ros::ok() )
+    {
+      ros::Duration(0.01).sleep();
+
+      visual_servo_->get_closer();
+
+      if( !servo_server_->isActive() )
+      {
+        ROS_DEBUG("ABORTING");
+        return;
+      }
+    }
+
+    ROS_DEBUG("NEW GOAL FINISHED");
+
+    servo_server_->setSucceeded();
+  }
+
+}//end namespace sr_taco
+
+
+
 
 int main(int argc, char *argv[])
 {
   ros::init(argc, argv, "visual_servoing");
 
-  sr_taco::VisualServoing visual_servo;
+  sr_taco::VisualServoingActionServer visual_servo_as;
   ros::spin();
 }
 

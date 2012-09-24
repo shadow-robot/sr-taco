@@ -157,9 +157,9 @@ namespace sr_taco
     marker_sphere.pose = data.pose.pose.pose;
 
     //scale of the sphere based on the covariance
-    marker_sphere.scale.x = data.pose.pose.covariance[0]/10.0;
-    marker_sphere.scale.y = data.pose.pose.covariance[7]/10.0;
-    marker_sphere.scale.z = data.pose.pose.covariance[14]/10.0;
+    marker_sphere.scale.x = data.pose.pose.covariance[0];
+    marker_sphere.scale.y = data.pose.pose.covariance[7];
+    marker_sphere.scale.z = data.pose.pose.covariance[14];
 
     marker_sphere.color.a = 0.5;
     marker_sphere.color.r = 0.34;
