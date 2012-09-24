@@ -20,6 +20,7 @@
   <depend package="openrave"/>
   <depend package="bfl"/>
   <depend package="actionlib"/>
+  <depend package="actionlib_msgs"/>
 
 </package>
 
