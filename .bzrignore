@@ -11,3 +11,5 @@
 ./sr_visual_servoing/src/sr_visual_servoing
 ./sr_visual_servoing/bin
 ./sr_visual_servoing/msg
+./sr_visual_servoing/build
+./sr_visual_servoing/msg_gen
