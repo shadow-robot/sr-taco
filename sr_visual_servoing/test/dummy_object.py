@@ -17,7 +17,7 @@
 #
 
 import roslib
-roslib.load_manifest('sr_grasp_moving_object')
+roslib.load_manifest('sr_visual_servoing')
 import rospy
 import random
 

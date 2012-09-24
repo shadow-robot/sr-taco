@@ -35,7 +35,7 @@
 #include <nav_msgs/Odometry.h>
 #include <visualization_msgs/Marker.h>
 
-#include <sr_grasp_moving_object/prediction_model.hpp>
+#include <sr_visual_servoing/prediction_model.hpp>
 
 namespace sr_taco
 {

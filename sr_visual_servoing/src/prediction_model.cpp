@@ -23,7 +23,7 @@
  *
  */
 
-#include <sr_grasp_moving_object/prediction_model.hpp>
+#include <sr_visual_servoing/prediction_model.hpp>
 #include <ros/ros.h>
 
 /**

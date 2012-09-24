@@ -43,9 +43,14 @@
 
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/Point.h>
 #include <sensor_msgs/JointState.h>
 
-//#include "sr_grasp_moving_object/kinematics/ik_fast.h"
+//#include "sr_visual_servoing/kinematics/ik_fast.h"
+
+#include <sr_visual_servoing/VisualServoingAction.h>
+#include <sr_visual_servoing/VisualServoingFeedback.h>
+#include <actionlib/server/simple_action_server.h>
 
 namespace sr_taco
 {
@@ -55,6 +60,9 @@ namespace sr_taco
     VisualServoing();
     ~VisualServoing();
 
+    ///Servo the arm to the current target, called periodically from Actionlib Server
+    sr_visual_servoing::VisualServoingFeedback get_closer();
+
   protected:
     ros::NodeHandle nh_tilde_;
 
@@ -62,16 +70,12 @@ namespace sr_taco
     ros::Subscriber joint_states_sub_;
     std::map<std::string, double> current_positions_;
     std::vector<std::string> joint_names_;
+
     void joint_states_cb_(const sensor_msgs::JointStateConstPtr& msg);
 
     ///subscribes to the odometry messages coming from the object analyser
     ros::Subscriber odom_sub_;
     void new_odom_cb_(const nav_msgs::OdometryConstPtr& msg);
-
-    ///A timer used to servo the arm
-    ros::Timer timer_;
-    ///Timer callback, will servo the arm to the current target
-    void get_closer_(const ros::TimerEvent& event);
 
     /**
      * Generate different solutions aroung the current position
@@ -114,8 +118,37 @@ namespace sr_taco
     ///Set to true once we've received a msg
     bool object_msg_received_;
     bool joint_states_msg_received_;
+
+    ///update the feedback for the action server
+    void update_feedback_();
+    sr_visual_servoing::VisualServoingFeedback visual_servoing_feedback_;
+
+    static inline double compute_distance_(geometry_msgs::Point a, geometry_msgs::Point b)
+    {
+      return std::sqrt((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y) + (a.z - b.z)*(a.z - b.z));
+    }
   };
-}
+
+  typedef actionlib::SimpleActionServer<sr_visual_servoing::VisualServoingAction> VisualServoServer;
+
+  class VisualServoingActionServer
+  {
+  public:
+    VisualServoingActionServer();
+    virtual ~VisualServoingActionServer();
+
+    void execute(const sr_visual_servoing::VisualServoingGoalConstPtr& goal);
+    void preempt();
+  protected:
+    boost::shared_ptr<VisualServoing> visual_servo_;
+    boost::shared_ptr<VisualServoServer> servo_server_;
+    ros::NodeHandle nh_;
+
+    sr_visual_servoing::VisualServoingFeedback feedback_;
+  };
+
+} //end namespace sr_taco
+
 /* For the emacs weenies in the crowd.
    Local Variables:
    c-basic-offset: 2

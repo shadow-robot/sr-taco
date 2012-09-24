@@ -28,8 +28,8 @@
  *
  */
 
-#include <sr_grasp_moving_object/visual_servoing.hpp>
-#include <sr_grasp_moving_object/utils.hpp>
+#include <sr_visual_servoing/visual_servoing.hpp>
+#include <sr_visual_servoing/utils.hpp>
 #include <ros/package.h>
 
 #include <std_msgs/Float64.h>
@@ -46,16 +46,40 @@ namespace sr_taco
 
     init_robot_publishers_();
 
+    // the distance is set to -1 until we've started tracking the object
+    visual_servoing_feedback_.distance = -1.0;
+
     //initialises subscribers and timer
     joint_states_sub_ = nh_tilde_.subscribe("/gazebo/joint_states", 2, &VisualServoing::joint_states_cb_, this);
 
     odom_sub_ = nh_tilde_.subscribe("/analyse_moving_object/odometry", 2, &VisualServoing::new_odom_cb_, this);
-    timer_ = nh_tilde_.createTimer(ros::Rate(100.0), &VisualServoing::get_closer_, this);
   }
 
   VisualServoing::~VisualServoing()
   {
     OpenRAVE::RaveDestroy();
+  }
+
+  ///Servoes the arm to the current tracked_object
+  sr_visual_servoing::VisualServoingFeedback VisualServoing::get_closer()
+  {
+    //don't do anything if we haven't received the first tracked_object
+    // or the first joint_states msg.
+    if( object_msg_received_ && joint_states_msg_received_ )
+    {
+      //generate different solutions aroung the current position
+      // and keep the one closest to object position + twist
+      // (the object is moving toward this point)
+      generate_best_solution_();
+
+      //send it to the joints
+      send_robot_targets_();
+
+      //updates the feedback message
+      update_feedback_();
+    }
+
+    return visual_servoing_feedback_;
   }
 
   void VisualServoing::new_odom_cb_(const nav_msgs::OdometryConstPtr& msg)
@@ -69,23 +93,37 @@ namespace sr_taco
     object_msg_received_ = true;
   }
 
-  ///Timer callback, will servo the arm to the current tracked_object
-  void VisualServoing::get_closer_(const ros::TimerEvent& event)
+  void VisualServoing::update_feedback_()
   {
-    //don't do anything if we haven't received the first tracked_object
-    // or the first joint_states msg.
-    if(!object_msg_received_)
-      return;
-    if(!joint_states_msg_received_)
-      return;
+    //update the feedback with the tracked object pose;
+    visual_servoing_feedback_.object_pose.position.x = tracked_object_.pose.pose.position.x;
+    visual_servoing_feedback_.object_pose.position.y = tracked_object_.pose.pose.position.y;
+    visual_servoing_feedback_.object_pose.position.z = tracked_object_.pose.pose.position.z;
 
-    //generate different solutions aroung the current position
-    // and keep the one closest to object position + twist
-    // (the object is moving toward this point)
-    generate_best_solution_();
+    visual_servoing_feedback_.object_pose.orientation.x = tracked_object_.pose.pose.orientation.x;
+    visual_servoing_feedback_.object_pose.orientation.y = tracked_object_.pose.pose.orientation.y;
+    visual_servoing_feedback_.object_pose.orientation.z = tracked_object_.pose.pose.orientation.z;
+    visual_servoing_feedback_.object_pose.orientation.w = tracked_object_.pose.pose.orientation.w;
 
-    //send it to the joints
-    send_robot_targets_();
+    OpenRAVE::Transform trans = rave_manipulator_->GetEndEffectorTransform();
+    //The local tool is where we want the grasping point to be (defined in arm_and_hand_motor.xml)
+    trans.trans += rave_manipulator_->GetLocalToolTransform().trans;
+
+    //update the feedback with the grasping point transform
+    visual_servoing_feedback_.grasp_pose.position.x = trans.trans.x;
+    visual_servoing_feedback_.grasp_pose.position.y = trans.trans.y;
+
+    //TODO: get rid of this static offset
+    visual_servoing_feedback_.grasp_pose.position.z = trans.trans.z - 1.02;
+
+    visual_servoing_feedback_.grasp_pose.orientation.x = trans.rot.x;
+    visual_servoing_feedback_.grasp_pose.orientation.y = trans.rot.y;
+    visual_servoing_feedback_.grasp_pose.orientation.z = trans.rot.z;
+    visual_servoing_feedback_.grasp_pose.orientation.w = trans.rot.w;
+
+    //update the distance between the object and the tooltip in the feedback
+    visual_servoing_feedback_.distance = compute_distance_(visual_servoing_feedback_.grasp_pose.position, visual_servoing_feedback_.object_pose.position );
+
   }
 
   void VisualServoing::generate_best_solution_()
@@ -96,12 +134,6 @@ namespace sr_taco
 
     OpenRAVE::Transform trans;// = rave_manipulator_->GetEndEffectorTransform();
 
-    /*
-    trans.trans.x = 0.521232;
-    trans.trans.y = -0.134005 - 0.04;
-    trans.trans.z = 1.1698 + 0.07;
-    */
-
     trans.rot.w = 0.5599;
     trans.rot.x = 0.4320;
     trans.rot.y = 0.4320;
@@ -109,6 +141,8 @@ namespace sr_taco
 
     trans.trans.x = tracked_object_.pose.pose.position.x;
     trans.trans.y = tracked_object_.pose.pose.position.y;
+
+    //update the feedback with the grasping point transform
     trans.trans.z = tracked_object_.pose.pose.position.z + 1.02;
 
     //The local tool is where we want the grasping point to be (defined in arm_and_hand_motor.xml)
@@ -135,62 +169,19 @@ namespace sr_taco
     	robot_targets_[i] = ik_solution[i];
         ss << ik_solution[i] << " ";
       }
+
+      //update the openrave model position
+      rave_manipulator_->GetRobot()->SetActiveDOFs(rave_manipulator_->GetArmIndices());
+      rave_manipulator_->GetRobot()->SetActiveDOFValues( ik_solution );
+
       ROS_DEBUG_STREAM("The solution for: " << trans << " \n  is: " << ss.str());
     }
     else
     {
       ROS_DEBUG_STREAM("No solution found for " << trans
-    		  << " \n current pos: " << rave_manipulator_->GetEndEffectorTransform());
+                       << " \n current pos: " << rave_manipulator_->GetEndEffectorTransform());
     }
 
-
-
-    /*
-    ROS_ERROR("\nUsage: ./ik r00 r01 r02 t0 r10 r11 r12 t1 r20 r21 r22 t2 free0 ...\n\n"
-              "Returns the ik solutions given the transformation of the end effector specified by\n"
-              "a 3x3 rotation R (rXX), and a 3x1 translation (tX).\n"
-              "There are %d free parameters that have to be specified.\n\n",
-              IKFAST_NAMESPACE::GetNumFreeParameters());
-     */
-
-    /*
-    ik_fast::IkSolutionList<IkReal> solutions;
-    std::vector<ik_fast::IkReal> vfree(ik_fast::GetNumFreeParameters());
-    ik_fast::IkReal eerot[9],eetrans[3];
-
-    tf::Matrix3x3 test(tracked_object_.pose.pose.orientation);
-
-    for (unsigned int i=0; i < 9; ++i)
-      eerot[i] = test.m_el[i];
-
-    eetrans[0] = tracked_object_.pose.pose.position.x;
-    eetrans[1] = tracked_object_.pose.pose.position.y;
-    eetrans[2] = tracked_object_.pose.pose.position.z;
-
-    for(std::size_t i = 0; i < vfree.size(); ++i)
-      vfree[i] = 0.0;
-
-    bool bSuccess = ComputeIk(eetrans, eerot, vfree.size() > 0 ? &vfree[0] : NULL, solutions);
-
-    if( !bSuccess )
-    {
-      ROS_WARN("Failed to get ik solution");
-      return;
-    }
-
-    ROS_ERROR("Found %d ik solutions:\n", (int)solutions.GetNumSolutions());
-    std::vector<ik_fast::IkReal> solvalues(ik_fast::GetNumJoints());
-    for(std::size_t i = 0; i < solutions.GetNumSolutions(); ++i)
-    {
-      const ik_fast::IkSolutionBase<ik_fast::IkReal>& sol = solutions.GetSolution(i);
-      ROS_ERROR("sol%d (free=%d): ", (int)i, (int)sol.GetFree().size());
-      std::vector<ik_fast::IkReal> vsolfree(sol.GetFree().size());
-      sol.GetSolution(&solvalues[0],vsolfree.size()>0?&vsolfree[0]:NULL);
-      for( std::size_t j = 0; j < solvalues.size(); ++j)
-        ROS_ERROR("%.15f, ", solvalues[j]);
-      ROS_ERROR("\n");
-    }
-    */
   }
 
   void VisualServoing::send_robot_targets_()
@@ -231,8 +222,8 @@ namespace sr_taco
     //lock the environment to prevent changes
     OpenRAVE::EnvironmentMutex::scoped_lock lock(rave_env_->GetMutex());
     //load the scene from the xml file
-    // the file is in sr_grasp_moving_object/openrave/arm_and_hand_motor.xml
-    std::string path = ros::package::getPath("sr_grasp_moving_object");
+    // the file is in sr_visual_servoing/openrave/arm_and_hand_motor.xml
+    std::string path = ros::package::getPath("sr_visual_servoing");
     path += "/openrave/arm_and_hand_motor.xml";
     rave_robot_ = rave_env_->ReadRobotXMLFile(path);
     if( !rave_robot_ )
@@ -310,13 +301,62 @@ namespace sr_taco
     robot_publishers_["ElbowJRotate"] = nh_tilde_.advertise<std_msgs::Float64>("/sa_er_position_controller/command", 1);
     robot_publishers_["ElbowJSwing"] = nh_tilde_.advertise<std_msgs::Float64>("/sa_es_position_controller/command", 1);
   }
-}
+
+  //////////
+  // ACTION SERVER
+
+
+  VisualServoingActionServer::VisualServoingActionServer()
+  {
+    visual_servo_.reset( new VisualServoing() );
+
+    servo_server_.reset( new VisualServoServer(nh_, "visual_servo", boost::bind(&VisualServoingActionServer::execute, this, _1), false) );
+    servo_server_->registerPreemptCallback(boost::bind(&VisualServoingActionServer::preempt, this));
+
+    servo_server_->start();
+  }
+
+  VisualServoingActionServer::~VisualServoingActionServer()
+  {
+  }
+
+  void VisualServoingActionServer::preempt()
+  {
+    ROS_DEBUG("GOAL PREEMPTED");
+
+    servo_server_->setPreempted();
+  }
+
+  void VisualServoingActionServer::execute(const sr_visual_servoing::VisualServoingGoalConstPtr& goal)
+  {
+    while( ros::ok() )
+    {
+      ros::Duration(0.01).sleep();
+
+      feedback_ = visual_servo_->get_closer();
+      servo_server_->publishFeedback(feedback_);
+
+      if( !servo_server_->isActive() )
+      {
+        ROS_DEBUG("ABORTING");
+        return;
+      }
+    }
+
+    //will never reach this point as the goal is infinite
+    servo_server_->setSucceeded();
+  }
+
+}//end namespace sr_taco
+
+
+
 
 int main(int argc, char *argv[])
 {
   ros::init(argc, argv, "visual_servoing");
 
-  sr_taco::VisualServoing visual_servo;
+  sr_taco::VisualServoingActionServer visual_servo_as;
   ros::spin();
 }
 

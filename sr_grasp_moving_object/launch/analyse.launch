@@ -1,5 +1,0 @@
-<launch>
-  <node pkg="sr_grasp_moving_object" name="analyse_moving_object" type="analyse_moving_object">
-    <rosparam command="load" file="$(find sr_grasp_moving_object)/param/prediction_model.yaml"/>
-  </node>
-</launch>
