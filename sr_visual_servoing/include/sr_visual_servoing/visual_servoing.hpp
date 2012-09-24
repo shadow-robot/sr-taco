@@ -43,11 +43,13 @@
 
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/Point.h>
 #include <sensor_msgs/JointState.h>
 
 //#include "sr_visual_servoing/kinematics/ik_fast.h"
 
 #include <sr_visual_servoing/VisualServoingAction.h>
+#include <sr_visual_servoing/VisualServoingFeedback.h>
 #include <actionlib/server/simple_action_server.h>
 
 namespace sr_taco
@@ -59,7 +61,7 @@ namespace sr_taco
     ~VisualServoing();
 
     ///Servo the arm to the current target, called periodically from Actionlib Server
-    void get_closer();
+    sr_visual_servoing::VisualServoingFeedback get_closer();
 
   protected:
     ros::NodeHandle nh_tilde_;
@@ -116,6 +118,15 @@ namespace sr_taco
     ///Set to true once we've received a msg
     bool object_msg_received_;
     bool joint_states_msg_received_;
+
+    ///update the feedback for the action server
+    void update_feedback_();
+    sr_visual_servoing::VisualServoingFeedback visual_servoing_feedback_;
+
+    static inline double compute_distance_(geometry_msgs::Point a, geometry_msgs::Point b)
+    {
+      return std::sqrt((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y) + (a.z - b.z)*(a.z - b.z));
+    }
   };
 
   typedef actionlib::SimpleActionServer<sr_visual_servoing::VisualServoingAction> VisualServoServer;
@@ -132,6 +143,8 @@ namespace sr_taco
     boost::shared_ptr<VisualServoing> visual_servo_;
     boost::shared_ptr<VisualServoServer> servo_server_;
     ros::NodeHandle nh_;
+
+    sr_visual_servoing::VisualServoingFeedback feedback_;
   };
 
 } //end namespace sr_taco

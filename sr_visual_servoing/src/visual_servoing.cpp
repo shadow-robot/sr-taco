@@ -46,6 +46,9 @@ namespace sr_taco
 
     init_robot_publishers_();
 
+    // the distance is set to -1 until we've started tracking the object
+    visual_servoing_feedback_.distance = -1.0;
+
     //initialises subscribers and timer
     joint_states_sub_ = nh_tilde_.subscribe("/gazebo/joint_states", 2, &VisualServoing::joint_states_cb_, this);
 
@@ -57,23 +60,26 @@ namespace sr_taco
     OpenRAVE::RaveDestroy();
   }
 
-  ///Timer callback, will servo the arm to the current tracked_object
-  void VisualServoing::get_closer()
+  ///Servoes the arm to the current tracked_object
+  sr_visual_servoing::VisualServoingFeedback VisualServoing::get_closer()
   {
     //don't do anything if we haven't received the first tracked_object
     // or the first joint_states msg.
-    if(!object_msg_received_)
-      return;
-    if(!joint_states_msg_received_)
-      return;
+    if( object_msg_received_ && joint_states_msg_received_ )
+    {
+      //generate different solutions aroung the current position
+      // and keep the one closest to object position + twist
+      // (the object is moving toward this point)
+      generate_best_solution_();
 
-    //generate different solutions aroung the current position
-    // and keep the one closest to object position + twist
-    // (the object is moving toward this point)
-    generate_best_solution_();
+      //send it to the joints
+      send_robot_targets_();
 
-    //send it to the joints
-    send_robot_targets_();
+      //updates the feedback message
+      update_feedback_();
+    }
+
+    return visual_servoing_feedback_;
   }
 
   void VisualServoing::new_odom_cb_(const nav_msgs::OdometryConstPtr& msg)
@@ -85,6 +91,39 @@ namespace sr_taco
     tracked_object_.header = msg->header;
 
     object_msg_received_ = true;
+  }
+
+  void VisualServoing::update_feedback_()
+  {
+    //update the feedback with the tracked object pose;
+    visual_servoing_feedback_.object_pose.position.x = tracked_object_.pose.pose.position.x;
+    visual_servoing_feedback_.object_pose.position.y = tracked_object_.pose.pose.position.y;
+    visual_servoing_feedback_.object_pose.position.z = tracked_object_.pose.pose.position.z;
+
+    visual_servoing_feedback_.object_pose.orientation.x = tracked_object_.pose.pose.orientation.x;
+    visual_servoing_feedback_.object_pose.orientation.y = tracked_object_.pose.pose.orientation.y;
+    visual_servoing_feedback_.object_pose.orientation.z = tracked_object_.pose.pose.orientation.z;
+    visual_servoing_feedback_.object_pose.orientation.w = tracked_object_.pose.pose.orientation.w;
+
+    OpenRAVE::Transform trans = rave_manipulator_->GetEndEffectorTransform();
+    //The local tool is where we want the grasping point to be (defined in arm_and_hand_motor.xml)
+    trans.trans += rave_manipulator_->GetLocalToolTransform().trans;
+
+    //update the feedback with the grasping point transform
+    visual_servoing_feedback_.grasp_pose.position.x = trans.trans.x;
+    visual_servoing_feedback_.grasp_pose.position.y = trans.trans.y;
+
+    //TODO: get rid of this static offset
+    visual_servoing_feedback_.grasp_pose.position.z = trans.trans.z - 1.02;
+
+    visual_servoing_feedback_.grasp_pose.orientation.x = trans.rot.x;
+    visual_servoing_feedback_.grasp_pose.orientation.y = trans.rot.y;
+    visual_servoing_feedback_.grasp_pose.orientation.z = trans.rot.z;
+    visual_servoing_feedback_.grasp_pose.orientation.w = trans.rot.w;
+
+    //update the distance between the object and the tooltip in the feedback
+    visual_servoing_feedback_.distance = compute_distance_(visual_servoing_feedback_.grasp_pose.position, visual_servoing_feedback_.object_pose.position );
+
   }
 
   void VisualServoing::generate_best_solution_()
@@ -102,6 +141,8 @@ namespace sr_taco
 
     trans.trans.x = tracked_object_.pose.pose.position.x;
     trans.trans.y = tracked_object_.pose.pose.position.y;
+
+    //update the feedback with the grasping point transform
     trans.trans.z = tracked_object_.pose.pose.position.z + 1.02;
 
     //The local tool is where we want the grasping point to be (defined in arm_and_hand_motor.xml)
@@ -128,12 +169,17 @@ namespace sr_taco
     	robot_targets_[i] = ik_solution[i];
         ss << ik_solution[i] << " ";
       }
+
+      //update the openrave model position
+      rave_manipulator_->GetRobot()->SetActiveDOFs(rave_manipulator_->GetArmIndices());
+      rave_manipulator_->GetRobot()->SetActiveDOFValues( ik_solution );
+
       ROS_DEBUG_STREAM("The solution for: " << trans << " \n  is: " << ss.str());
     }
     else
     {
       ROS_DEBUG_STREAM("No solution found for " << trans
-    		  << " \n current pos: " << rave_manipulator_->GetEndEffectorTransform());
+                       << " \n current pos: " << rave_manipulator_->GetEndEffectorTransform());
     }
 
   }
@@ -283,13 +329,12 @@ namespace sr_taco
 
   void VisualServoingActionServer::execute(const sr_visual_servoing::VisualServoingGoalConstPtr& goal)
   {
-    ROS_DEBUG("NEW GOAL RECEIVED");
-
     while( ros::ok() )
     {
       ros::Duration(0.01).sleep();
 
-      visual_servo_->get_closer();
+      feedback_ = visual_servo_->get_closer();
+      servo_server_->publishFeedback(feedback_);
 
       if( !servo_server_->isActive() )
       {
@@ -298,8 +343,7 @@ namespace sr_taco
       }
     }
 
-    ROS_DEBUG("NEW GOAL FINISHED");
-
+    //will never reach this point as the goal is infinite
     servo_server_->setSucceeded();
   }
 
