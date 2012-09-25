@@ -78,6 +78,13 @@ namespace sr_taco
     void new_odom_cb_(const nav_msgs::OdometryConstPtr& msg);
 
     /**
+     * We're going to a point between the current pose and the
+     *  object pose, at a distance (in m) epsilon_ from the current
+     *  pose.
+     */
+    static const double epsilon_;
+
+    /**
      * Generate different solutions aroung the current position
      *  and keep the one closest to object position + twist
      *  (the object is moving toward this point)

@@ -38,6 +38,8 @@
 
 namespace sr_taco
 {
+  const double VisualServoing::epsilon_ = 0.7;
+
   VisualServoing::VisualServoing()
     : nh_tilde_("~"), object_msg_received_(false),
       joint_states_msg_received_(false)
@@ -128,40 +130,67 @@ namespace sr_taco
 
   void VisualServoing::generate_best_solution_()
   {
+
     //TODO: generate the best solution using fk
     // for all the joints from arm_base to palm.
     //TODO: use openmp for loop (https://computing.llnl.gov/tutorials/openMP/#DO)
 
-    OpenRAVE::Transform trans;// = rave_manipulator_->GetEndEffectorTransform();
+    OpenRAVE::Transform end_effector = rave_manipulator_->GetEndEffectorTransform();
+    end_effector.trans += rave_manipulator_->GetLocalToolTransform().trans;
 
-    trans.rot.w = 0.5599;
-    trans.rot.x = 0.4320;
-    trans.rot.y = 0.4320;
-    trans.rot.z = 0.5599;
+    OpenRAVE::Transform object;
+    object.trans.x = tracked_object_.pose.pose.position.x;
+    object.trans.y = tracked_object_.pose.pose.position.y;
 
-    trans.trans.x = tracked_object_.pose.pose.position.x;
-    trans.trans.y = tracked_object_.pose.pose.position.y;
+    //TODO: get rid of this static transform
+    object.trans.z = tracked_object_.pose.pose.position.z + 1.02;
 
-    //update the feedback with the grasping point transform
-    trans.trans.z = tracked_object_.pose.pose.position.z + 1.02;
+    /*
+     * We're going to:
+     *  - either a point between the current pose and the
+     *    object pose, at a distance (in m) epsilon_ from
+     *    the current pose.
+     *  - or the object pose if it's close enough
+     */
+    OpenRAVE::Transform target;
+    target.trans = end_effector.trans - object.trans;
+    double distance = OpenRAVE::geometry::MATH_SQRT( target.trans.lengthsqr3() );
+    if( distance > 0.2 )
+    {
+      target.trans.normalize3();
+      target.trans *= epsilon_ * distance;
+      target.trans += end_effector.trans;
 
-    //The local tool is where we want the grasping point to be (defined in arm_and_hand_motor.xml)
-    trans.trans += rave_manipulator_->GetLocalToolTransform().trans;
+      ROS_WARN_STREAM("Between "<< end_effector.trans <<" and "<< object.trans <<" => " << target.trans );
+    }
+    else
+    {
+      ROS_ERROR_STREAM("Directly to object => " << object.trans << " (from: " << end_effector.trans <<")");
 
-    trans.trans.x += (OpenRAVE::RaveRandomFloat() - 0.5) / 100.0;
-    trans.trans.y += (OpenRAVE::RaveRandomFloat() - 0.5) / 100.0;
-    trans.trans.z += (OpenRAVE::RaveRandomFloat() - 0.5) / 100.0;
+      //object is really close, go to the object
+      target.trans = object.trans;
+    }
 
-    trans.rot.x += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
-    trans.rot.y += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
-    trans.rot.z += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
-    trans.rot.w += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
+    target.rot.w = 0.5599;
+    target.rot.x = 0.4320;
+    target.rot.y = 0.4320;
+    target.rot.z = 0.5599;
 
+    //randomize pose around the target
+    // to make sure we find a solution
+    target.trans.x += (OpenRAVE::RaveRandomFloat() - 0.5) / 100.0;
+    target.trans.y += (OpenRAVE::RaveRandomFloat() - 0.5) / 100.0;
+    target.trans.z += (OpenRAVE::RaveRandomFloat() - 0.5) / 100.0;
 
-    trans.rot.normalize();
+    target.rot.x += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
+    target.rot.y += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
+    target.rot.z += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
+    target.rot.w += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
+
+    target.rot.normalize();
 
     std::vector<OpenRAVE::dReal> ik_solution;
-    if( rave_manipulator_->FindIKSolution(OpenRAVE::IkParameterization(trans), ik_solution, OpenRAVE::IKFO_IgnoreEndEffectorCollisions) )
+    if( rave_manipulator_->FindIKSolution(OpenRAVE::IkParameterization(target), ik_solution, OpenRAVE::IKFO_IgnoreEndEffectorCollisions) )
     {
       std::stringstream ss;
       for(size_t i = 0; i < ik_solution.size(); ++i)
@@ -174,11 +203,11 @@ namespace sr_taco
       rave_manipulator_->GetRobot()->SetActiveDOFs(rave_manipulator_->GetArmIndices());
       rave_manipulator_->GetRobot()->SetActiveDOFValues( ik_solution );
 
-      ROS_DEBUG_STREAM("The solution for: " << trans << " \n  is: " << ss.str());
+      ROS_DEBUG_STREAM("The solution for: " << target << " \n  is: " << ss.str());
     }
     else
     {
-      ROS_DEBUG_STREAM("No solution found for " << trans
+      ROS_DEBUG_STREAM("No solution found for " << target
                        << " \n current pos: " << rave_manipulator_->GetEndEffectorTransform());
     }
 
@@ -331,7 +360,7 @@ namespace sr_taco
   {
     while( ros::ok() )
     {
-      ros::Duration(0.01).sleep();
+      ros::Duration(5.0).sleep();
 
       feedback_ = visual_servo_->get_closer();
       servo_server_->publishFeedback(feedback_);

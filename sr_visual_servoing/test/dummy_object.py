@@ -73,9 +73,9 @@ class DummyMovingObject(object):
         self.msg.header.stamp = rospy.Time.now()
 
         #we randomize the velocity a bit
-        self.velocity_x += (random.random() - 0.5) / 500.0
-        self.velocity_y += (random.random() - 0.5) / 500.0
-        self.velocity_z += (random.random() - 0.5) / 500.0
+        #self.velocity_x += (random.random() - 0.5) / 500.0
+        #self.velocity_y += (random.random() - 0.5) / 500.0
+        #self.velocity_z += (random.random() - 0.5) / 500.0
 
         self.msg.pose.position.x = self.msg.pose.position.x + self.velocity_x * self.timestep
         #reverse the speed if we're out of a reasonable box
