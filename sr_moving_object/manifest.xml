@@ -1,0 +1,16 @@
+<package>
+  <description brief="sr_moving_object">
+
+     This package contains launchfiles to create and move an object in Gazebo
+
+  </description>
+  <author>Toni Oliver Duran</author>
+  <license>GPL</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/sr_moving_object</url>
+  <depend package="gazebo"/>
+  <depend package="gazebo_worlds"/>
+
+</package>
+
+
