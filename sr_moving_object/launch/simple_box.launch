@@ -2,6 +2,6 @@
   <include file="$(find gazebo_worlds)/launch/empty_world.launch" />
   <!-- send urdf of a simple box to param server -->
   <param name="simple_box" textfile="$(find sr_moving_object)/objects/simple_box.urdf" />
-  <node name="spawn_simple_box" pkg="gazebo" type="spawn_model" args="-urdf -param simple_box -z 1 -model simple_box" respawn="false" output="screen" />
+  <node name="spawn_simple_box" pkg="gazebo" type="spawn_model" args="-urdf -param simple_box -z 3 -model simple_box" respawn="false" output="screen" />
 </launch>
 

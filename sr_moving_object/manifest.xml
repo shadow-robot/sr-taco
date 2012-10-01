@@ -10,6 +10,13 @@
   <url>http://ros.org/wiki/sr_moving_object</url>
   <depend package="gazebo"/>
   <depend package="gazebo_worlds"/>
+  <depend package="gazebo_msgs"/>
+  <depend package="rqt_gui"/>
+  <depend package="rqt_gui_py"/>
+
+  <export>
+    <rqt_gui plugin="${prefix}/sr_moving_object_plugin.xml"/>
+  </export>
 
 </package>
 

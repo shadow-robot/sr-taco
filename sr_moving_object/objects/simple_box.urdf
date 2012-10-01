@@ -20,6 +20,6 @@
   </link>
   <gazebo reference="my_box">
     <material>Gazebo/Blue</material>
-    <turnGravityOff>false</turnGravityOff>
+    <turnGravityOff>true</turnGravityOff>
   </gazebo>
 </robot>
