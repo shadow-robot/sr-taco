@@ -27,8 +27,9 @@ from qt_gui.qt_binding_helper import loadUi
 
 from QtCore import QEvent, QObject, Qt, QTimer, Slot
 from QtGui import QShortcut, QMessageBox, QWidget
-from gazebo_msgs.srv import ApplyBodyWrench, GetModelProperties, GetWorldProperties
-from geometry_msgs.msg import Wrench
+from gazebo_msgs.srv import ApplyBodyWrench, GetModelProperties, GetWorldProperties, SetModelState
+from gazebo_msgs.msg import ModelState
+from geometry_msgs.msg import Wrench, Pose, Twist
 
 
 '''
@@ -85,16 +86,41 @@ class SrMoveObject(Plugin):
         self._widget.btnZero.pressed.connect(self.on_zero_clicked_)
         self._widget.btnOpposite.pressed.connect(self.on_opposite_clicked_)
         self._widget.btn_wrench.pressed.connect(self.on_apply_wrench_clicked_)
-        self._widget.btnSetToInitialPos.pressed.connect(self.on_set_to_init_clicked_)
+        self._widget.btnSetToPos.pressed.connect(self.on_set_to_position_clicked_)
 
     def on_zero_clicked_(self):
-        QMessageBox.warning(self._widget, "Warning", "Not Implemented")
+        self._widget.lineEdit.setText("0.0")
+        self._widget.lineEdit_2.setText("0.0")
+        self._widget.lineEdit_3.setText("0.0")
 
     def on_opposite_clicked_(self):
-        QMessageBox.warning(self._widget, "Warning", "Not Implemented")
+        self._widget.lineEdit.setText( str((-1) * float(str(self._widget.lineEdit.text()))) )
+        self._widget.lineEdit_2.setText( str((-1) * float(str(self._widget.lineEdit_2.text()))) )
+        self._widget.lineEdit_3.setText( str((-1) * float(str(self._widget.lineEdit_3.text()))) )
 
-    def on_set_to_init_clicked_(self):
-        QMessageBox.warning(self._widget, "Warning", "Not Implemented")
+    def on_set_to_position_clicked_(self):
+        success = True
+        set_model_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
+        model_state = ModelState()
+        model_state.model_name = str(self._widget.comboBoxObjectList.currentText()).split('::')[0]
+        model_state.pose = Pose()
+        model_state.twist = Twist()
+        model_state.reference_frame = "world"
+        
+        model_state.pose.position.x = float(str(self._widget.lineEdit_4.text()))
+        model_state.pose.position.y = float(str(self._widget.lineEdit_5.text()))
+        model_state.pose.position.z = float(str(self._widget.lineEdit_6.text()))
+
+        try:
+            resp1 = set_model_state(model_state)
+        except rospy.ServiceException:
+            success = False
+        if success:
+            if not resp1.success:
+                success = False
+
+        if not success:
+            QMessageBox.warning(self._widget, "Warning", "Could not set model state.")
 
     def on_refresh_list_clicked_(self):
         self._widget.comboBoxObjectList.clear()

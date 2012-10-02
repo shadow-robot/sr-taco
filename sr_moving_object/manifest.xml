@@ -11,6 +11,7 @@
   <depend package="gazebo"/>
   <depend package="gazebo_worlds"/>
   <depend package="gazebo_msgs"/>
+  <depend package="geometry_msgs"/>
   <depend package="rqt_gui"/>
   <depend package="rqt_gui_py"/>
 
