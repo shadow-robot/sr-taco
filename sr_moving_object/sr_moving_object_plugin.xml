@@ -1,0 +1,17 @@
+<library path="src">
+  <class name="Move Objects" type="sr_moving_object.move_objects.SrMoveObject" base_class_type="rqt_gui_py::Plugin">
+    <description>
+	A plugin to move objects in Gazebo.
+    </description>
+    <qtgui>
+      <group>
+	<label>Shadow Robot</label>
+      </group>
+      <group>
+	<label>Gazebo</label>
+      </group>
+      <label>Move Objects</label>
+      <statustip>A plugin to move objects in Gazebo.</statustip>
+    </qtgui>
+  </class>
+</library>

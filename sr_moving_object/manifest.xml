@@ -1,0 +1,24 @@
+<package>
+  <description brief="sr_moving_object">
+
+     This package contains launchfiles to create and move an object in Gazebo
+
+  </description>
+  <author>Toni Oliver Duran</author>
+  <license>GPL</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/sr_moving_object</url>
+  <depend package="gazebo"/>
+  <depend package="gazebo_worlds"/>
+  <depend package="gazebo_msgs"/>
+  <depend package="geometry_msgs"/>
+  <depend package="rqt_gui"/>
+  <depend package="rqt_gui_py"/>
+
+  <export>
+    <rqt_gui plugin="${prefix}/sr_moving_object_plugin.xml"/>
+  </export>
+
+</package>
+
+

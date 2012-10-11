@@ -13,3 +13,8 @@
 ./sr_visual_servoing/msg
 ./sr_visual_servoing/build
 ./sr_visual_servoing/msg_gen
+./sr_moving_object/build
+./sr_moving_object/bin
+./sr_taco_openni/bin
+./sr_taco_openni/build
+./sr_taco_openni_bag/build
