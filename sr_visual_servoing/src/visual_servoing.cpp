@@ -38,8 +38,6 @@
 
 namespace sr_taco
 {
-  const double VisualServoing::epsilon_ = 0.7;
-
   VisualServoing::VisualServoing()
     : nh_tilde_("~"), object_msg_received_(false),
       joint_states_msg_received_(false)
@@ -130,9 +128,6 @@ namespace sr_taco
 
   void VisualServoing::generate_best_solution_()
   {
-
-    //TODO: generate the best solution using fk
-    // for all the joints from arm_base to palm.
     //TODO: use openmp for loop (https://computing.llnl.gov/tutorials/openMP/#DO)
 
     OpenRAVE::Transform end_effector = rave_manipulator_->GetEndEffectorTransform();
@@ -142,75 +137,67 @@ namespace sr_taco
     object.trans.x = tracked_object_.pose.pose.position.x;
     object.trans.y = tracked_object_.pose.pose.position.y;
 
-    //TODO: get rid of this static transform
+    //TODO: get rid of this static transform.
+    // 1.02 is the height of the arm in the scene
     object.trans.z = tracked_object_.pose.pose.position.z + 1.02;
 
     /*
-     * We're going to:
-     *  - either a point between the current pose and the
-     *    object pose, at a distance (in m) epsilon_ from
-     *    the current pose.
-     *  - or the object pose if it's close enough
+     * We're going to a point between the current pose and the
+     *  object pose. The closer we are to the object, the
+     *  closer we're going toward the object.
      */
     OpenRAVE::Transform target;
-    target.trans = end_effector.trans - object.trans;
+    target.trans = object.trans - end_effector.trans;
     double distance = OpenRAVE::geometry::MATH_SQRT( target.trans.lengthsqr3() );
-    if( distance > 0.2 )
-    {
-      target.trans.normalize3();
-      target.trans *= epsilon_ * distance;
-      target.trans += end_effector.trans;
 
-      ROS_WARN_STREAM("Between "<< end_effector.trans <<" and "<< object.trans <<" => " << target.trans );
-    }
-    else
-    {
-      ROS_ERROR_STREAM("Directly to object => " << object.trans << " (from: " << end_effector.trans <<")");
+    distance = std::min(1.0, distance);
+    target.trans = end_effector.trans + target.trans * distance;
 
-      //object is really close, go to the object
-      target.trans = object.trans;
-    }
+    //TODO: also takes into account the twist: the further we
+    // are from the target, the more twist we should use
+    // (to go in front of the object if we're far way)
+    ROS_WARN_STREAM("" << distance * 100.0 << "% between "<< end_effector.trans <<" and "<< object.trans <<" => " << target.trans);
 
     target.rot.w = 0.5599;
     target.rot.x = 0.4320;
     target.rot.y = 0.4320;
     target.rot.z = 0.5599;
 
-    //randomize pose around the target
-    // to make sure we find a solution
-    target.trans.x += (OpenRAVE::RaveRandomFloat() - 0.5) / 100.0;
-    target.trans.y += (OpenRAVE::RaveRandomFloat() - 0.5) / 100.0;
-    target.trans.z += (OpenRAVE::RaveRandomFloat() - 0.5) / 100.0;
-
-    target.rot.x += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
-    target.rot.y += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
-    target.rot.z += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
-    target.rot.w += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
-
-    target.rot.normalize();
-
-    std::vector<OpenRAVE::dReal> ik_solution;
-    if( rave_manipulator_->FindIKSolution(OpenRAVE::IkParameterization(target), ik_solution, OpenRAVE::IKFO_IgnoreEndEffectorCollisions) )
+    for( unsigned int i=0; i < 1000; ++i)
     {
-      std::stringstream ss;
-      for(size_t i = 0; i < ik_solution.size(); ++i)
+      //randomize orientation around the target
+      // to make sure we find a solution
+      /*
+      target.trans.x += (OpenRAVE::RaveRandomFloat() - 0.1) / 100.0;
+      target.trans.y += (OpenRAVE::RaveRandomFloat() - 0.1) / 100.0;
+      target.trans.z += (OpenRAVE::RaveRandomFloat() - 0.1) / 100.0;
+      */
+
+      target.rot.x += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
+      target.rot.y += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
+      target.rot.z += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
+      target.rot.w += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
+
+      target.rot.normalize();
+
+      std::vector<OpenRAVE::dReal> ik_solution;
+      if( rave_manipulator_->FindIKSolution(OpenRAVE::IkParameterization(target), ik_solution, OpenRAVE::IKFO_IgnoreEndEffectorCollisions) )
       {
-    	robot_targets_[i] = ik_solution[i];
-        ss << ik_solution[i] << " ";
+        std::stringstream ss;
+        for(size_t i = 0; i < ik_solution.size(); ++i)
+        {
+          robot_targets_[i] = ik_solution[i];
+          ss << ik_solution[i] << " ";
+        }
+
+        ROS_DEBUG_STREAM("The solution for: " << target << " \n  is: " << ss.str());
+
+        return;
       }
-
-      //update the openrave model position
-      rave_manipulator_->GetRobot()->SetActiveDOFs(rave_manipulator_->GetArmIndices());
-      rave_manipulator_->GetRobot()->SetActiveDOFValues( ik_solution );
-
-      ROS_DEBUG_STREAM("The solution for: " << target << " \n  is: " << ss.str());
-    }
-    else
-    {
-      ROS_DEBUG_STREAM("No solution found for " << target
-                       << " \n current pos: " << rave_manipulator_->GetEndEffectorTransform());
     }
 
+    ROS_DEBUG_STREAM("No solution found for " << target
+                     << " \n current pos: " << rave_manipulator_->GetEndEffectorTransform());
   }
 
   void VisualServoing::send_robot_targets_()
@@ -236,11 +223,17 @@ namespace sr_taco
       joint_states_msg_received_ = true;
     }
 
+    std::vector<OpenRAVE::dReal> current_position;
     ROS_ASSERT( msg->position.size() == joint_names_.size() );
     for(unsigned int i=0; i < joint_names_.size(); ++i)
     {
       current_positions_[ joint_names_[i] ] = msg->position[i];
+      current_position.push_back(OpenRAVE::dReal(msg->position[i]));
     }
+
+    //update the openrave model position
+    rave_manipulator_->GetRobot()->SetActiveDOFs(rave_manipulator_->GetArmIndices());
+    rave_manipulator_->GetRobot()->SetActiveDOFValues( current_position );
   }
 
   void VisualServoing::init_openrave_()
