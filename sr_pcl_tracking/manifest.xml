@@ -1,0 +1,18 @@
+<package>
+  <description brief="sr_pcl_tracking">
+
+     sr_pcl_tracking - Node implimenting pcl::tracking based object tracking.
+
+  </description>
+  <author>Mark Pitchless</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/sr_pcl_tracking</url>
+  <depend package="pcl"/>
+  <depend package="pcl_ros"/>
+  <depend package="roscpp"/>
+  <depend package="sensor_msgs"/>
+
+</package>
+
+
