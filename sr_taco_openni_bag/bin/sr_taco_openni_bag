@@ -50,7 +50,7 @@ class SrTacoOpenNIBag(object):
             try:
                 cv_image = self.bridge.imgmsg_to_cv(msg)
             except CvBridgeError, e:
-                print "ERROR: e"
+                print "ERROR: %s"%e
                 continue
             #print type(cv_image), "type:{i.type} channels:{i.channels}".format(i=cv_image)
             out_image = cv.CreateImage((msg.width,msg.height),8,3)
