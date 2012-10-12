@@ -131,6 +131,8 @@ namespace sr_taco
 
   void VisualServoing::generate_best_solution_()
   {
+    boost::mutex::scoped_lock l(mutex_);
+
     //TODO: use openmp for loop (https://computing.llnl.gov/tutorials/openMP/#DO)
 
     OpenRAVE::Transform end_effector = rave_manipulator_->GetEndEffectorTransform();
@@ -145,8 +147,8 @@ namespace sr_taco
     object.trans.z = tracked_object_.pose.pose.position.z + 1.02;
 
     twist.trans.x = tracked_object_.twist.twist.linear.x;
-    twist.trans.y = tracked_object_.twist.twist.linear.x;
-    twist.trans.z = tracked_object_.twist.twist.linear.x;
+    twist.trans.y = tracked_object_.twist.twist.linear.y;
+    twist.trans.z = tracked_object_.twist.twist.linear.z;
 
     /*
      * We're aiming for the point at which the object will
@@ -165,21 +167,20 @@ namespace sr_taco
 
     ROS_DEBUG_STREAM("Distance = " << distance << " (reaching in approx "<< reaching_time << "s), end effector: "<< end_effector.trans <<" / object: "<< object.trans <<" / twist: " << twist.trans << "=> " << target.trans);
 
+    //Fixed orientation of the wrist
     target.rot.w = 0.5599;
     target.rot.x = 0.4320;
     target.rot.y = 0.4320;
     target.rot.z = 0.5599;
 
-    for( unsigned int i=0; i < 1000; ++i)
+    //TODO: should get closer to the target if it can't reach it.
+
+    //try a few random orientations around the target
+    // to have more chances of finding a solution
+    for( unsigned int i=0; i < 50; ++i)
     {
       //randomize orientation around the target
       // to make sure we find a solution
-      /*
-      target.trans.x += (OpenRAVE::RaveRandomFloat() - 0.1) / 100.0;
-      target.trans.y += (OpenRAVE::RaveRandomFloat() - 0.1) / 100.0;
-      target.trans.z += (OpenRAVE::RaveRandomFloat() - 0.1) / 100.0;
-      */
-
       target.rot.x += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
       target.rot.y += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
       target.rot.z += (OpenRAVE::RaveRandomFloat() - 0.5) / 5.0;
@@ -188,18 +189,25 @@ namespace sr_taco
       target.rot.normalize();
 
       std::vector<OpenRAVE::dReal> ik_solution;
-      if( rave_manipulator_->FindIKSolution(OpenRAVE::IkParameterization(target), ik_solution, OpenRAVE::IKFO_IgnoreEndEffectorCollisions) )
+      try
       {
-        std::stringstream ss;
-        for(size_t i = 0; i < ik_solution.size(); ++i)
+        if( rave_manipulator_->FindIKSolution(OpenRAVE::IkParameterization(target), ik_solution, OpenRAVE::IKFO_IgnoreEndEffectorCollisions) )
         {
-          robot_targets_[i] = ik_solution[i];
-          ss << ik_solution[i] << " ";
+          std::stringstream ss;
+          for(size_t i = 0; i < ik_solution.size(); ++i)
+          {
+            robot_targets_[i] = ik_solution[i];
+            ss << ik_solution[i] << " ";
+          }
+
+          ROS_DEBUG_STREAM("The solution for: " << target << " \n  is: " << ss.str());
+
+          return;
         }
-
-        ROS_DEBUG_STREAM("The solution for: " << target << " \n  is: " << ss.str());
-
-        return;
+      }
+      catch(OpenRAVE::openrave_exception& e)
+      {
+        ROS_ERROR_STREAM( "Caught Openrave exception[" << e.GetCode() << "]: " << e.message() );
       }
     }
 
@@ -223,11 +231,16 @@ namespace sr_taco
 
   void VisualServoing::joint_states_cb_(const sensor_msgs::JointStateConstPtr& msg)
   {
+    boost::mutex::scoped_lock l(mutex_);
+
     if( !joint_states_msg_received_ )
     {
       joint_names_ = msg->name;
 
       joint_states_msg_received_ = true;
+
+      //set the active DOFs for the robot the first time we receive a message.
+      rave_manipulator_->GetRobot()->SetActiveDOFs(rave_manipulator_->GetArmIndices());
     }
 
     std::vector<OpenRAVE::dReal> current_position;
@@ -238,9 +251,15 @@ namespace sr_taco
       current_position.push_back(OpenRAVE::dReal(msg->position[i]));
     }
 
-    //update the openrave model position
-    rave_manipulator_->GetRobot()->SetActiveDOFs(rave_manipulator_->GetArmIndices());
-    rave_manipulator_->GetRobot()->SetActiveDOFValues( current_position );
+    try
+    {
+      //update the openrave model position
+      rave_manipulator_->GetRobot()->SetActiveDOFValues( current_position, 0 );
+    }
+    catch(OpenRAVE::openrave_exception& e)
+    {
+      ROS_ERROR_STREAM( "Caught Openrave exception[" << e.GetCode() << "]: " << e.message() );
+    }
   }
 
   void VisualServoing::init_openrave_()
