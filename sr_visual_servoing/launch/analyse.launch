@@ -3,5 +3,5 @@
     <rosparam command="load" file="$(find sr_visual_servoing)/param/prediction_model.yaml"/>
   </node>
 
-  <node pkg="sr_visual_servoing" name="visual_servoing" type="visual_servoing"/>
+  <node pkg="sr_visual_servoing" name="visual_servoing" type="visual_servoing" output="screen"/>
 </launch>

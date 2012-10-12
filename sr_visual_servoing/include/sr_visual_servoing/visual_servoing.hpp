@@ -37,6 +37,7 @@
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/format.hpp>
+#include <boost/thread/mutex.hpp>
 #include <map>
 
 #include <openrave-core.h>
@@ -107,6 +108,9 @@ namespace sr_taco
     OpenRAVE::ViewerBasePtr rave_viewer_;
     OpenRAVE::IkSolverBasePtr rave_ik_solver_;
 
+    ///The approximative velocity of the arm
+    static const double arm_velocity_const_;
+
     ///The latest object position and twist
     nav_msgs::Odometry tracked_object_;
 
@@ -118,6 +122,9 @@ namespace sr_taco
     ///Set to true once we've received a msg
     bool object_msg_received_;
     bool joint_states_msg_received_;
+
+    ///A mutex to keep joint states cb and compute method threadsafe
+    boost::mutex mutex_;
 
     ///update the feedback for the action server
     void update_feedback_();
