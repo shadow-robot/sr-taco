@@ -1,0 +1,19 @@
+<launch>
+  <include file="$(find sr_taco_launch)/launch/gazebo_arm_and_hand.launch" />
+
+
+  <param name="kinect_description" command="$(find xacro)/xacro.py '$(find sr_taco_launch)/other/base_with_kinect.urdf.xacro'" />
+
+  <node name="spawn_kinect" pkg="gazebo" type="spawn_model" args="-urdf -param kinect_description -x 1.0 -y 2.0 -z 0.01 -model kinect_model " respawn="false" output="screen" />
+
+
+  <param name="table_description" command="$(find xacro)/xacro.py '$(find gazebo_worlds)/objects/table.urdf.xacro'" />
+  <node name="spawn_table" pkg="gazebo" type="spawn_model" args="-urdf -param table_description -x 0.0 -y 0.0 -z 0.0 -model table_model " respawn="false" output="screen" />
+
+  <param name="simple_box" textfile="$(find sr_taco_launch)/other/simple_box.urdf" />
+  <node name="spawn_simple_box" pkg="gazebo" type="spawn_model" args="-urdf -param simple_box -x 2.5 -y 0.0 -z 1.3 -model simple_box" respawn="false" output="screen" />
+
+  <param name="suitcase" textfile="$(find sr_taco_launch)/other/suitcase.urdf" />
+  <node name="spawn_suitcase" pkg="gazebo" type="spawn_model" args="-urdf -param suitcase -x 0.8 -y 0.0 -z 0.65 -model suitcase" respawn="false" output="screen" />
+
+</launch>
