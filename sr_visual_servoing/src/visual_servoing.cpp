@@ -38,6 +38,9 @@
 
 namespace sr_taco
 {
+  // TODO: get a better (cartesian!) velocity measurement
+  const double VisualServoing::arm_velocity_const_ = 0.4;
+
   VisualServoing::VisualServoing()
     : nh_tilde_("~"), object_msg_received_(false),
       joint_states_msg_received_(false)
@@ -133,7 +136,7 @@ namespace sr_taco
     OpenRAVE::Transform end_effector = rave_manipulator_->GetEndEffectorTransform();
     end_effector.trans += rave_manipulator_->GetLocalToolTransform().trans;
 
-    OpenRAVE::Transform object;
+    OpenRAVE::Transform object, twist;
     object.trans.x = tracked_object_.pose.pose.position.x;
     object.trans.y = tracked_object_.pose.pose.position.y;
 
@@ -141,22 +144,26 @@ namespace sr_taco
     // 1.02 is the height of the arm in the scene
     object.trans.z = tracked_object_.pose.pose.position.z + 1.02;
 
+    twist.trans.x = tracked_object_.twist.twist.linear.x;
+    twist.trans.y = tracked_object_.twist.twist.linear.x;
+    twist.trans.z = tracked_object_.twist.twist.linear.x;
+
     /*
-     * We're going to a point between the current pose and the
-     *  object pose. The closer we are to the object, the
-     *  closer we're going toward the object.
+     * We're aiming for the point at which the object will
+     *  be when we get there, based on the arm velocity.
+     *  The closer we are to the object, the
+     *  closer we're going toward the object. The further
+     *  away we are the more in front of the object we're
+     *  going to aim for.
      */
+    double distance = OpenRAVE::geometry::MATH_SQRT( (object.trans - end_effector.trans).lengthsqr3() );
+
     OpenRAVE::Transform target;
-    target.trans = object.trans - end_effector.trans;
-    double distance = OpenRAVE::geometry::MATH_SQRT( target.trans.lengthsqr3() );
+    // object + twist * time it would take to get to the object
+    double reaching_time = distance / arm_velocity_const_;
+    target.trans = object.trans + twist.trans * reaching_time;
 
-    distance = std::min(1.0, distance);
-    target.trans = end_effector.trans + target.trans * distance;
-
-    //TODO: also takes into account the twist: the further we
-    // are from the target, the more twist we should use
-    // (to go in front of the object if we're far way)
-    ROS_WARN_STREAM("" << distance * 100.0 << "% between "<< end_effector.trans <<" and "<< object.trans <<" => " << target.trans);
+    ROS_DEBUG_STREAM("Distance = " << distance << " (reaching in approx "<< reaching_time << "s), end effector: "<< end_effector.trans <<" / object: "<< object.trans <<" / twist: " << twist.trans << "=> " << target.trans);
 
     target.rot.w = 0.5599;
     target.rot.x = 0.4320;
@@ -353,7 +360,7 @@ namespace sr_taco
   {
     while( ros::ok() )
     {
-      ros::Duration(5.0).sleep();
+      ros::Duration(0.1).sleep();
 
       feedback_ = visual_servo_->get_closer();
       servo_server_->publishFeedback(feedback_);

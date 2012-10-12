@@ -107,6 +107,9 @@ namespace sr_taco
     OpenRAVE::ViewerBasePtr rave_viewer_;
     OpenRAVE::IkSolverBasePtr rave_ik_solver_;
 
+    ///The approximative velocity of the arm
+    static const double arm_velocity_const_;
+
     ///The latest object position and twist
     nav_msgs::Odometry tracked_object_;
 
