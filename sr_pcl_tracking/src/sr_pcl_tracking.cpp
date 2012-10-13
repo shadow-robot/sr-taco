@@ -136,6 +136,10 @@ public:
         coherence->setSearchMethod(search);
         coherence->setMaximumDistance(0.01);
         tracker_->setCloudCoherence(coherence);
+
+        // Start tracking an empty cloud
+        CloudPtr ref_cloud(new Cloud);
+        trackCloud(ref_cloud);
     }
 
     void run () { ros::spin(); }
@@ -152,6 +156,11 @@ protected:
         // TODO - Filter z?
 
         gridSampleApprox (cloud_pass_, *cloud_pass_downsampled_, downsampling_grid_size_);
+        // Avoid lots of noisey pcl lib output when no cloud to track
+        if (reference_->points.size() > 0) {
+            tracker_->setInputCloud (cloud_pass_downsampled_);
+            tracker_->compute ();
+        }
 
         sensor_msgs::PointCloud2 out_cloud;
         pcl::toROSMsg(*cloud_pass_downsampled_, out_cloud);
@@ -167,6 +176,32 @@ protected:
       grid.filter (result);
     }
 
+    void
+    gridSample (const CloudConstPtr &cloud, Cloud &result, double leaf_size = 0.01)
+    {
+      pcl::VoxelGrid<PointType> grid;
+      grid.setLeafSize (leaf_size, leaf_size, leaf_size);
+      grid.setInputCloud (cloud);
+      grid.filter (result);
+    }
+
+    void
+    trackCloud (const CloudConstPtr &ref_cloud)
+    {
+        Eigen::Vector4f c;
+        CloudPtr transed_ref (new Cloud);
+        pcl::compute3DCentroid<PointType> (*ref_cloud, c);
+        Eigen::Affine3f trans = Eigen::Affine3f::Identity ();
+        trans.translation () = Eigen::Vector3f (c[0], c[1], c[2]);
+        pcl::transformPointCloud<PointType> (*ref_cloud, *transed_ref, trans.inverse ());
+        CloudPtr transed_ref_downsampled (new Cloud);
+        gridSample (transed_ref, *transed_ref_downsampled, downsampling_grid_size_);
+        tracker_->setReferenceCloud (transed_ref_downsampled);
+        tracker_->setTrans (trans);
+        reference_ = transed_ref;
+        tracker_->setMinIndices (ref_cloud->points.size () / 2);
+    }
+
     ros::NodeHandle nh_, nh_home_;
     ros::Subscriber input_sub_;
     ros::Publisher output_pub_;
@@ -174,6 +209,7 @@ protected:
     boost::shared_ptr<ParticleFilter> tracker_;
     CloudPtr cloud_pass_;
     CloudPtr cloud_pass_downsampled_;
+    CloudPtr reference_;
     double downsampling_grid_size_;
 
 }; // Tracker
