@@ -30,3 +30,5 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #target_link_libraries(example ${PROJECT_NAME})
 
 rosbuild_add_executable(example src/example.cpp)
+
+rosbuild_add_executable(sr_pcl_tracker src/sr_pcl_tracking.cpp)
