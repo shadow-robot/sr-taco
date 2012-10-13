@@ -3,6 +3,7 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <std_srvs/Empty.h>
 
 // PCL specific includes
 #include <pcl/ros/conversions.h>
@@ -74,6 +75,8 @@ public:
         // ROS setup
         input_sub_ = nh_home_.subscribe("input", 1, &Tracker::cloud_cb, this);
         output_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("output", 1);
+        particle_cloud_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("particle_cloud", 1);
+        track_nearest_srv_ = nh_home_.advertiseService("track_nearest", &Tracker::trackNearest_cb, this);
 
         // PCL Tracking setup
         bool use_fixed = false;
@@ -148,6 +151,8 @@ protected:
     void
     cloud_cb (const sensor_msgs::PointCloud2ConstPtr& cloud)
     {
+        input_ = cloud;
+
         // Convert incoming cloud to PCL type
         CloudPtr input_cloud(new Cloud);
         pcl::fromROSMsg(*cloud, *input_cloud);
@@ -164,14 +169,38 @@ protected:
 
         gridSampleApprox (cloud_pass_, *cloud_pass_downsampled_, downsampling_grid_size_);
 
-        if (reference_->points.size() > 0) {
-            tracker_->setInputCloud (cloud_pass_downsampled_);
-            tracker_->compute ();
-        }
+        if (reference_->points.size() > 0)
+            tracking ();
 
         sensor_msgs::PointCloud2 out_cloud;
         pcl::toROSMsg(*cloud_pass_downsampled_, out_cloud);
         output_pub_.publish (out_cloud);
+    }
+
+    void
+    tracking ()
+    {
+        tracker_->setInputCloud(cloud_pass_downsampled_);
+        tracker_->compute();
+
+        // Publish the particle cloud
+        typename ParticleFilter::PointCloudStatePtr particles = tracker_->getParticles();
+        if (particles) {
+            pcl::PointCloud<pcl::PointXYZ>::Ptr particle_cloud(new pcl::PointCloud<pcl::PointXYZ>());
+            for (size_t i = 0; i < particles->points.size(); i++) {
+                pcl::PointXYZ point;
+                point.x = particles->points[i].x;
+                point.y = particles->points[i].y;
+                point.z = particles->points[i].z;
+                particle_cloud->points.push_back(point);
+            }
+            sensor_msgs::PointCloud2 out_cloud;
+            pcl::toROSMsg(*particle_cloud, out_cloud);
+            // Copy the header so we get the right frame
+            // XXX - Shoudl we updatet the time stamp?
+            out_cloud.header = input_->header;
+            particle_cloud_pub_.publish (out_cloud);
+        }
     }
 
     void
@@ -190,6 +219,35 @@ protected:
       grid.setLeafSize (leaf_size, leaf_size, leaf_size);
       grid.setInputCloud (cloud);
       grid.filter (result);
+    }
+
+    bool
+    trackNearest_cb(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
+    {
+        // Find the nearest cluster and track it
+        // If this fails we get an empty ref_cloud
+        CloudPtr ref_cloud(new Cloud);
+        std::vector<CloudPtr> clusters;
+        ClusterSegmentor<PointType> cluster_segmentor;
+        cluster_segmentor.setInputCloud(cloud_pass_);
+        cluster_segmentor.extractByDistance(clusters);
+        if (clusters.size() > 0)
+            ref_cloud = clusters[0];
+
+        std::cout << "ref_cloud: "
+                << " points: " << ref_cloud->points.size()
+                << " wh:" << ref_cloud->width << "x" << ref_cloud->height
+                << " is_dense: " << (ref_cloud->is_dense ? "Yes" : "No")
+                << std::endl;
+
+//        if (save_reference_) {
+//            PCL_INFO(("saving ref cloud: " + reference_filename_ + "\n").c_str());
+//            pcl::io::savePCDFileASCII(reference_filename_, *ref_cloud);
+//        }
+
+        trackCloud(ref_cloud);
+
+        return true;
     }
 
     void
@@ -212,6 +270,9 @@ protected:
     ros::NodeHandle nh_, nh_home_;
     ros::Subscriber input_sub_;
     ros::Publisher output_pub_;
+    ros::Publisher particle_cloud_pub_;
+    ros::ServiceServer track_nearest_srv_;
+    sensor_msgs::PointCloud2ConstPtr input_;
 
     boost::shared_ptr<ParticleFilter> tracker_;
     CloudPtr cloud_pass_;
