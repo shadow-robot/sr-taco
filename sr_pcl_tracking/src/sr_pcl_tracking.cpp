@@ -149,14 +149,21 @@ protected:
     cloud_cb (const sensor_msgs::PointCloud2ConstPtr& cloud)
     {
         // Convert incoming cloud to PCL type
+        CloudPtr input_cloud(new Cloud);
+        pcl::fromROSMsg(*cloud, *input_cloud);
+
         cloud_pass_.reset (new Cloud);
         cloud_pass_downsampled_.reset (new Cloud);
-        pcl::fromROSMsg(*cloud, *cloud_pass_);
 
-        // TODO - Filter z?
+        pcl::PassThrough<PointType> pass;
+        pass.setFilterFieldName ("z");
+        pass.setFilterLimits (0.0, 10.0);
+        pass.setKeepOrganized (false);
+        pass.setInputCloud (input_cloud);
+        pass.filter (*cloud_pass_);
 
         gridSampleApprox (cloud_pass_, *cloud_pass_downsampled_, downsampling_grid_size_);
-        // Avoid lots of noisey pcl lib output when no cloud to track
+
         if (reference_->points.size() > 0) {
             tracker_->setInputCloud (cloud_pass_downsampled_);
             tracker_->compute ();
