@@ -76,6 +76,7 @@ public:
         input_sub_ = nh_home_.subscribe("input", 1, &Tracker::cloud_cb, this);
         output_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("output", 1);
         particle_cloud_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("particle_cloud", 1);
+        result_cloud_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("result_cloud", 1);
         track_nearest_srv_ = nh_home_.advertiseService("track_nearest", &Tracker::trackNearest_cb, this);
 
         // PCL Tracking setup
@@ -197,10 +198,29 @@ protected:
             sensor_msgs::PointCloud2 out_cloud;
             pcl::toROSMsg(*particle_cloud, out_cloud);
             // Copy the header so we get the right frame
-            // XXX - Shoudl we updatet the time stamp?
+            // XXX - Should we update the time stamp?
             out_cloud.header = input_->header;
             particle_cloud_pub_.publish (out_cloud);
         }
+
+        // Publish the result cloud
+        ParticleXYZRPY result = tracker_->getResult();
+        Eigen::Affine3f transformation = tracker_->toEigenMatrix(result);
+        // move a little bit for better visualization
+//       transformation.translation() += Eigen::Vector3f(0.0, 0.0, -0.005);
+        CloudPtr result_cloud(new Cloud());
+//        if (!visualize_non_downsample_)
+//            pcl::transformPointCloud<PointType>(*(tracker_->getReferenceCloud()), *result_cloud, transformation);
+//        else
+        pcl::transformPointCloud<PointType>(*reference_, *result_cloud, transformation);
+        {
+            sensor_msgs::PointCloud2 out_cloud;
+            pcl::toROSMsg(*result_cloud, out_cloud);
+            out_cloud.header = input_->header;
+            result_cloud_pub_.publish (out_cloud);
+        }
+
+        // TODO: Publish the transformation (pose)
     }
 
     void
@@ -271,6 +291,7 @@ protected:
     ros::Subscriber input_sub_;
     ros::Publisher output_pub_;
     ros::Publisher particle_cloud_pub_;
+    ros::Publisher result_cloud_pub_;
     ros::ServiceServer track_nearest_srv_;
     sensor_msgs::PointCloud2ConstPtr input_;
 
