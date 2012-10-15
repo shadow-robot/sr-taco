@@ -1,11 +1,21 @@
 <launch>
   <include file="$(find sr_taco_launch)/launch/gazebo_arm_and_hand.launch" />
 
-
+  <!--Load the kinect+base description and launch the model in gazebo -->
   <param name="kinect_description" command="$(find xacro)/xacro.py '$(find sr_taco_launch)/other/base_with_kinect.urdf.xacro'" />
-
   <node name="spawn_kinect" pkg="gazebo" type="spawn_model" args="-urdf -param kinect_description -x 1.0 -y 2.0 -z 0.01 -model kinect_model " respawn="false" output="screen" />
+  <!--Publish the tf for the kinect+base chain (they are static tfs) -->
+  <node pkg="robot_state_publisher" type="state_publisher" name="kinect_state_publisher" >
+    <remap from="robot_description" to="kinect_description" />
+    <param name="publish_frequency" type="double" value="20.0" />
+  </node>
 
+  <!--
+      publishes fixed transform: to link the robot (base+arm+hand)
+      to the kinect (kinect_base+kinect)
+  -->
+  <node pkg="tf" type="static_transform_publisher" name="fixed_frame_robot" args="0 0 0 0 0 0 world /desk_support 100" />
+  <node pkg="tf" type="static_transform_publisher" name="fixed_frame_kinect" args="1.0 2.0 0 0 0 0 world /desk2_support 100" />
 
   <param name="table_description" command="$(find xacro)/xacro.py '$(find gazebo_worlds)/objects/table.urdf.xacro'" />
   <node name="spawn_table" pkg="gazebo" type="spawn_model" args="-urdf -param table_description -x 0.0 -y 0.0 -z 0.0 -model table_model " respawn="false" output="screen" />
