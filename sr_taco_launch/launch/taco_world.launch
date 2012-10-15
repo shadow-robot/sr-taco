@@ -1,5 +1,12 @@
 <launch>
+  <!-- start gazebo with an empty plane 
+       !!Commented out as it looks much more stable to run gazebo with an empty world first in a separate terminal
+       and run taco_world.launch once Gazebo is already running. Otherwise it crashes most of the times -->
+  <!--include file="$(find sr_hand)/launch/gazebo/loaders/empty_world.launch"/-->
+
   <include file="$(find sr_taco_launch)/launch/gazebo_arm_and_hand.launch" />
+
+  <include file="$(find sr_hand)/launch/sr_arm_and_hand.launch" />
 
   <!--Load the kinect+base description and launch the model in gazebo -->
   <param name="kinect_description" command="$(find xacro)/xacro.py '$(find sr_taco_launch)/other/base_with_kinect.urdf.xacro'" />
@@ -17,13 +24,14 @@
   <node pkg="tf" type="static_transform_publisher" name="fixed_frame_robot" args="0 0 0 0 0 0 world /desk_support 100" />
   <node pkg="tf" type="static_transform_publisher" name="fixed_frame_kinect" args="1.0 2.0 0 0 0 0 world /desk2_support 100" />
 
+  <!--param name="table_description" command="$(find xacro)/xacro.py '$(find sr_taco_launch)/other/xacro/objects/table.urdf.xacro'" /-->
   <param name="table_description" command="$(find xacro)/xacro.py '$(find gazebo_worlds)/objects/table.urdf.xacro'" />
-  <node name="spawn_table" pkg="gazebo" type="spawn_model" args="-urdf -param table_description -x 0.0 -y 0.0 -z 0.0 -model table_model " respawn="false" output="screen" />
+  <node name="spawn_table" pkg="gazebo" type="spawn_model" args="-urdf -param table_description -x 0.75 -y 0.0 -z 0.0 -model table_model " respawn="false" output="screen" />
 
   <param name="simple_box" textfile="$(find sr_taco_launch)/other/simple_box.urdf" />
   <node name="spawn_simple_box" pkg="gazebo" type="spawn_model" args="-urdf -param simple_box -x 2.5 -y 0.0 -z 1.3 -model simple_box" respawn="false" output="screen" />
 
   <param name="suitcase" textfile="$(find sr_taco_launch)/other/suitcase.urdf" />
-  <node name="spawn_suitcase" pkg="gazebo" type="spawn_model" args="-urdf -param suitcase -x 0.8 -y 0.0 -z 0.65 -model suitcase" respawn="false" output="screen" />
+  <node name="spawn_suitcase" pkg="gazebo" type="spawn_model" args="-urdf -param suitcase -x 0.6 -y 0.0 -z 0.95 -model suitcase" respawn="false" output="screen" />
 
 </launch>
