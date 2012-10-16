@@ -10,7 +10,7 @@
 
   <!--Load the kinect+base description and launch the model in gazebo -->
   <param name="kinect_description" command="$(find xacro)/xacro.py '$(find sr_taco_launch)/other/base_with_kinect.urdf.xacro'" />
-  <node name="spawn_kinect" pkg="gazebo" type="spawn_model" args="-urdf -param kinect_description -x 1.0 -y 2.0 -z 0.01 -model kinect_model " respawn="false" output="screen" />
+  <node name="spawn_kinect" pkg="gazebo" type="spawn_model" args="-urdf -param kinect_description -x 0.5 -y 2.0 -z 0.01 -model kinect_model " respawn="false" output="screen" />
   <!--Publish the tf for the kinect+base chain (they are static tfs) -->
   <node pkg="robot_state_publisher" type="state_publisher" name="kinect_state_publisher" >
     <remap from="robot_description" to="kinect_description" />
@@ -28,10 +28,12 @@
   <!--param name="table_description" command="$(find xacro)/xacro.py '$(find gazebo_worlds)/objects/table.urdf.xacro'" /-->
   <node name="spawn_table" pkg="gazebo" type="spawn_model" args="-urdf -param table_description -x -0.10 -y 0.0 -z 0.0 -model table_model " respawn="false" output="screen" />
 
+  <!-- This object is a simple blue box without gravity, representing the object that will be passed to the robot to swap the suitcase /-->
   <param name="simple_box" textfile="$(find sr_taco_launch)/other/simple_box.urdf" />
   <node name="spawn_simple_box" pkg="gazebo" type="spawn_model" args="-urdf -param simple_box -x 2.5 -y 0.0 -z 1.3 -model simple_box" respawn="false" output="screen" />
 
-  <param name="suitcase" textfile="$(find sr_taco_launch)/other/suitcase.urdf" />
+  <!--param name="suitcase" textfile="$(find sr_taco_launch)/other/suitcase.urdf" /-->
+  <param name="suitcase" command="$(find xacro)/xacro.py '$(find sr_taco_launch)/other/xacro/objects/suitcase.urdf.xacro'" />
   <node name="spawn_suitcase" pkg="gazebo" type="spawn_model" args="-urdf -param suitcase -x 0.65 -y 0.0 -z 0.95 -model suitcase" respawn="false" output="screen" />
 
 </launch>
