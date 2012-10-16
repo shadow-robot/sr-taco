@@ -85,20 +85,46 @@ class ClusterSegmentor
     }
 
     void
+    extractByCentered (std::vector<CloudPtr> &results)
+    {
+      extract (results);
+      std::sort (results.begin(), results.end(), ClusterSegmentor::byCentered);
+    }
+
+    void
     extractByDistance (std::vector<CloudPtr> &results)
     {
       extract (results);
       std::sort (results.begin(), results.end(), ClusterSegmentor::byDistance);
     }
 
+    /**
+     * Sort function for clouds. Sorts by distance of cloud x,y centroid to the origins x,y center.
+     * Closest first. Given the axes alignment with the camera this is a measure of how centred in the frame
+     * the object is.
+     */
     static bool
-    byDistance (const CloudPtr &a, const CloudPtr &b)
+    byCentered (const CloudPtr &a, const CloudPtr &b)
     {
       Eigen::Vector4f ca, cb;
       pcl::compute3DCentroid<PointType> (*a, ca);
       pcl::compute3DCentroid<PointType> (*b, cb);
       double da = ca[0] * ca[0] + ca[1] * ca[1];
       double db = cb[0] * cb[0] + cb[1] * cb[1];
+      return (da < db);
+    }
+
+    /**
+     * Sort function for clouds. Sorts by distance of cloud centroid to the origin. Closest first.
+     */
+    static bool
+    byDistance (const CloudPtr &a, const CloudPtr &b)
+    {
+      Eigen::Vector4f ca, cb;
+      pcl::compute3DCentroid<PointType> (*a, ca);
+      pcl::compute3DCentroid<PointType> (*b, cb);
+      double da = ca[0] * ca[0] + ca[1] * ca[1] + ca[2] * ca[2];
+      double db = cb[0] * cb[0] + cb[1] * cb[1] + cb[2] * cb[2];
       return (da < db);
     }
 

@@ -78,6 +78,7 @@ public:
         particle_cloud_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("particle_cloud", 1);
         result_cloud_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("result_cloud", 1);
         track_nearest_srv_ = nh_home_.advertiseService("track_nearest", &Tracker::trackNearest_cb, this);
+        track_centered_srv_ = nh_home_.advertiseService("track_centered", &Tracker::trackCentred_cb, this);
 
         // PCL Tracking setup
         bool use_fixed = false;
@@ -241,16 +242,36 @@ protected:
       grid.filter (result);
     }
 
+    enum SegmentSort
+    {
+        SEGMENT_SORT_BY_DISTANCE,
+        SEGMENT_SORT_BY_CENTERED,
+    };
+
     bool
     trackNearest_cb(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
     {
-        // Find the nearest cluster and track it
+        return segmentReferece(SEGMENT_SORT_BY_DISTANCE);
+    }
+
+    bool
+    trackCentred_cb(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
+    {
+        return segmentReferece(SEGMENT_SORT_BY_CENTERED);
+    }
+
+    bool
+    segmentReferece(SegmentSort sort_type)
+    {
         // If this fails we get an empty ref_cloud
         CloudPtr ref_cloud(new Cloud);
         std::vector<CloudPtr> clusters;
         ClusterSegmentor<PointType> cluster_segmentor;
         cluster_segmentor.setInputCloud(cloud_pass_);
-        cluster_segmentor.extractByDistance(clusters);
+        if (sort_type == SEGMENT_SORT_BY_CENTERED)
+            cluster_segmentor.extractByCentered(clusters);
+        else
+            cluster_segmentor.extractByDistance(clusters);
         if (clusters.size() > 0)
             ref_cloud = clusters[0];
 
@@ -259,11 +280,6 @@ protected:
                 << " wh:" << ref_cloud->width << "x" << ref_cloud->height
                 << " is_dense: " << (ref_cloud->is_dense ? "Yes" : "No")
                 << std::endl;
-
-//        if (save_reference_) {
-//            PCL_INFO(("saving ref cloud: " + reference_filename_ + "\n").c_str());
-//            pcl::io::savePCDFileASCII(reference_filename_, *ref_cloud);
-//        }
 
         trackCloud(ref_cloud);
 
@@ -293,6 +309,7 @@ protected:
     ros::Publisher particle_cloud_pub_;
     ros::Publisher result_cloud_pub_;
     ros::ServiceServer track_nearest_srv_;
+    ros::ServiceServer track_centered_srv_;
     sensor_msgs::PointCloud2ConstPtr input_;
 
     boost::shared_ptr<ParticleFilter> tracker_;
