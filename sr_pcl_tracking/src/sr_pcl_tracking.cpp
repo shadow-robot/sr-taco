@@ -1,5 +1,7 @@
 #include "sr_pcl_tracking/cluster_segmentor.h"
 #include "sr_pcl_tracking/template_alignment.h"
+#include "sr_pcl_tracking/SaveReference.h"
+#include "sr_pcl_tracking/LoadReference.h"
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -51,11 +53,14 @@
 #include <pcl/common/transforms.h>
 
 #include <boost/format.hpp>
+#include <boost/filesystem.hpp>
+#include <wordexp.h>
 
 
 namespace sr_pcl_tracking {
 
 using namespace pcl::tracking;
+namespace fs = boost::filesystem;
 
 class Tracker {
 
@@ -70,6 +75,7 @@ public:
 
     Tracker()
         : nh_home_("~")
+        , reference_dir_ ("~/.ros/sr_pcl_tracking")
         , downsampling_grid_size_(0.01)
     {
         // ROS setup
@@ -79,6 +85,8 @@ public:
         result_cloud_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("result_cloud", 1);
         track_nearest_srv_ = nh_home_.advertiseService("track_nearest", &Tracker::trackNearest_cb, this);
         track_centered_srv_ = nh_home_.advertiseService("track_centered", &Tracker::trackCentred_cb, this);
+        save_srv_ = nh_home_.advertiseService("load_reference", &Tracker::loadReference_cb, this);
+        save_srv_ = nh_home_.advertiseService("save_reference", &Tracker::saveReference_cb, this);
 
         // PCL Tracking setup
         bool use_fixed = false;
@@ -303,14 +311,48 @@ protected:
         tracker_->setMinIndices (ref_cloud->points.size () / 2);
     }
 
+    /**
+     * Return referece_dir_ as a boost::filesystem::path after performing word expansion like a
+     * POSIX shell (e.g. expand ~).
+     */
+    fs::path
+    referenceDirPath ()
+    {
+        wordexp_t exp_result;
+        wordexp(reference_dir_.c_str(), &exp_result, 0);
+        fs::path path(exp_result.we_wordv[0]);
+        wordfree (&exp_result);
+        return path;
+    }
+
+    bool
+    saveReference_cb (SaveReferenceRequest &req, SaveReferenceResponse &res)
+    {
+        fs::path path;
+        path /= referenceDirPath();
+        path /= req.name + ".pcd";
+        pcl::io::savePCDFileASCII(path.c_str(), *reference_);
+        ROS_INFO_STREAM("Saved: " << path);
+        return true;
+    }
+
+    bool
+    loadReference_cb (LoadReferenceRequest &req, LoadReferenceResponse &res)
+    {
+        ROS_WARN_STREAM("TODO: loadReference");
+        return true;
+    }
+
     ros::NodeHandle nh_, nh_home_;
     ros::Subscriber input_sub_;
     ros::Publisher output_pub_;
     ros::Publisher particle_cloud_pub_;
     ros::Publisher result_cloud_pub_;
-    ros::ServiceServer track_nearest_srv_;
-    ros::ServiceServer track_centered_srv_;
+    ros::ServiceServer track_nearest_srv_, track_centered_srv_, load_srv_, save_srv_;
     sensor_msgs::PointCloud2ConstPtr input_;
+
+    /// Directory to load and save reference objects to and from
+    std::string reference_dir_;
 
     boost::shared_ptr<ParticleFilter> tracker_;
     CloudPtr cloud_pass_;

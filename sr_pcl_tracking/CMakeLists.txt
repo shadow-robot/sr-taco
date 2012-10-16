@@ -18,8 +18,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 #uncomment if you have defined messages
 #rosbuild_genmsg()
-#uncomment if you have defined services
-#rosbuild_gensrv()
+rosbuild_gensrv()
 
 #common commands for building c++ executables and libraries
 #rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
@@ -33,3 +32,4 @@ rosbuild_add_boost_directories()
 rosbuild_add_executable(example src/example.cpp)
 
 rosbuild_add_executable(sr_pcl_tracker src/sr_pcl_tracking.cpp)
+rosbuild_link_boost(sr_pcl_tracker filesystem system)
