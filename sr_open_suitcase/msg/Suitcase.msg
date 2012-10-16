@@ -1,0 +1,5 @@
+Header header
+
+object_manipulation_msgs/ClusterBoundingBox opening_mechanism
+geometry_msgs/Point32 lid_axis_a
+geometry_msgs/Point32 lid_axis_b

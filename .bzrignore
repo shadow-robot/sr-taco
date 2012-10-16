@@ -18,3 +18,7 @@
 ./sr_taco_openni/bin
 ./sr_taco_openni/build
 ./sr_taco_openni_bag/build
+./sr_open_suitcase/build
+./sr_open_suitcase/msg_gen
+./sr_open_suitcase/srv_gen
+./sr_open_suitcase/src/sr_open_suitcase
