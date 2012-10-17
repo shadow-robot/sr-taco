@@ -6,7 +6,7 @@
 
   <include file="$(find sr_taco_launch)/launch/gazebo_arm_and_hand.launch" />
 
-  <!--include file="$(find sr_hand)/launch/sr_arm_and_hand.launch" /-->
+  <include file="$(find sr_hand)/launch/sr_arm_and_hand.launch" >
 
   <!--Load the kinect+base description and launch the model in gazebo -->
   <param name="kinect_description" command="$(find xacro)/xacro.py '$(find sr_taco_launch)/other/base_with_kinect.urdf.xacro'" />
