@@ -106,7 +106,7 @@ class Execution(object):
             self.send_traj_( filtered_traj )
 
             #approach
-            time.sleep(15)
+            #time.sleep(15)
             self.send_traj_( interpolated_motion_plan_res.trajectory.joint_trajectory )
 
         else:
