@@ -28,6 +28,7 @@ from trajectory_msgs.msg import JointTrajectory
 from sr_utilities.srv import getJointState
 from planification import Planification
 from sr_utilities.srv import getJointState
+from visualization_msgs.msg import Marker
 
 from sr_open_suitcase.srv import OpenSuitcase, OpenSuitcaseResponse
 
@@ -43,6 +44,8 @@ class Execution(object):
     def __init__(self, ):
         """
         """
+        self.markers_pub_ = rospy.Publisher("~markers", Marker)
+
         #initialize the planner
         self.plan = Planification()
 
@@ -131,7 +134,41 @@ class Execution(object):
         time.sleep(0.5)
 
     def display_suitcase_(self, suitcase):
-        print "Displaying the suitcase"
+        #display axes
+        axes_marker = Marker()
+        axes_marker.header.frame_id = suitcase.header.frame_id
+        axes_marker.ns = "suitcase"
+        axes_marker.id = 0
+        axes_marker.type = Marker.LINE_STRIP
+        axes_marker.action = Marker.ADD
+        axes_marker.points.append(suitcase.lid_axis_a)
+        axes_marker.points.append(suitcase.lid_axis_b)
+        axes_marker.scale.x = 0.02
+
+        axes_marker.color.a = 0.4;
+        axes_marker.color.r = 0.1;
+        axes_marker.color.g = 0.47;
+        axes_marker.color.b = 0.88;
+
+        self.markers_pub_.publish( axes_marker )
+
+        #display mechanism
+        mechanism_marker = Marker()
+        mechanism_marker.header.frame_id = suitcase.header.frame_id
+        mechanism_marker.ns = "suitcase"
+        mechanism_marker.id = 1
+        mechanism_marker.type = Marker.CUBE
+        mechanism_marker.action = Marker.ADD
+
+        mechanism_marker.pose = suitcase.opening_mechanism.pose_stamped.pose
+        mechanism_marker.scale = suitcase.opening_mechanism.dimensions
+
+        mechanism_marker.color.a = 0.4;
+        mechanism_marker.color.r = 0.1;
+        mechanism_marker.color.g = 0.47;
+        mechanism_marker.color.b = 0.88;
+
+        self.markers_pub_.publish( mechanism_marker )
 
     def filter_traj_(self, motion_plan_res):
         try:
