@@ -64,21 +64,15 @@ class Execution(object):
         self.suitcase_src_ = rospy.Service("~open_suitcase", OpenSuitcase, self.open_lid)
 
     def open_lid(self, suitcase_req):
-        self.display_suitcase_(suitcase_req.suitcase)
+        suitcase = suitcase_req.suitcase
+        self.display_suitcase_(suitcase)
 
         motion_plan_res=GetMotionPlanResponse()
 
         #TODO: compute targets based on mechanism pose and lid axes
         target_pose_ = PoseStamped()
-        target_pose_.header.frame_id = "/world";
-        target_pose_.pose.position.x = 0.63
-        target_pose_.pose.position.y = 0.0
-        target_pose_.pose.position.z = 1.3
-
-        target_pose_.pose.orientation.x = 0.375
-        target_pose_.pose.orientation.y = 0.155
-        target_pose_.pose.orientation.z = 0.844
-        target_pose_.pose.orientation.w = 0.351
+        target_pose_.header.frame_id = suitcase.header.frame_id
+        target_pose_.pose = suitcase.opening_mechanism.pose_stamped.pose
 
         next_target_pose_ = copy.deepcopy(target_pose_)
         next_target_pose_.pose.position.z = next_target_pose_.pose.position.z + 0.05
