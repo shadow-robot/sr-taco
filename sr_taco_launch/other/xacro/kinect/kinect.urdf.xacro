@@ -10,7 +10,7 @@
       <!-- origin xyz="0.01216 0.1713 0.433"
 	      rpy="-${M_PI/2} ${M_PI/4} -${M_PI/12}" /> -->
       <origin xyz="0 0 1.56"
-	      rpy="0 0 -${M_PI/2}" />
+	      rpy="0 ${M_PI/8} -${M_PI/2}" />
 
       <parent link="${parent}"/>
       <child link="camera_link" />

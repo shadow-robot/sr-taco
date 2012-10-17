@@ -5,7 +5,7 @@
   <include filename="$(find sr_description)/hand/xacro/full_hand_motor.urdf.xacro" />
   <include filename="$(find sr_description)/other/xacro/gazebo/gazebo.urdf.xacro" />
 
-  <include filename="$(find sr_description)/other/xacro/desk/desk.urdf.xacro" />
+  <include filename="$(find sr_taco_launch)/other/xacro/desk/desk.urdf.xacro" />
 
   <xacro:desk/>
 

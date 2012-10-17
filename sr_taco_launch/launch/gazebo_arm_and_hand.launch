@@ -1,7 +1,9 @@
 <launch>
 
-  <!-- start gazebo with an empty plane -->
-  <include file="$(find sr_hand)/launch/gazebo/loaders/empty_world.launch"/>
+  <!-- start gazebo with an empty plane 
+       Commented out as it looks much more stable to run gazebo with an empty world first in a separate terminal
+       and run taco_world.launch once Gazebo is already running. Otherwise it crashes most of the times -->
+  <!--include file="$(find sr_hand)/launch/gazebo/loaders/empty_world.launch"/-->
 
   <include file="$(find sr_taco_launch)/loaders/load_arm_and_hand_model.launch" />
 
@@ -16,7 +18,7 @@
 
   <node pkg="robot_state_publisher" type="state_publisher"
         name="robot_state_publisher_full_pos">
-    <remap from="joint_states" to="gazebo/joint_states" />
+    <!--remap from="joint_states" to="gazebo/joint_states" /-->
     <param name="publish_frequency" type="double" value="20.0" />
   </node>
 
