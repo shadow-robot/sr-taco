@@ -6,7 +6,7 @@
 
   <include file="$(find sr_taco_launch)/launch/gazebo_arm_and_hand.launch" />
 
-  <include file="$(find sr_hand)/launch/sr_arm_and_hand.launch" />
+  <!--include file="$(find sr_hand)/launch/sr_arm_and_hand.launch" /-->
 
   <!--Load the kinect+base description and launch the model in gazebo -->
   <param name="kinect_description" command="$(find xacro)/xacro.py '$(find sr_taco_launch)/other/base_with_kinect.urdf.xacro'" />
@@ -18,14 +18,13 @@
   </node>
 
   <!--
-      publishes fixed transform: to link the robot (base+arm+hand)
+      publishes fixed transform: to link the world
       to the kinect (kinect_base+kinect)
   -->
-  <node pkg="tf" type="static_transform_publisher" name="fixed_frame_robot" args="0 0 0 0 0 0 world /desk_support 100" />
-  <node pkg="tf" type="static_transform_publisher" name="fixed_frame_kinect" args="1.0 2.0 0 0 0 0 world /desk2_support 100" />
+  <node pkg="tf" type="static_transform_publisher" name="fixed_frame_kinect" args="0.5 2.0 0 0 0 0 world /desk2_support 100" />
 
+  <!-- Spawn the table -->
   <param name="table_description" command="$(find xacro)/xacro.py '$(find sr_taco_launch)/other/xacro/objects/table.urdf.xacro'" />
-  <!--param name="table_description" command="$(find xacro)/xacro.py '$(find gazebo_worlds)/objects/table.urdf.xacro'" /-->
   <node name="spawn_table" pkg="gazebo" type="spawn_model" args="-urdf -param table_description -x -0.10 -y 0.0 -z 0.0 -model table_model " respawn="false" output="screen" />
 
   <!-- This object is a simple blue box without gravity, representing the object that will be passed to the robot to swap the suitcase /-->
