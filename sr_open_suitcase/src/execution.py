@@ -61,6 +61,8 @@ class Execution(object):
         self.suitcase_src_ = rospy.Service("~open_suitcase", OpenSuitcase, self.open_lid)
 
     def open_lid(self, suitcase_req):
+        self.display_suitcase_(suitcase_req.suitcase)
+
         motion_plan_res=GetMotionPlanResponse()
 
         #TODO: compute targets based on mechanism pose and lid axes
@@ -128,6 +130,8 @@ class Execution(object):
         print "   -> trajectory published"
         time.sleep(0.5)
 
+    def display_suitcase_(self, suitcase):
+        print "Displaying the suitcase"
 
     def filter_traj_(self, motion_plan_res):
         try:
