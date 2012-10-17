@@ -29,14 +29,19 @@ if __name__ == "__main__":
 
     #where's the opening mechanism
     suitcase.opening_mechanism.pose_stamped.header.frame_id = "/world"
-    suitcase.opening_mechanism.pose_stamped.pose.position.x = 0.5
+    suitcase.opening_mechanism.pose_stamped.pose.position.x = 0.39
     suitcase.opening_mechanism.pose_stamped.pose.position.y = 0.0
-    suitcase.opening_mechanism.pose_stamped.pose.position.z = 1.2
+    suitcase.opening_mechanism.pose_stamped.pose.position.z = 1.08
 
-    suitcase.opening_mechanism.pose_stamped.pose.orientation.x = 0.0
-    suitcase.opening_mechanism.pose_stamped.pose.orientation.y = 0.0
-    suitcase.opening_mechanism.pose_stamped.pose.orientation.z = 0.0
-    suitcase.opening_mechanism.pose_stamped.pose.orientation.w = 1.0
+    suitcase.opening_mechanism.pose_stamped.pose.orientation.x = 0.45
+    suitcase.opening_mechanism.pose_stamped.pose.orientation.y = 0.55
+    suitcase.opening_mechanism.pose_stamped.pose.orientation.z = 0.55
+    suitcase.opening_mechanism.pose_stamped.pose.orientation.w = 0.45
+
+    # suitcase.opening_mechanism.pose_stamped.pose.orientation.x = 0.375
+    # suitcase.opening_mechanism.pose_stamped.pose.orientation.y = 0.155
+    # suitcase.opening_mechanism.pose_stamped.pose.orientation.z = 0.844
+    # suitcase.opening_mechanism.pose_stamped.pose.orientation.w = 0.351
 
     suitcase.opening_mechanism.dimensions.x = 0.05
     suitcase.opening_mechanism.dimensions.y = 0.05

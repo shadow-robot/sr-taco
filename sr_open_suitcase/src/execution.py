@@ -68,17 +68,17 @@ class Execution(object):
         self.display_suitcase_(suitcase)
 
         motion_plan_res=GetMotionPlanResponse()
+        total_motion_plan_res=GetMotionPlanResponse()
 
-        #TODO: compute targets based on mechanism pose and lid axes
-        target_pose_ = PoseStamped()
-        target_pose_.header.frame_id = suitcase.header.frame_id
-        target_pose_.pose = suitcase.opening_mechanism.pose_stamped.pose
+        #approach the object
+        approach_pose_ = PoseStamped()
+        approach_pose_.header.frame_id = suitcase.header.frame_id
+        approach_pose_.pose = suitcase.opening_mechanism.pose_stamped.pose
 
-        next_target_pose_ = copy.deepcopy(target_pose_)
-        next_target_pose_.pose.position.z = next_target_pose_.pose.position.z + 0.05
-        next_target_pose_.pose.position.x = next_target_pose_.pose.position.x + 0.05
-
-        interpolated_motion_plan_res = self.plan.get_interpolated_ik_motion_plan(target_pose_, next_target_pose_, False, num_steps = 1, frame="/world")
+        grasp_lid_pose_ = copy.deepcopy(approach_pose_)
+        grasp_lid_pose_.pose.position.z = grasp_lid_pose_.pose.position.z + 0.05
+        grasp_lid_pose_.pose.position.x = grasp_lid_pose_.pose.position.x + 0.05
+        interpolated_motion_plan_res = self.plan.get_interpolated_ik_motion_plan(approach_pose_, grasp_lid_pose_, False, num_steps = 1, frame=approach_pose_.header.frame_id)
 
         # check the result (depending on number of steps etc...)
         if (interpolated_motion_plan_res.error_code.val == interpolated_motion_plan_res.error_code.SUCCESS):
@@ -90,10 +90,15 @@ class Execution(object):
                     number_of_interpolated_steps=interpolation_index
 
         if number_of_interpolated_steps+1==len(interpolated_motion_plan_res.trajectory.joint_trajectory.points):
-            motion_plan_res = self.plan.plan_arm_motion( "right_arm", "jointspace", target_pose_ )
+            motion_plan_res = self.plan.plan_arm_motion( "right_arm", "jointspace", approach_pose_ )
 
             if (motion_plan_res.error_code.val == motion_plan_res.error_code.SUCCESS):
+                total_motion_plan_res = motion_plan_res
+
+            motion_plan_res = self.plan.plan_arm_motion( "right_arm", "jointspace", grasp_lid_pose_ )
+            if (motion_plan_res.error_code.val == motion_plan_res.error_code.SUCCESS):
                 rospy.loginfo("OK, motion planned, executing it.")
+                total_motion_plan_res.trajectory.joint_trajectory.points.append(motion_plan_res.trajectory.joint_trajectory.points)
 
         #at the lid, compute lifting of the lid
         if (motion_plan_res.error_code.val == motion_plan_res.error_code.SUCCESS):
@@ -111,6 +116,8 @@ class Execution(object):
         else:
             rospy.logerr("Lifting impossible")
             return OpenSuitcaseResponse(OpenSuitcaseResponse.FAILED)
+
+
 
         return OpenSuitcaseResponse(OpenSuitcaseResponse.SUCCESS)
 
