@@ -50,7 +50,7 @@ class Planification(object):
         rospy.wait_for_service("/r_interpolated_ik_motion_plan_set_params")
         rospy.wait_for_service("/r_interpolated_ik_motion_plan")
         rospy.wait_for_service("/trajectory_filter_unnormalizer/filter_trajectory")
-        #rospy.wait_for_service("/getJointState")
+        rospy.wait_for_service("/getJointState")
         rospy.loginfo("  OK services found")
 
         self.set_planning_scene_diff_ = rospy.ServiceProxy("/environment_server/set_planning_scene_diff", SetPlanningSceneDiff)
@@ -59,6 +59,7 @@ class Planification(object):
         self.interpolated_ik_params_srv = rospy.ServiceProxy('/r_interpolated_ik_motion_plan_set_params', SetInterpolatedIKMotionPlanParams)
         self.interpolated_ik_srv = rospy.ServiceProxy('/r_interpolated_ik_motion_plan', GetMotionPlan)
         #self.ik_utils = ik_utilities.IKUtilities('right',None,0) # do not wait for service this is not needed for us
+        self.get_joint_state_ = rospy.ServiceProxy("/getJointState", getJointState)
 
         #self.standard_ik_ = rospy.ServiceProxy("/shadow_right_arm_kinematics/get_ik", GetPositionIK)
 
@@ -218,6 +219,7 @@ class Planification(object):
     def get_interpolated_ik_motion_plan(self, start_pose, target_pose, collision_check=False,
                                         steps_before_abort=1, num_steps=0,
                                         frame='shadowarm_base', max_joint_vels=[0.1]*6, max_joint_accs=[0.5]*6):
+        self.reset_planning_scene_()
 
         ik_motion_plan_res = self.interpolated_ik_params_srv(num_steps,
                                               math.pi/7.0,
@@ -234,7 +236,7 @@ class Planification(object):
         ik_motion_plan_req = GetMotionPlanRequest()
         ik_motion_plan_req.motion_plan_request.start_state.joint_state.name = ARM_NAMES
 
-        #joint_state_res = self.get_joint_state_.call()
+        joint_state_res = self.get_joint_state_.call()
         #start_angles = res.joint_state.positions # one cannot use this directly it contains not only arm but also fingers
         ik_motion_plan_req.motion_plan_request.start_state.joint_state.position = [0.3]*6 #start_angles
         ik_motion_plan_req.motion_plan_request.start_state.multi_dof_joint_state.poses = [start_pose.pose]

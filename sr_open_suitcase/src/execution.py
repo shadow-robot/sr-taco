@@ -29,7 +29,7 @@ from sr_utilities.srv import getJointState
 from planification import Planification
 from sr_utilities.srv import getJointState
 
-from sr_open_suitcase.srv import OpenSuitcase
+from sr_open_suitcase.srv import OpenSuitcase, OpenSuitcaseResponse
 
 import time
 import copy
@@ -50,12 +50,12 @@ class Execution(object):
         self.send_traj_pub_ = rospy.Publisher("/command", JointTrajectory, latch=True)
 
         rospy.loginfo("Waiting for services  /getJointState, /trajectory_filter_unnormalizer/filter_trajectory, /database_grasp_planning")
-        #rospy.wait_for_service("/getJointState")
+        rospy.wait_for_service("/getJointState")
         rospy.wait_for_service("/trajectory_filter_unnormalizer/filter_trajectory")
 
         rospy.loginfo("  OK services found")
 
-        #self.get_joint_state_ = rospy.ServiceProxy("/getJointState", getJointState)
+        self.get_joint_state_ = rospy.ServiceProxy("/getJointState", getJointState)
         self.trajectory_filter_ = rospy.ServiceProxy("/trajectory_filter_unnormalizer/filter_trajectory", FilterJointTrajectory)
 
         self.suitcase_src_ = rospy.Service("~open_suitcase", OpenSuitcase, self.open_lid)
@@ -66,9 +66,9 @@ class Execution(object):
         #TODO: compute targets based on mechanism pose and lid axes
         target_pose_ = PoseStamped()
         target_pose_.header.frame_id = "/world";
-        target_pose_.pose.position.x = 0.580
-        target_pose_.pose.position.y = -0.13
-        target_pose_.pose.position.z = 1.2
+        target_pose_.pose.position.x = 0.63
+        target_pose_.pose.position.y = 0.0
+        target_pose_.pose.position.z = 1.3
 
         target_pose_.pose.orientation.x = 0.375
         target_pose_.pose.orientation.y = 0.155
@@ -76,10 +76,10 @@ class Execution(object):
         target_pose_.pose.orientation.w = 0.351
 
         next_target_pose_ = copy.deepcopy(target_pose_)
-        next_target_pose_.pose.position.z = next_target_pose_.pose.position.z + 0.01
-        next_target_pose_.pose.position.x = next_target_pose_.pose.position.x + 0.01
+        next_target_pose_.pose.position.z = next_target_pose_.pose.position.z + 0.05
+        next_target_pose_.pose.position.x = next_target_pose_.pose.position.x + 0.05
 
-        interpolated_motion_plan_res = self.plan.get_interpolated_ik_motion_plan(target_pose_, next_target_pose_, False, num_steps = 1)
+        interpolated_motion_plan_res = self.plan.get_interpolated_ik_motion_plan(target_pose_, next_target_pose_, False, num_steps = 1, frame="/world")
 
         # check the result (depending on number of steps etc...)
         if (interpolated_motion_plan_res.error_code.val == interpolated_motion_plan_res.error_code.SUCCESS):
@@ -91,7 +91,7 @@ class Execution(object):
                     number_of_interpolated_steps=interpolation_index
 
         if number_of_interpolated_steps+1==len(interpolated_motion_plan_res.trajectory.joint_trajectory.points):
-            motion_plan_res = self.plan.plan_arm_motion( pickup_goal.arm_name, "jointspace", target_pose_ )
+            motion_plan_res = self.plan.plan_arm_motion( "right_arm", "jointspace", target_pose_ )
 
             if (motion_plan_res.error_code.val == motion_plan_res.error_code.SUCCESS):
                 rospy.loginfo("OK, motion planned, executing it.")
@@ -111,7 +111,9 @@ class Execution(object):
 
         else:
             rospy.logerr("Lifting impossible")
+            return OpenSuitcaseResponse(OpenSuitcaseResponse.FAILED)
 
+        return OpenSuitcaseResponse(OpenSuitcaseResponse.SUCCESS)
 
     def display_traj_(self, trajectory):
         print "Display trajectory"
