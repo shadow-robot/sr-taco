@@ -236,7 +236,7 @@ class Planification(object):
         ik_motion_plan_req = GetMotionPlanRequest()
         ik_motion_plan_req.motion_plan_request.start_state.joint_state.name = ARM_NAMES
 
-        joint_state_res = self.get_joint_state_.call()
+        #joint_state_res = self.get_joint_state_.call()
         #start_angles = res.joint_state.positions # one cannot use this directly it contains not only arm but also fingers
         ik_motion_plan_req.motion_plan_request.start_state.joint_state.position = [0.3]*6 #start_angles
         ik_motion_plan_req.motion_plan_request.start_state.multi_dof_joint_state.poses = [start_pose.pose]
