@@ -23,12 +23,15 @@ from object_manipulation_msgs.msg import Grasp, PickupGoal, PickupAction, PlaceG
 from object_manipulation_msgs.srv import GraspPlanning, GraspPlanningRequest, GraspPlanningResponse
 from arm_navigation_msgs.srv import GetMotionPlanRequest, GetMotionPlanResponse, FilterJointTrajectory, FilterJointTrajectoryRequest
 from arm_navigation_msgs.msg import DisplayTrajectory, JointLimits
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Pose
 from trajectory_msgs.msg import JointTrajectory
 from sr_utilities.srv import getJointState
 from planification import Planification
 from sr_utilities.srv import getJointState
 from visualization_msgs.msg import Marker
+from tf import transformations
+import math
+import numpy as np
 
 from sr_open_suitcase.srv import OpenSuitcase, OpenSuitcaseResponse
 
@@ -70,48 +73,51 @@ class Execution(object):
         motion_plan_res=GetMotionPlanResponse()
         total_motion_plan_res=GetMotionPlanResponse()
 
-        #approach the object
-        approach_pose_ = PoseStamped()
-        approach_pose_.header.frame_id = suitcase.header.frame_id
-        approach_pose_.pose = suitcase.opening_mechanism.pose_stamped.pose
+        #compute the trajectory
+        semi_circle = self.compute_semi_circle_traj_(suitcase)
 
-        grasp_lid_pose_ = copy.deepcopy(approach_pose_)
-        grasp_lid_pose_.pose.position.z = grasp_lid_pose_.pose.position.z + 0.05
-        grasp_lid_pose_.pose.position.x = grasp_lid_pose_.pose.position.x + 0.05
-        interpolated_motion_plan_res = self.plan.get_interpolated_ik_motion_plan(approach_pose_, grasp_lid_pose_, False, num_steps = 1, frame=approach_pose_.header.frame_id)
+        last_step = None
+        for step in semi_circle:
+            if last_step == None:
+                last_step = step
+                continue
 
-        # check the result (depending on number of steps etc...)
-        if (interpolated_motion_plan_res.error_code.val == interpolated_motion_plan_res.error_code.SUCCESS):
-            number_of_interpolated_steps=0
-            for interpolation_index, traj_error_code in enumerate(interpolated_motion_plan_res.trajectory_error_codes):
-                if traj_error_code.val!=1:
-                    rospy.logerr("One unfeasible approach-phase step found at "+str(interpolation_index)+ " with val " + str(traj_error_code.val))
-                else:
-                    number_of_interpolated_steps=interpolation_index
+            interpolated_motion_plan_res = self.plan.get_interpolated_ik_motion_plan(step, last_step, False, num_steps = 1, frame=step.header.frame_id)
+            time.sleep(0.5)
 
-        if number_of_interpolated_steps+1==len(interpolated_motion_plan_res.trajectory.joint_trajectory.points):
-            motion_plan_res = self.plan.plan_arm_motion( "right_arm", "jointspace", approach_pose_ )
+            last_step = step
 
-            if (motion_plan_res.error_code.val == motion_plan_res.error_code.SUCCESS):
-                total_motion_plan_res = motion_plan_res
+            # check the result (depending on number of steps etc...)
+            if (interpolated_motion_plan_res.error_code.val == interpolated_motion_plan_res.error_code.SUCCESS):
+                number_of_interpolated_steps=0
+                for interpolation_index, traj_error_code in enumerate(interpolated_motion_plan_res.trajectory_error_codes):
+                    if traj_error_code.val!=1:
+                        rospy.logerr("One unfeasible approach-phase step found at "+str(interpolation_index)+ " with val " + str(traj_error_code.val))
+                    else:
+                        number_of_interpolated_steps=interpolation_index
 
-            motion_plan_res = self.plan.plan_arm_motion( "right_arm", "jointspace", grasp_lid_pose_ )
-            if (motion_plan_res.error_code.val == motion_plan_res.error_code.SUCCESS):
-                rospy.loginfo("OK, motion planned, executing it.")
-                total_motion_plan_res.trajectory.joint_trajectory.points.append(motion_plan_res.trajectory.joint_trajectory.points)
+            if number_of_interpolated_steps+1==len(interpolated_motion_plan_res.trajectory.joint_trajectory.points):
+                motion_plan_res = self.plan.plan_arm_motion( "right_arm", "jointspace", last_step )
 
-        #at the lid, compute lifting of the lid
+                if (motion_plan_res.error_code.val == motion_plan_res.error_code.SUCCESS):
+                    total_motion_plan_res = motion_plan_res
+
+                    motion_plan_res = self.plan.plan_arm_motion( "right_arm", "jointspace", step )
+                if (motion_plan_res.error_code.val == motion_plan_res.error_code.SUCCESS):
+                    rospy.loginfo("OK, motion planned, executing it.")
+                    total_motion_plan_res.trajectory.joint_trajectory.points.append(motion_plan_res.trajectory.joint_trajectory.points)
+
         if (motion_plan_res.error_code.val == motion_plan_res.error_code.SUCCESS):
             #go there
             # filter the trajectory
-            filtered_traj = self.filter_traj_(motion_plan_res)
+            filtered_traj = self.filter_traj_(total_motion_plan_res)
 
             self.display_traj_( filtered_traj )
             self.send_traj_( filtered_traj )
 
             #approach
             #time.sleep(15)
-            self.send_traj_( interpolated_motion_plan_res.trajectory.joint_trajectory )
+            #self.send_traj_( interpolated_motion_plan_res.trajectory.joint_trajectory )
 
         else:
             rospy.logerr("Lifting impossible")
@@ -120,6 +126,57 @@ class Execution(object):
 
 
         return OpenSuitcaseResponse(OpenSuitcaseResponse.SUCCESS)
+
+    def compute_semi_circle_traj_(self, suitcase, nb_steps = 10):
+        poses = []
+
+        #compute a semi-circular trajectory, starting
+        # from the suitcase mechanism, rotating
+        # around the suitcase axis
+        target = PoseStamped()
+        target.header.frame_id = suitcase.header.frame_id
+        target.pose = suitcase.opening_mechanism.pose_stamped.pose
+
+        #axis_x and axis_z are the projection of the mechanism model
+        # onto the suitcase axis (point around which we want to rotate)
+        mechanism = [suitcase.opening_mechanism.pose_stamped.pose.position.x,
+                     suitcase.opening_mechanism.pose_stamped.pose.position.y,
+                     suitcase.opening_mechanism.pose_stamped.pose.position.z]
+        axis = [suitcase.lid_axis_a.x + (suitcase.lid_axis_b.x - suitcase.lid_axis_a.x) / 2.0,
+                suitcase.lid_axis_a.y + (suitcase.lid_axis_b.y - suitcase.lid_axis_a.y) / 2.0,
+                suitcase.lid_axis_a.z + (suitcase.lid_axis_b.z - suitcase.lid_axis_a.z) / 2.0]
+
+        #We're always starting with the palm straight along the x axis
+        #TODO: use real suitcase axis instead?
+        suitcase_axis = (1, 0, 0)
+        for i in range(0, nb_steps + 1):
+            #we're rotating from this angle around the suitcase axis
+            rotation_angle = float(i) * math.pi / 2.0 / float(nb_steps)
+
+            ####
+            # POSITION
+            target.pose.position.x = axis[0] - ((axis[0] - mechanism[0]) * math.cos(rotation_angle))
+            target.pose.position.z = axis[2] + ((axis[0] - mechanism[0]) * math.sin(rotation_angle))
+
+            ####
+            # ORIENTATION
+            # add 90 degrees to point the axis toward the suitcase
+            rotation_angle += math.pi / 2.0
+            #orientation, palm z axis pointing towards the suitcase axes
+            #z toward suitcase
+            toward_z = transformations.quaternion_about_axis(math.pi / 2.0, (0,0,1))
+            #then rotate as we go up to continue pointing at the axis
+            step_rotation = transformations.quaternion_about_axis( rotation_angle, suitcase_axis)
+            #combine those transform:
+            orientation = transformations.quaternion_multiply(toward_z, step_rotation)
+
+            target.pose.orientation.x = orientation[0]
+            target.pose.orientation.y = orientation[1]
+            target.pose.orientation.z = orientation[2]
+            target.pose.orientation.w = orientation[3]
+            poses.append( copy.deepcopy(target) )
+
+        return poses
 
     def display_traj_(self, trajectory):
         print "Display trajectory"

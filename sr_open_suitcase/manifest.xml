@@ -18,6 +18,7 @@
   <depend package="trajectory_msgs"/>
   <depend package="sr_utilities"/>
   <depend package="visualization_msgs"/>
+  <depend package="tf"/>
 
 </package>
 
