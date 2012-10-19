@@ -347,7 +347,103 @@ protected:
         path /= referenceDirPath();
         path /= req.name + ".pcd";
         ROS_INFO_STREAM("Loading: " << path);
+        CloudPtr ref_cloud(new Cloud);
+        CloudPtr load_cloud(new Cloud);
+        if (pcl::io::loadPCDFile<PointType>(path.c_str(), *load_cloud) == -1) {
+            std::string msg = "Failed to read file: " + path.string() + "\n";
+            ROS_ERROR_STREAM(msg.c_str());
+            return false;
+        }
+//        pcl::io::savePCDFileASCII("load_cloud.pcd", *load_cloud);
+//        pcl::io::savePCDFileASCII("load_cloud_pass.pcd", *cloud_pass_);
+        findCloud(load_cloud, ref_cloud);
+//        pcl::io::savePCDFileASCII("load_transformed_cloud.pcd", *ref_cloud);
+        trackCloud(ref_cloud);
         return true;
+    }
+
+    // http://answers.ros.org/question/9515/how-to-convert-between-different-point-cloud-types-using-pcl/
+    void copyPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr src,
+                          pcl::PointCloud<pcl::PointXYZ>::Ptr dst)
+    {
+      dst->resize (src->size());
+      dst->width = src->width;
+      dst->height = src->height;
+      dst->is_dense = src->is_dense;
+      for (size_t i = 0; i < src->size(); ++i )
+      {
+        dst->points[i].x = src->points[i].x;
+        dst->points[i].y = src->points[i].y;
+        dst->points[i].z = src->points[i].z;
+      }
+    }
+
+    /**
+     * Find the passed cloud in the input cloud
+     */
+    void findCloud(CloudPtr find_cloud, CloudPtr out_cloud) {
+        PCL_INFO("Searching for cloud\n");
+
+        // Find all the clusters. We then try to match the find cloud against each cluster.
+        std::vector<CloudPtr> clusters;
+        ClusterSegmentor<PointType> cluster_segmentor;
+        // XXX Use downsampled here?
+        cluster_segmentor.setInputCloud(cloud_pass_);
+        cluster_segmentor.extract(clusters);
+
+        // Convert the cloud we want to find.
+        // (We need PointXYZ but input tracking is using PointXYZRGB)
+        pcl::PointCloud<pcl::PointXYZ>::Ptr object_template(new pcl::PointCloud<pcl::PointXYZ>);
+        copyPointCloud(find_cloud, object_template);
+        pcl::io::savePCDFileASCII("find_object_template.pcd", *object_template);
+
+        // Set the TemplateAlignment inputs
+        TemplateAlignment template_align;
+//      for (size_t i = 0; i < object_templates.size (); ++i)
+//      {
+//        template_align.addTemplateCloud (object_templates[i]);
+//      }
+        FeatureCloud template_cloud;
+        template_cloud.setInputCloud(object_template);
+        template_align.addTemplateCloud(template_cloud);
+
+        TemplateAlignment::Result best_result;
+        best_result.fitness_score = 10000;
+        for (size_t i = 0; i < clusters.size(); ++i) {
+            // Assign to the target FeatureCloud
+            // We need PointXYZ but openni tracking is using PointXYZRGBA
+            FeatureCloud target_cloud;
+            pcl::PointCloud<pcl::PointXYZ>::Ptr temp_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+            copyPointCloud(clusters[i], temp_cloud);
+            target_cloud.setInputCloud(temp_cloud);
+            template_align.setTargetCloud(target_cloud);
+
+            // Find the best template alignment
+            ROS_INFO("Searching cluster %i", i);
+            TemplateAlignment::Result best_alignment;
+            template_align.findBestAlignment(best_alignment);
+//            int best_index = template_align.findBestAlignment(best_alignment);
+//            const FeatureCloud &best_template = object_templates[best_index];
+//            const FeatureCloud &best_template = template_cloud;
+
+            // Print the alignment fitness score (values less than 0.00002 are good)
+            printf("Best fitness score: %f\n", best_alignment.fitness_score);
+            // Print the rotation matrix and translation vector
+            Eigen::Matrix3f rotation = best_alignment.final_transformation.block<3, 3>(0, 0);
+            Eigen::Vector3f translation = best_alignment.final_transformation.block<3, 1>(0, 3);
+            printf("\n");
+            printf("    | %6.3f %6.3f %6.3f | \n", rotation(0, 0), rotation(0, 1), rotation(0, 2));
+            printf("R = | %6.3f %6.3f %6.3f | \n", rotation(1, 0), rotation(1, 1), rotation(1, 2));
+            printf("    | %6.3f %6.3f %6.3f | \n", rotation(2, 0), rotation(2, 1), rotation(2, 2));
+            printf("\n");
+            printf("t = < %0.3f, %0.3f, %0.3f >\n", translation(0), translation(1), translation(2));
+
+            if (best_alignment.fitness_score < best_result.fitness_score) best_result = best_alignment;
+        }
+
+        ROS_INFO("Overall best fitness score: %f\n", best_result.fitness_score);
+        // Transform the find_cloud so it aligns with the input cloud
+        pcl::transformPointCloud(*find_cloud, *out_cloud, best_result.final_transformation);
     }
 
     ros::NodeHandle nh_, nh_home_;
