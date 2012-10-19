@@ -349,11 +349,8 @@ protected:
         ROS_INFO_STREAM("Loading: " << path);
         CloudPtr ref_cloud(new Cloud);
         CloudPtr load_cloud(new Cloud);
-        if (pcl::io::loadPCDFile<PointType>(path.c_str(), *load_cloud) == -1) {
-            std::string msg = "Failed to read file: " + path.string() + "\n";
-            ROS_ERROR_STREAM(msg.c_str());
-            return false;
-        }
+        if (pcl::io::loadPCDFile<PointType>(path.c_str(), *load_cloud) == -1)
+            throw ros::Exception("Failed to read file: " + path.string());
 //        pcl::io::savePCDFileASCII("load_cloud.pcd", *load_cloud);
 //        pcl::io::savePCDFileASCII("load_cloud_pass.pcd", *cloud_pass_);
         findCloud(load_cloud, ref_cloud);
