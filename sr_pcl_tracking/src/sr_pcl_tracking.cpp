@@ -328,6 +328,8 @@ protected:
     bool
     saveReference_cb (SaveReferenceRequest &req, SaveReferenceResponse &res)
     {
+        if (req.name == "")
+            throw ros::Exception("Empty name");
         fs::path path;
         path /= referenceDirPath();
         path /= req.name + ".pcd";
@@ -339,6 +341,8 @@ protected:
     bool
     loadReference_cb (LoadReferenceRequest &req, LoadReferenceResponse &res)
     {
+        if (req.name == "")
+            throw ros::Exception("Empty name");
         fs::path path;
         path /= referenceDirPath();
         path /= req.name + ".pcd";
