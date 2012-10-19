@@ -85,7 +85,7 @@ public:
         result_cloud_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("result_cloud", 1);
         track_nearest_srv_ = nh_home_.advertiseService("track_nearest", &Tracker::trackNearest_cb, this);
         track_centered_srv_ = nh_home_.advertiseService("track_centered", &Tracker::trackCentred_cb, this);
-        save_srv_ = nh_home_.advertiseService("load_reference", &Tracker::loadReference_cb, this);
+        load_srv_ = nh_home_.advertiseService("load_reference", &Tracker::loadReference_cb, this);
         save_srv_ = nh_home_.advertiseService("save_reference", &Tracker::saveReference_cb, this);
 
         // PCL Tracking setup
@@ -339,7 +339,10 @@ protected:
     bool
     loadReference_cb (LoadReferenceRequest &req, LoadReferenceResponse &res)
     {
-        ROS_WARN_STREAM("TODO: loadReference");
+        fs::path path;
+        path /= referenceDirPath();
+        path /= req.name + ".pcd";
+        ROS_INFO_STREAM("Loading: " << path);
         return true;
     }
 
