@@ -2,6 +2,7 @@
 #include "sr_pcl_tracking/template_alignment.h"
 #include "sr_pcl_tracking/SaveReference.h"
 #include "sr_pcl_tracking/LoadReference.h"
+#include "sr_pcl_tracking/ListReference.h"
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -87,6 +88,7 @@ public:
         track_centered_srv_ = nh_home_.advertiseService("track_centered", &Tracker::trackCentred_cb, this);
         load_srv_ = nh_home_.advertiseService("load_reference", &Tracker::loadReference_cb, this);
         save_srv_ = nh_home_.advertiseService("save_reference", &Tracker::saveReference_cb, this);
+        list_srv_ = nh_home_.advertiseService("list_reference", &Tracker::listReference_cb, this);
 
         // PCL Tracking setup
         bool use_fixed = false;
@@ -314,6 +316,7 @@ protected:
     /**
      * Return referece_dir_ as a boost::filesystem::path after performing word expansion like a
      * POSIX shell (e.g. expand ~).
+     * Throws exceptions if the path does not exist or is not a directory.
      */
     fs::path
     referenceDirPath ()
@@ -363,6 +366,24 @@ protected:
         findCloud(load_cloud, ref_cloud);
 //        pcl::io::savePCDFileASCII("load_transformed_cloud.pcd", *ref_cloud);
         trackCloud(ref_cloud);
+        return true;
+    }
+
+    bool
+    listReference_cb (ListReferenceRequest& req, ListReferenceResponse& res)
+    {
+        fs::path dir = referenceDirPath();
+        fs::directory_iterator end_it;
+        for (fs::directory_iterator dir_it(dir); dir_it != end_it; ++dir_it)
+        {
+            fs::directory_entry entry = *dir_it;
+            if ( fs::is_regular_file(entry.status()) && entry.path().extension().string() == ".pcd" )
+            {
+                std::string name = entry.path().filename().stem().string();
+                res.names.push_back(name);
+            }
+        }
+        std::sort(res.names.begin(), res.names.end());
         return true;
     }
 
@@ -455,7 +476,7 @@ protected:
     ros::Publisher output_pub_;
     ros::Publisher particle_cloud_pub_;
     ros::Publisher result_cloud_pub_;
-    ros::ServiceServer track_nearest_srv_, track_centered_srv_, load_srv_, save_srv_;
+    ros::ServiceServer track_nearest_srv_, track_centered_srv_, load_srv_, save_srv_, list_srv_;
     sensor_msgs::PointCloud2ConstPtr input_;
 
     /// Directory to load and save reference objects to and from
