@@ -448,7 +448,7 @@ protected:
             template_align.setTargetCloud(target_cloud);
 
             // Find the best template alignment
-            ROS_INFO("Searching cluster %i", i);
+            ROS_INFO("Searching cluster %i", (int)i);
             TemplateAlignment::Result best_alignment;
             template_align.findBestAlignment(best_alignment);
 //            int best_index = template_align.findBestAlignment(best_alignment);
