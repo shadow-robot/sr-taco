@@ -281,18 +281,20 @@ protected:
         std::vector<CloudPtr> clusters;
         ClusterSegmentor<PointType> cluster_segmentor;
         cluster_segmentor.setInputCloud(cloud_pass_);
+        ROS_INFO("Segmenting cloud...");
         if (sort_type == SEGMENT_SORT_BY_CENTERED)
             cluster_segmentor.extractByCentered(clusters);
         else
             cluster_segmentor.extractByDistance(clusters);
+        ROS_INFO("... found %i clusters", (int)clusters.size());
         if (clusters.size() > 0)
             ref_cloud = clusters[0];
 
-        std::cout << "ref_cloud: "
+        ROS_INFO_STREAM("ref_cloud: "
                 << " points: " << ref_cloud->points.size()
                 << " wh:" << ref_cloud->width << "x" << ref_cloud->height
                 << " is_dense: " << (ref_cloud->is_dense ? "Yes" : "No")
-                << std::endl;
+                );
 
         trackCloud(ref_cloud);
 
@@ -411,7 +413,7 @@ protected:
      * Find the passed cloud in the input cloud
      */
     void findCloud(CloudPtr find_cloud, CloudPtr out_cloud) {
-        PCL_INFO("Searching for cloud\n");
+        ROS_INFO("Searching for cloud");
 
         // Find all the clusters. We then try to match the find cloud against each cluster.
         std::vector<CloudPtr> clusters;
@@ -470,7 +472,7 @@ protected:
             if (best_alignment.fitness_score < best_result.fitness_score) best_result = best_alignment;
         }
 
-        ROS_INFO("Overall best fitness score: %f\n", best_result.fitness_score);
+        ROS_INFO("Overall best fitness score: %f", best_result.fitness_score);
         // Transform the find_cloud so it aligns with the input cloud
         pcl::transformPointCloud(*find_cloud, *out_cloud, best_result.final_transformation);
     }

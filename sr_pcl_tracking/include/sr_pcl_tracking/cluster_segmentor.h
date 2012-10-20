@@ -63,8 +63,6 @@ class ClusterSegmentor
      */
     void extract (std::vector<CloudPtr> &results)
     {
-      PCL_INFO("segmenting clusters...\n");
-
       segmentTargetCloud(); // Sets target_cloud_
 
       std::vector<pcl::PointIndices> cluster_indices;
