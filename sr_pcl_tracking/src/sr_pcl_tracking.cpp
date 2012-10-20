@@ -76,15 +76,17 @@ public:
 
     Tracker()
         : nh_home_("~")
-        , reference_file_ext_ (".pcd")
         , reference_dir_ ("~/.ros/sr_pcl_tracking")
+        , reference_file_ext_ (".pcd")
         , downsampling_grid_size_(0.01)
     {
         // ROS setup
-        input_sub_ = nh_home_.subscribe("input", 1, &Tracker::cloud_cb, this);
-        output_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("output", 1);
-        particle_cloud_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("particle_cloud", 1);
-        result_cloud_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("result_cloud", 1);
+        input_sub_ = nh_home_.subscribe("input/points", 1, &Tracker::cloud_cb, this);
+
+        output_downsampled_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("cloud_downsampled/points", 1);
+        particle_cloud_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("particle/points", 1);
+        result_cloud_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("result/points", 1);
+
         track_nearest_srv_ = nh_home_.advertiseService("track_nearest", &Tracker::trackNearest_cb, this);
         track_centered_srv_ = nh_home_.advertiseService("track_centered", &Tracker::trackCentred_cb, this);
         load_srv_ = nh_home_.advertiseService("load_reference", &Tracker::loadReference_cb, this);
@@ -187,7 +189,7 @@ protected:
 
         sensor_msgs::PointCloud2 out_cloud;
         pcl::toROSMsg(*cloud_pass_downsampled_, out_cloud);
-        output_pub_.publish (out_cloud);
+        output_downsampled_pub_.publish (out_cloud);
     }
 
     void
@@ -475,7 +477,7 @@ protected:
 
     ros::NodeHandle nh_, nh_home_;
     ros::Subscriber input_sub_;
-    ros::Publisher output_pub_;
+    ros::Publisher output_downsampled_pub_;
     ros::Publisher particle_cloud_pub_;
     ros::Publisher result_cloud_pub_;
     ros::ServiceServer track_nearest_srv_, track_centered_srv_, load_srv_, save_srv_, list_srv_;
