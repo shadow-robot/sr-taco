@@ -322,6 +322,13 @@ protected:
         wordexp(reference_dir_.c_str(), &exp_result, 0);
         fs::path path(exp_result.we_wordv[0]);
         wordfree (&exp_result);
+
+        if ( !fs::exists(path) )
+            throw ros::Exception("Reference dir '" + path.string() + "' does not exist. "
+                    "You will need to create it.");
+        if ( !fs::is_directory(path) )
+            throw ros::Exception("Reference dir '" + path.string() + "' is not a directory!");
+
         return path;
     }
 
