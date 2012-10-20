@@ -1,0 +1,10 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b sr_pcl_tracking_gui - rqt_gui plugin for the sr_pcl_tracking node.
+
+-->
+
+
+*/

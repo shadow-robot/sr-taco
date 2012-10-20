@@ -1,0 +1,20 @@
+<library path="src">
+  <class name="SrPclTrackingGui" type="sr_pcl_tracking_gui.sr_pcl_tracking_gui.SrPclTrackingGui" base_class_type="rqt_gui_py::Plugin">
+    <description>
+        User interface for the sr_pcl_tracking tracker node.
+    </description>
+    <qtgui>
+      <!-- optional grouping...
+      <group>
+        <label>Group</group>
+      </group>
+      <group>
+        <label>Subgroup</group>
+      </group>
+      -->
+      <label>sr_pcl_tracking interface.</label>
+      <icon type="theme">system-help</icon>
+      <statustip>Great user interface to provide real value.</statustip>
+    </qtgui>
+  </class>
+</library>
