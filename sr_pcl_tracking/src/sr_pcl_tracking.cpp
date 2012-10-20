@@ -76,6 +76,7 @@ public:
 
     Tracker()
         : nh_home_("~")
+        , reference_file_ext_ (".pcd")
         , reference_dir_ ("~/.ros/sr_pcl_tracking")
         , downsampling_grid_size_(0.01)
     {
@@ -342,7 +343,7 @@ protected:
             throw ros::Exception("Empty name");
         fs::path path;
         path /= referenceDirPath();
-        path /= req.name + ".pcd";
+        path /= req.name + reference_file_ext_;
         pcl::io::savePCDFileASCII(path.c_str(), *reference_);
         ROS_INFO_STREAM("Saved: " << path);
         return true;
@@ -355,12 +356,12 @@ protected:
             throw ros::Exception("Empty name");
         fs::path path;
         path /= referenceDirPath();
-        path /= req.name + ".pcd";
+        path /= req.name + reference_file_ext_;
         ROS_INFO_STREAM("Loading: " << path);
         CloudPtr ref_cloud(new Cloud);
         CloudPtr load_cloud(new Cloud);
         if (pcl::io::loadPCDFile<PointType>(path.c_str(), *load_cloud) == -1)
-            throw ros::Exception("Failed to read file: " + path.string());
+            throw ros::Exception("Failed to read file '" + path.string() + "'");
 //        pcl::io::savePCDFileASCII("load_cloud.pcd", *load_cloud);
 //        pcl::io::savePCDFileASCII("load_cloud_pass.pcd", *cloud_pass_);
         findCloud(load_cloud, ref_cloud);
@@ -377,7 +378,8 @@ protected:
         for (fs::directory_iterator dir_it(dir); dir_it != end_it; ++dir_it)
         {
             fs::directory_entry entry = *dir_it;
-            if ( fs::is_regular_file(entry.status()) && entry.path().extension().string() == ".pcd" )
+            if ( fs::is_regular_file(entry.status())
+                && entry.path().extension().string() == reference_file_ext_ )
             {
                 std::string name = entry.path().filename().stem().string();
                 res.names.push_back(name);
@@ -481,6 +483,7 @@ protected:
 
     /// Directory to load and save reference objects to and from
     std::string reference_dir_;
+    std::string reference_file_ext_;
 
     boost::shared_ptr<ParticleFilter> tracker_;
     CloudPtr cloud_pass_;
