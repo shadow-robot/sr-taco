@@ -13,6 +13,9 @@
 #include <boost/filesystem.hpp>
 #include <wordexp.h>
 
+#include <kdl/frames.hpp>
+
+
 // PCL specific includes
 #include <pcl/ros/conversions.h>
 
@@ -241,12 +244,16 @@ protected:
         out_cloud.header = input_->header;
         result_cloud_pub_.publish (out_cloud);
 
-        // TODO: Publish the transformation (pose)
+        // Publish the transformation (pose)
         geometry_msgs::PoseStamped pose;
         pose.header = input_->header;
         pose.pose.position.x = result.x;
         pose.pose.position.y = result.y;
         pose.pose.position.z = result.z;
+        KDL::Rotation rot = KDL::Rotation::RPY(result.roll, result.pitch, result.yaw);
+        rot.GetQuaternion(
+                pose.pose.orientation.x, pose.pose.orientation.y,
+                pose.pose.orientation.z, pose.pose.orientation.w );
         result_pose_pub_.publish(pose);
     }
 
