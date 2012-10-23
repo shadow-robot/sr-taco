@@ -80,7 +80,11 @@ public:
         , reference_file_ext_ (".pcd")
         , downsampling_grid_size_(0.01)
     {
-        // ROS setup
+        // Read any params set for us. If nothing set update the param server
+        if (!nh_home_.getParam("downsampling_grid_size", downsampling_grid_size_))
+            nh_home_.setParam("downsampling_grid_size", downsampling_grid_size_);
+
+        // Setup ROS topics and services
         input_sub_ = nh_home_.subscribe("input/points", 1, &Tracker::cloud_cb, this);
 
         output_downsampled_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("cloud_downsampled/points", 1);
