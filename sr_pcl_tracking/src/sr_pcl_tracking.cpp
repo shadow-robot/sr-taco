@@ -7,6 +7,11 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_srvs/Empty.h>
+#include <geometry_msgs/PoseStamped.h>
+
+#include <boost/format.hpp>
+#include <boost/filesystem.hpp>
+#include <wordexp.h>
 
 // PCL specific includes
 #include <pcl/ros/conversions.h>
@@ -53,10 +58,6 @@
 #include <pcl/search/pcl_search.h>
 #include <pcl/common/transforms.h>
 
-#include <boost/format.hpp>
-#include <boost/filesystem.hpp>
-#include <wordexp.h>
-
 
 namespace sr_pcl_tracking {
 
@@ -97,6 +98,7 @@ public:
         output_downsampled_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("cloud_downsampled/points", 1);
         particle_cloud_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("particle/points", 1);
         result_cloud_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("result/points", 1);
+        result_pose_pub_ = nh_home_.advertise<geometry_msgs::PoseStamped>("result/pose", 1);
 
         track_nearest_srv_ = nh_home_.advertiseService("track_nearest", &Tracker::trackNearest_cb, this);
         track_centered_srv_ = nh_home_.advertiseService("track_centered", &Tracker::trackCentred_cb, this);
@@ -240,6 +242,9 @@ protected:
         result_cloud_pub_.publish (out_cloud);
 
         // TODO: Publish the transformation (pose)
+        geometry_msgs::PoseStamped pose;
+        pose.header = input_->header;
+        result_pose_pub_.publish(pose);
     }
 
     void
@@ -481,9 +486,7 @@ protected:
 
     ros::NodeHandle nh_, nh_home_;
     ros::Subscriber input_sub_;
-    ros::Publisher output_downsampled_pub_;
-    ros::Publisher particle_cloud_pub_;
-    ros::Publisher result_cloud_pub_;
+    ros::Publisher output_downsampled_pub_, particle_cloud_pub_, result_cloud_pub_, result_pose_pub_;
     ros::ServiceServer track_nearest_srv_, track_centered_srv_, load_srv_, save_srv_, list_srv_;
     sensor_msgs::PointCloud2ConstPtr input_;
 
