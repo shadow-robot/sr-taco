@@ -13,14 +13,14 @@ from sr_pcl_tracking.srv import *
 class SrPclTrackingProxy(object):
     """Provides a proxy interface to the sr_pcl_tracking/sr_pcl_tracker node.
     Call methods on an instance calls services etc on the tracker.
-    Pass the node to proxy to py passing the name to the constructor. Default
-    is /sr_pcl_tracker
+    Pass the node to proxy to by passing the name to the constructor. Default
+    is '/sr_pcl_tracker'.
     """
     def __init__(self, topic = "/sr_pcl_tracker"):
         self.topic = topic
 
     def callEmptySrv(self, name):
-        rospy.wait_for_service(name);
+        rospy.wait_for_service(name,10);
         try:
             srv_proxy = rospy.ServiceProxy(name, Empty)
             resp = srv_proxy()
@@ -50,6 +50,9 @@ class SrPclTrackingProxy(object):
     def load_reference(self, name):
         return self.callSrv(self.topic+"/load_reference", LoadReference, name)
 
+    def save_reference(self, name):
+        return self.callSrv(self.topic+"/save_reference", SaveReference, name)
+
 
 class SrPclTrackingGui(Plugin):
 
@@ -76,6 +79,8 @@ class SrPclTrackingGui(Plugin):
         self.ui.trackNearestBtn.pressed.connect(self.tracker.track_nearest)
         self.ui.refreshBtn.pressed.connect(self.refresh)
         self.ui.loadBtn.pressed.connect(self.load_selected)
+        self.ui.saveBtn.pressed.connect(self.save_selected)
+        self.ui.saveAsBtn.pressed.connect(self.save_as)
 
 
     def shutdown_plugin(self):
@@ -115,5 +120,19 @@ class SrPclTrackingGui(Plugin):
         if not item:
             return self.show_msg("No reference selected. Please select one from the list.")
         self.tracker.load_reference(item.text())
+
+    def save_selected(self):
+        """Save the current reference using the currently selected name."""
+        item = self.ui.referenceList.currentItem();
+        if not item:
+            return self.show_msg("No reference selected. Please select one from the list.")
+        self.tracker.save_reference(item.text())
+
+    def save_as(self):
+        """Save the current reference using a new name, requested in a dialog."""
+        text, ok = QInputDialog.getText(self.ui, 'Save Reference As', 'Enter name for object:')
+        if ok:
+            self.tracker.save_reference(text)
+            self.refresh()
 
 
