@@ -244,6 +244,9 @@ protected:
         // TODO: Publish the transformation (pose)
         geometry_msgs::PoseStamped pose;
         pose.header = input_->header;
+        pose.pose.position.x = result.x;
+        pose.pose.position.y = result.y;
+        pose.pose.position.z = result.z;
         result_pose_pub_.publish(pose);
     }
 
