@@ -8,6 +8,7 @@ from python_qt_binding import loadUi
 from python_qt_binding.QtGui import QWidget
 
 from std_srvs.srv import *
+from sr_pcl_tracking.srv import *
 
 class SrPclTrackingProxy(object):
     """Provides a proxy interface to the sr_pcl_tracking/sr_pcl_tracker node.
@@ -18,12 +19,6 @@ class SrPclTrackingProxy(object):
     def __init__(self, topic = "/sr_pcl_tracker"):
         self.topic = topic
 
-    def track_centered(self):
-        self.callEmptySrv(self.topic + "/track_centered")
-
-    def track_nearest(self):
-        self.callEmptySrv(self.topic + "/track_nearest")
-
     def callEmptySrv(self, name):
         rospy.wait_for_service(name);
         try:
@@ -32,6 +27,25 @@ class SrPclTrackingProxy(object):
             return resp
         except rospy.ServiceException, e:
             rospy.logerr("%s service fail: %s"%(name, e))
+
+    def callSrv(self, name, msgtype, msg):
+        rospy.wait_for_service(name);
+        try:
+            srv_proxy = rospy.ServiceProxy(name, msgtype)
+            resp = srv_proxy(msg)
+            return resp
+        except rospy.ServiceException, e:
+            rospy.logerr("%s service fail: %s"%(name, e))
+
+    def track_centered(self):
+        self.callEmptySrv(self.topic + "/track_centered")
+
+    def track_nearest(self):
+        self.callEmptySrv(self.topic + "/track_nearest")
+
+    def list_references(self):
+        req  = ListReferenceRequest()
+        return self.callSrv(self.topic+"/list_reference", ListReference, req)
 
 
 class SrPclTrackingGui(Plugin):
@@ -57,8 +71,8 @@ class SrPclTrackingGui(Plugin):
 
         self.ui.trackCenteredBtn.pressed.connect(self.tracker.track_centered)
         self.ui.trackNearestBtn.pressed.connect(self.tracker.track_nearest)
+        self.ui.refreshBtn.pressed.connect(self.refresh)
 
-        #self.ui.refreshBtn
         #self.ui.saveBtn
         #self.ui.loadBtn
 
@@ -79,3 +93,10 @@ class SrPclTrackingGui(Plugin):
     #def trigger_configuration(self):
         # Comment in to signal that the plugin has a way to configure it
         # Usually used to open a dialog to offer the user a set of configuration
+
+    def refresh(self):
+        """Refresh the list of references."""
+        self.ui.referenceList.clear()
+        resp = self.tracker.list_references()
+        for name in resp.names:
+            self.ui.referenceList.addItem(name)
