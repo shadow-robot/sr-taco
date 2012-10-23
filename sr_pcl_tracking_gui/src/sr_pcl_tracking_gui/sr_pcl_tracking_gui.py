@@ -5,7 +5,7 @@ import rospy
 
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
-from python_qt_binding.QtGui import QWidget
+from python_qt_binding.QtGui import *
 
 from std_srvs.srv import *
 from sr_pcl_tracking.srv import *
@@ -28,11 +28,11 @@ class SrPclTrackingProxy(object):
         except rospy.ServiceException, e:
             rospy.logerr("%s service fail: %s"%(name, e))
 
-    def callSrv(self, name, msgtype, msg):
+    def callSrv(self, name, msgtype, *args):
         rospy.wait_for_service(name);
         try:
             srv_proxy = rospy.ServiceProxy(name, msgtype)
-            resp = srv_proxy(msg)
+            resp = srv_proxy(*args)
             return resp
         except rospy.ServiceException, e:
             rospy.logerr("%s service fail: %s"%(name, e))
@@ -46,6 +46,9 @@ class SrPclTrackingProxy(object):
     def list_references(self):
         req  = ListReferenceRequest()
         return self.callSrv(self.topic+"/list_reference", ListReference, req)
+    
+    def load_reference(self, name):
+        return self.callSrv(self.topic+"/load_reference", LoadReference, name)
 
 
 class SrPclTrackingGui(Plugin):
@@ -72,9 +75,8 @@ class SrPclTrackingGui(Plugin):
         self.ui.trackCenteredBtn.pressed.connect(self.tracker.track_centered)
         self.ui.trackNearestBtn.pressed.connect(self.tracker.track_nearest)
         self.ui.refreshBtn.pressed.connect(self.refresh)
+        self.ui.loadBtn.pressed.connect(self.load_selected)
 
-        #self.ui.saveBtn
-        #self.ui.loadBtn
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here
@@ -94,9 +96,24 @@ class SrPclTrackingGui(Plugin):
         # Comment in to signal that the plugin has a way to configure it
         # Usually used to open a dialog to offer the user a set of configuration
 
+    def show_msg(self,msg):
+        """Show the user a message box."""
+        msg_box = QMessageBox(self.ui)
+        msg_box.setText("No reference selected. Please select one from the list.")
+        msg_box.show()
+
     def refresh(self):
         """Refresh the list of references."""
         self.ui.referenceList.clear()
         resp = self.tracker.list_references()
         for name in resp.names:
             self.ui.referenceList.addItem(name)
+
+    def load_selected(self):
+        """Load the currently selected reference."""
+        item = self.ui.referenceList.currentItem();
+        if not item:
+            return self.show_msg("No reference selected. Please select one from the list.")
+        self.tracker.load_reference(item.text())
+
+
