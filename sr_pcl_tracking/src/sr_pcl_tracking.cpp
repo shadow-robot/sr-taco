@@ -79,10 +79,18 @@ public:
         , reference_dir_ ("~/.ros/sr_pcl_tracking")
         , reference_file_ext_ (".pcd")
         , downsampling_grid_size_(0.01)
+        , filter_z_min_(0.0)
+        , filter_z_max_(10.0)
     {
         // Read any params set for us. If nothing set update the param server
         if (!nh_home_.getParam("downsampling_grid_size", downsampling_grid_size_))
             nh_home_.setParam("downsampling_grid_size", downsampling_grid_size_);
+
+        if (!nh_home_.getParam("filter_z_min", filter_z_min_))
+            nh_home_.setParam("filter_z_min", filter_z_min_);
+
+        if (!nh_home_.getParam("filter_z_max", filter_z_max_))
+            nh_home_.setParam("filter_z_max", filter_z_max_);
 
         // Setup ROS topics and services
         input_sub_ = nh_home_.subscribe("input/points", 1, &Tracker::cloud_cb, this);
@@ -181,7 +189,7 @@ protected:
 
         pcl::PassThrough<PointType> pass;
         pass.setFilterFieldName ("z");
-        pass.setFilterLimits (0.0, 10.0);
+        pass.setFilterLimits (filter_z_min_, filter_z_max_);
         pass.setKeepOrganized (false);
         pass.setInputCloud (input_cloud);
         pass.filter (*cloud_pass_);
@@ -498,6 +506,7 @@ protected:
     CloudPtr cloud_pass_downsampled_;
     CloudPtr reference_;
     double downsampling_grid_size_;
+    double filter_z_min_, filter_z_max_;
 
 }; // Tracker
 
