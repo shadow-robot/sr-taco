@@ -66,7 +66,6 @@ namespace fs = boost::filesystem;
 class Tracker {
 
 public:
-//    typedef pcl::PointXYZRGBA PointType;
     typedef pcl::PointXYZRGB PointType;
     typedef ParticleXYZRPY ParticleT;
     typedef pcl::PointCloud<PointType> Cloud;
@@ -230,21 +229,15 @@ protected:
         }
 
         // Publish the result cloud
+        // (tracker_->getReferenceCloud() for non-downsampled cloud)
         ParticleXYZRPY result = tracker_->getResult();
         Eigen::Affine3f transformation = tracker_->toEigenMatrix(result);
-        // move a little bit for better visualization
-//       transformation.translation() += Eigen::Vector3f(0.0, 0.0, -0.005);
         CloudPtr result_cloud(new Cloud());
-//        if (!visualize_non_downsample_)
-//            pcl::transformPointCloud<PointType>(*(tracker_->getReferenceCloud()), *result_cloud, transformation);
-//        else
         pcl::transformPointCloud<PointType>(*reference_, *result_cloud, transformation);
-        {
-            sensor_msgs::PointCloud2 out_cloud;
-            pcl::toROSMsg(*result_cloud, out_cloud);
-            out_cloud.header = input_->header;
-            result_cloud_pub_.publish (out_cloud);
-        }
+        sensor_msgs::PointCloud2 out_cloud;
+        pcl::toROSMsg(*result_cloud, out_cloud);
+        out_cloud.header = input_->header;
+        result_cloud_pub_.publish (out_cloud);
 
         // TODO: Publish the transformation (pose)
     }
@@ -331,7 +324,7 @@ protected:
     }
 
     /**
-     * Return referece_dir_ as a boost::filesystem::path after performing word expansion like a
+     * Return reference_dir_ as a boost::filesystem::path after performing word expansion like a
      * POSIX shell (e.g. expand ~).
      * Throws exceptions if the path does not exist or is not a directory.
      */
@@ -378,10 +371,7 @@ protected:
         CloudPtr load_cloud(new Cloud);
         if (pcl::io::loadPCDFile<PointType>(path.c_str(), *load_cloud) == -1)
             throw ros::Exception("Failed to read file '" + path.string() + "'");
-//        pcl::io::savePCDFileASCII("load_cloud.pcd", *load_cloud);
-//        pcl::io::savePCDFileASCII("load_cloud_pass.pcd", *cloud_pass_);
         findCloud(load_cloud, ref_cloud);
-//        pcl::io::savePCDFileASCII("load_transformed_cloud.pcd", *ref_cloud);
         trackCloud(ref_cloud);
         return true;
     }
