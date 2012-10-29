@@ -70,62 +70,50 @@ class Execution(object):
         suitcase = suitcase_req.suitcase
         self.display_suitcase_(suitcase)
 
-        motion_plan_res=GetMotionPlanResponse()
-        total_motion_plan_res=GetMotionPlanResponse()
+        semi_circle = self.go_to_mechanism_and_grasp_(suitcase)
+        self.lift_lid_(suitcase, semi_circle)
 
-        #compute the trajectory
+    def go_to_mechanism_and_grasp_(self, suitcase):
+        #compute the full trajectory
         semi_circle = self.compute_semi_circle_traj_(suitcase)
 
-        last_step = None
+        #go to the first step (ie to the mechanism)
+        self.plan_and_execute_step_(semi_circle[0])
+
+        #then close the hand
+        print "TODO: grasp the mechanism"
+
+        #return the full traj
+        return semi_circle
+
+
+    def lift_lid_(self, suitcase, semi_circle):
+        is_first = True
         for step in semi_circle:
-            if last_step == None:
-                last_step = step
+            #ignore the first step as we're already there
+            if is_first:
+                is_first = False
                 continue
 
-            interpolated_motion_plan_res = self.plan.get_interpolated_ik_motion_plan(step, last_step, False, num_steps = 1, frame=step.header.frame_id)
-            time.sleep(0.5)
-
-            last_step = step
-
-            # check the result (depending on number of steps etc...)
-            if (interpolated_motion_plan_res.error_code.val == interpolated_motion_plan_res.error_code.SUCCESS):
-                number_of_interpolated_steps=0
-                for interpolation_index, traj_error_code in enumerate(interpolated_motion_plan_res.trajectory_error_codes):
-                    if traj_error_code.val!=1:
-                        rospy.logerr("One unfeasible approach-phase step found at "+str(interpolation_index)+ " with val " + str(traj_error_code.val))
-                    else:
-                        number_of_interpolated_steps=interpolation_index
-
-            if number_of_interpolated_steps+1==len(interpolated_motion_plan_res.trajectory.joint_trajectory.points):
-                motion_plan_res = self.plan.plan_arm_motion( "right_arm", "jointspace", last_step )
-
-                if (motion_plan_res.error_code.val == motion_plan_res.error_code.SUCCESS):
-                    total_motion_plan_res = motion_plan_res
-
-                    motion_plan_res = self.plan.plan_arm_motion( "right_arm", "jointspace", step )
-                if (motion_plan_res.error_code.val == motion_plan_res.error_code.SUCCESS):
-                    rospy.loginfo("OK, motion planned, executing it.")
-                    total_motion_plan_res.trajectory.joint_trajectory.points.append(motion_plan_res.trajectory.joint_trajectory.points)
-
-        if (motion_plan_res.error_code.val == motion_plan_res.error_code.SUCCESS):
-            #go there
-            # filter the trajectory
-            filtered_traj = self.filter_traj_(total_motion_plan_res)
-
-            self.display_traj_( filtered_traj )
-            self.send_traj_( filtered_traj )
-
-            #approach
-            #time.sleep(15)
-            #self.send_traj_( interpolated_motion_plan_res.trajectory.joint_trajectory )
-
-        else:
-            rospy.logerr("Lifting impossible")
-            return OpenSuitcaseResponse(OpenSuitcaseResponse.FAILED)
-
-
+            raw_input("Press enter to proceed to next step:")
+            self.plan_and_execute_step_(step)
 
         return OpenSuitcaseResponse(OpenSuitcaseResponse.SUCCESS)
+
+    def plan_and_execute_step_(self, step):
+        motion_plan_res = self.plan.plan_arm_motion( "right_arm", "jointspace", step )
+        if (motion_plan_res.error_code.val == motion_plan_res.error_code.SUCCESS):
+            rospy.loginfo("OK, motion planned, executing it.")
+            # filter the trajectory
+            filtered_traj = self.filter_traj_(motion_plan_res)
+            #go there
+            self.display_traj_( filtered_traj )
+
+            raw_input("press enter to send the traj step ")
+            self.send_traj_( filtered_traj )
+
+        else:
+            rospy.logerr("This step was impossible")
 
     def compute_semi_circle_traj_(self, suitcase, nb_steps = 10):
         poses = []
@@ -150,8 +138,9 @@ class Execution(object):
         #TODO: use real suitcase axis instead?
         suitcase_axis = (1, 0, 0)
         for i in range(0, nb_steps + 1):
-            #we're rotating from this angle around the suitcase axis
-            rotation_angle = float(i) * math.pi / 2.0 / float(nb_steps)
+            #we're rotating from this angle around the suitcase axis to point towards the suitcase
+            # not rotating more than 40 as WRJ1 can't go further than this.
+            rotation_angle = min( float(i) * math.pi / 2.0 / float(nb_steps), math.radians(20.0))
 
             ####
             # POSITION
@@ -177,6 +166,17 @@ class Execution(object):
             poses.append( copy.deepcopy(target) )
 
         return poses
+
+    def recompute_timings_(self, motion_plan):
+        start_time = rospy.Duration(0)
+        last_start_time = rospy.Duration(0)
+        for index, point in enumerate(motion_plan.trajectory.joint_trajectory.points):
+            if point.time_from_start < last_start_time:
+                start_time = last_start_time
+            motion_plan.trajectory.joint_trajectory.points[index].time_from_start = start_time + point.time_from_start + rospy.Duration(5.0)
+            last_start_time = point.time_from_start
+
+        return motion_plan
 
     def display_traj_(self, trajectory):
         print "Display trajectory"
@@ -247,8 +247,8 @@ class Execution(object):
 
             res = self.get_joint_state_.call()
             req.start_state.joint_state = res.joint_state
-
             res = self.trajectory_filter_.call( req )
+
         except rospy.ServiceException, e:
             rospy.logerr("Failed to filter "+str(e))
             return motion_plan_res.trajectory
@@ -256,16 +256,16 @@ class Execution(object):
         return res.trajectory
 
     def send_traj_(self, trajectory):
-        print "Sending trajectory"
-
         traj = trajectory
         for index, point in enumerate(traj.points):
-            #if index == 0 or index == len(traj.points) - 1:
-            #    point.velocities = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-            #else:
-            #    point.velocities = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+            if index == 0 or index == len(traj.points) - 1:
+                point.velocities = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            else:
+                point.velocities = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
             point.time_from_start = rospy.Duration.from_sec(float(index) / 8.0)
-        #    traj.points[index] = point
+            traj.points[index] = point
+
+        print "Sending trajectory : ", traj
         self.send_traj_pub_.publish( traj )
 
         print "   -> trajectory sent"
