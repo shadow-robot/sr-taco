@@ -80,6 +80,9 @@ class Execution(object):
         self.display_suitcase_(suitcase)
 
         semi_circle = self.go_to_mechanism_and_grasp_(suitcase)
+
+        time.sleep(1.0)
+
         self.lift_lid_(suitcase, semi_circle)
 
     def go_to_mechanism_and_grasp_(self, suitcase):
@@ -105,18 +108,18 @@ class Execution(object):
                 continue
 
             self.plan_and_execute_step_(step)
+            time.sleep(0.5)
 
         return OpenSuitcaseResponse(OpenSuitcaseResponse.SUCCESS)
 
     def plan_and_execute_step_(self, step):
         motion_plan_res = self.plan.plan_arm_motion( "right_arm", "jointspace", step )
         if (motion_plan_res.error_code.val == motion_plan_res.error_code.SUCCESS):
-            rospy.loginfo("OK, motion planned, executing it.")
+            rospy.logdebug("OK, motion planned, executing it.")
             # filter the trajectory
             filtered_traj = self.filter_traj_(motion_plan_res)
             #go there
             self.display_traj_( filtered_traj )
-
             self.send_traj_( filtered_traj )
 
         else:
@@ -186,7 +189,7 @@ class Execution(object):
         return motion_plan
 
     def display_traj_(self, trajectory):
-        print "Display trajectory"
+        rospy.logdebug( "Display trajectory" )
 
         traj = DisplayTrajectory()
         traj.model_id = "shadow"
@@ -195,7 +198,6 @@ class Execution(object):
         traj.trajectory.joint_trajectory.header.stamp = rospy.Time.now()
         self.display_traj_pub_.publish(traj)
 
-        print "   -> trajectory published"
         time.sleep(0.5)
 
     def display_suitcase_(self, suitcase):
@@ -263,7 +265,7 @@ class Execution(object):
         return res.trajectory
 
     def send_traj_(self, trajectory):
-        print "Sending trajectory"
+        rospy.logdebug( "Sending trajectory" )
         #for index, point in enumerate(traj.points):
         #    if index == 0 or index == len(traj.points) - 1:
         #        point.velocities = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -285,10 +287,8 @@ class Execution(object):
             rospy.logerr("The joint_trajectory action has failed: " + str(joint_spline_trajectory_result_.error_code) )
             return -1
         else:
-            rospy.loginfo("The joint_trajectory action has succeeded")
+            rospy.logdebug("The joint_trajectory action has succeeded")
             return 0
-
-        print "   -> trajectory sent"
 
 if __name__ =="__main__":
     rospy.init_node("execution")
