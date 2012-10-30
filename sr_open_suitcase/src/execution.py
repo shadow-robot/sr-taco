@@ -24,12 +24,16 @@ from object_manipulation_msgs.srv import GraspPlanning, GraspPlanningRequest, Gr
 from arm_navigation_msgs.srv import GetMotionPlanRequest, GetMotionPlanResponse, FilterJointTrajectory, FilterJointTrajectoryRequest
 from arm_navigation_msgs.msg import DisplayTrajectory, JointLimits
 from geometry_msgs.msg import PoseStamped, Pose
+from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
+from actionlib_msgs.msg import GoalID, GoalStatus, GoalStatusArray
 from trajectory_msgs.msg import JointTrajectory
 from sr_utilities.srv import getJointState
 from planification import Planification
 from sr_utilities.srv import getJointState
 from visualization_msgs.msg import Marker
 from tf import transformations
+import actionlib
+
 import math
 import numpy as np
 
@@ -64,6 +68,11 @@ class Execution(object):
         self.get_joint_state_ = rospy.ServiceProxy("/getJointState", getJointState)
         self.trajectory_filter_ = rospy.ServiceProxy("/trajectory_filter_unnormalizer/filter_trajectory", FilterJointTrajectory)
 
+        # access arm_movement actionlib
+        self.joint_spline_trajectory_actionclient_ = actionlib.SimpleActionClient('/r_arm_controller/joint_trajectory_action', FollowJointTrajectoryAction)
+        self.joint_spline_trajectory_actionclient_.wait_for_server()
+        rospy.loginfo("joint_spline_trajectory server ready")
+
         self.suitcase_src_ = rospy.Service("~open_suitcase", OpenSuitcase, self.open_lid)
 
     def open_lid(self, suitcase_req):
@@ -95,7 +104,6 @@ class Execution(object):
                 is_first = False
                 continue
 
-            raw_input("Press enter to proceed to next step:")
             self.plan_and_execute_step_(step)
 
         return OpenSuitcaseResponse(OpenSuitcaseResponse.SUCCESS)
@@ -109,7 +117,6 @@ class Execution(object):
             #go there
             self.display_traj_( filtered_traj )
 
-            raw_input("press enter to send the traj step ")
             self.send_traj_( filtered_traj )
 
         else:
@@ -256,17 +263,30 @@ class Execution(object):
         return res.trajectory
 
     def send_traj_(self, trajectory):
-        traj = trajectory
-        for index, point in enumerate(traj.points):
-            if index == 0 or index == len(traj.points) - 1:
-                point.velocities = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-            else:
-                point.velocities = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
-            point.time_from_start = rospy.Duration.from_sec(float(index) / 8.0)
-            traj.points[index] = point
+        print "Sending trajectory"
+        #for index, point in enumerate(traj.points):
+        #    if index == 0 or index == len(traj.points) - 1:
+        #        point.velocities = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        #    else:
+        #        point.velocities = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+        #    point.time_from_start = rospy.Duration.from_sec(float(index) / 8.0)
+        #    traj.points[index] = point
 
-        print "Sending trajectory : ", traj
-        self.send_traj_pub_.publish( traj )
+        #prepare goal
+        trajgoal = FollowJointTrajectoryGoal()
+        trajgoal.trajectory = trajectory
+        # send goal
+        self.joint_spline_trajectory_actionclient_.send_goal(trajgoal)
+        # wait for result up to 30 seconds
+        self.joint_spline_trajectory_actionclient_.wait_for_result(timeout=rospy.Duration.from_sec(50))
+        # analyze result
+        joint_spline_trajectory_result_ = self.joint_spline_trajectory_actionclient_.get_result()
+        if self.joint_spline_trajectory_actionclient_.get_state() != GoalStatus.SUCCEEDED:
+            rospy.logerr("The joint_trajectory action has failed: " + str(joint_spline_trajectory_result_.error_code) )
+            return -1
+        else:
+            rospy.loginfo("The joint_trajectory action has succeeded")
+            return 0
 
         print "   -> trajectory sent"
 

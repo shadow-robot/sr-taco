@@ -15,6 +15,7 @@
   <depend package="interpolated_ik_motion_planner"/>
   <depend package="geometry_msgs"/>
   <depend package="kinematics_msgs"/>
+  <depend package="control_msgs"/>
   <depend package="trajectory_msgs"/>
   <depend package="sr_utilities"/>
   <depend package="visualization_msgs"/>
