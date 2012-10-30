@@ -83,14 +83,14 @@ class Execution(object):
 
         time.sleep(1.0)
 
-        self.lift_lid_(suitcase, semi_circle)
+        return self.lift_lid_(suitcase, semi_circle)
 
     def go_to_mechanism_and_grasp_(self, suitcase):
         #compute the full trajectory
         semi_circle = self.compute_semi_circle_traj_(suitcase)
 
         #go to the first step (ie to the mechanism)
-        self.plan_and_execute_step_(semi_circle[0])
+        self.plan_and_execute_step_(semi_circle)
 
         #then close the hand
         print "TODO: grasp the mechanism"
@@ -100,19 +100,14 @@ class Execution(object):
 
 
     def lift_lid_(self, suitcase, semi_circle):
-        is_first = True
-        for step in semi_circle:
-            #ignore the first step as we're already there
-            if is_first:
-                is_first = False
-                continue
-
-            self.plan_and_execute_step_(step)
+        while len(semi_circle) > 0:
+            self.plan_and_execute_step_(semi_circle)
             time.sleep(0.5)
 
         return OpenSuitcaseResponse(OpenSuitcaseResponse.SUCCESS)
 
-    def plan_and_execute_step_(self, step):
+    def plan_and_execute_step_(self, all_steps):
+        step = all_steps.pop(0)
         motion_plan_res = self.plan.plan_arm_motion( "right_arm", "jointspace", step )
         if (motion_plan_res.error_code.val == motion_plan_res.error_code.SUCCESS):
             rospy.logdebug("OK, motion planned, executing it.")
