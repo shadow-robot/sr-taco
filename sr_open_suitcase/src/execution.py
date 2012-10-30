@@ -144,8 +144,7 @@ class Execution(object):
         suitcase_axis = (1, 0, 0)
         for i in range(0, nb_steps + 1):
             #we're rotating from this angle around the suitcase axis to point towards the suitcase
-            # not rotating more than 40 as WRJ1 can't go further than this.
-            rotation_angle = min( float(i) * math.pi / 2.0 / float(nb_steps), math.radians(20.0))
+            rotation_angle = float(i) * math.pi / 2.0 / float(nb_steps)
 
             ####
             # POSITION
@@ -154,6 +153,8 @@ class Execution(object):
 
             ####
             # ORIENTATION
+            #limit the wrj1 axis
+            rotation_angle = min(rotation_angle, math.radians(15.) )
             # add 90 degrees to point the axis toward the suitcase
             rotation_angle += math.pi / 2.0
             #orientation, palm z axis pointing towards the suitcase axes
