@@ -28,11 +28,12 @@ from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryG
 from actionlib_msgs.msg import GoalID, GoalStatus, GoalStatusArray
 from trajectory_msgs.msg import JointTrajectory
 from sr_utilities.srv import getJointState
-from planification import Planification
 from sr_utilities.srv import getJointState
 from visualization_msgs.msg import Marker
 from tf import transformations
 import actionlib
+
+from sr_pick_and_place.execution import Execution
 
 import math
 import numpy as np
@@ -44,7 +45,7 @@ import copy
 
 ARM_NAMES = ['ShoulderJRotate', 'ShoulderJSwing', 'ElbowJSwing', 'ElbowJRotate', "WRJ1", "WRJ2"]
 
-class Execution(object):
+class SrOpenSuitcase(object):
     """
     """
 
@@ -52,26 +53,7 @@ class Execution(object):
         """
         """
         self.markers_pub_ = rospy.Publisher("~markers", Marker)
-
-        #initialize the planner
-        self.plan = Planification()
-
-        self.display_traj_pub_ = rospy.Publisher("/joint_path_display", DisplayTrajectory, latch=True)
-        self.send_traj_pub_ = rospy.Publisher("/command", JointTrajectory, latch=True)
-
-        rospy.loginfo("Waiting for services  /getJointState, /trajectory_filter_unnormalizer/filter_trajectory, /database_grasp_planning")
-        rospy.wait_for_service("/getJointState")
-        rospy.wait_for_service("/trajectory_filter_unnormalizer/filter_trajectory")
-
-        rospy.loginfo("  OK services found")
-
-        self.get_joint_state_ = rospy.ServiceProxy("/getJointState", getJointState)
-        self.trajectory_filter_ = rospy.ServiceProxy("/trajectory_filter_unnormalizer/filter_trajectory", FilterJointTrajectory)
-
-        # access arm_movement actionlib
-        self.joint_spline_trajectory_actionclient_ = actionlib.SimpleActionClient('/r_arm_controller/joint_trajectory_action', FollowJointTrajectoryAction)
-        self.joint_spline_trajectory_actionclient_.wait_for_server()
-        rospy.loginfo("joint_spline_trajectory server ready")
+        self.execution = Execution(use_database = False)
 
         self.suitcase_src_ = rospy.Service("~open_suitcase", OpenSuitcase, self.open_lid)
 
@@ -90,7 +72,7 @@ class Execution(object):
         semi_circle = self.compute_semi_circle_traj_(suitcase)
 
         #go to the first step (ie to the mechanism)
-        self.plan_and_execute_step_(semi_circle)
+        self.execution.plan_and_execute_step_(semi_circle)
 
         #then close the hand
         print "TODO: grasp the mechanism"
@@ -101,24 +83,10 @@ class Execution(object):
 
     def lift_lid_(self, suitcase, semi_circle):
         while len(semi_circle) > 0:
-            self.plan_and_execute_step_(semi_circle)
+            self.execution.plan_and_execute_step_(semi_circle)
             time.sleep(0.5)
 
         return OpenSuitcaseResponse(OpenSuitcaseResponse.SUCCESS)
-
-    def plan_and_execute_step_(self, all_steps):
-        step = all_steps.pop(0)
-        motion_plan_res = self.plan.plan_arm_motion( "right_arm", "jointspace", step )
-        if (motion_plan_res.error_code.val == motion_plan_res.error_code.SUCCESS):
-            rospy.logdebug("OK, motion planned, executing it.")
-            # filter the trajectory
-            filtered_traj = self.filter_traj_(motion_plan_res)
-            #go there
-            self.display_traj_( filtered_traj )
-            self.send_traj_( filtered_traj )
-
-        else:
-            rospy.logerr("This step was impossible")
 
     def compute_semi_circle_traj_(self, suitcase, nb_steps = 10):
         poses = []
@@ -173,29 +141,6 @@ class Execution(object):
 
         return poses
 
-    def recompute_timings_(self, motion_plan):
-        start_time = rospy.Duration(0)
-        last_start_time = rospy.Duration(0)
-        for index, point in enumerate(motion_plan.trajectory.joint_trajectory.points):
-            if point.time_from_start < last_start_time:
-                start_time = last_start_time
-            motion_plan.trajectory.joint_trajectory.points[index].time_from_start = start_time + point.time_from_start + rospy.Duration(5.0)
-            last_start_time = point.time_from_start
-
-        return motion_plan
-
-    def display_traj_(self, trajectory):
-        rospy.logdebug( "Display trajectory" )
-
-        traj = DisplayTrajectory()
-        traj.model_id = "shadow"
-        traj.trajectory.joint_trajectory = trajectory
-        traj.trajectory.joint_trajectory.header.frame_id = "world"
-        traj.trajectory.joint_trajectory.header.stamp = rospy.Time.now()
-        self.display_traj_pub_.publish(traj)
-
-        time.sleep(0.5)
-
     def display_suitcase_(self, suitcase):
         #display axes
         axes_marker = Marker()
@@ -233,62 +178,9 @@ class Execution(object):
 
         self.markers_pub_.publish( mechanism_marker )
 
-    def filter_traj_(self, motion_plan_res):
-        try:
-            req = FilterJointTrajectoryRequest()
-            for name in ARM_NAMES:
-                limit = JointLimits()
-                limit.joint_name = name
-                limit.min_position = -1.5
-                limit.max_position = 1.5
-                limit.has_velocity_limits = True
-                limit.max_velocity = 0.1
-                limit.has_acceleration_limits = True
-                limit.max_acceleration = 0.1
-                req.limits.append(limit)
-
-            req.trajectory = motion_plan_res.trajectory.joint_trajectory
-            req.allowed_time = rospy.Duration.from_sec( 5.0 )
-
-            res = self.get_joint_state_.call()
-            req.start_state.joint_state = res.joint_state
-            res = self.trajectory_filter_.call( req )
-
-        except rospy.ServiceException, e:
-            rospy.logerr("Failed to filter "+str(e))
-            return motion_plan_res.trajectory
-
-        return res.trajectory
-
-    def send_traj_(self, trajectory):
-        rospy.logdebug( "Sending trajectory" )
-        #for index, point in enumerate(traj.points):
-        #    if index == 0 or index == len(traj.points) - 1:
-        #        point.velocities = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        #    else:
-        #        point.velocities = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
-        #    point.time_from_start = rospy.Duration.from_sec(float(index) / 8.0)
-        #    traj.points[index] = point
-
-        #prepare goal
-        trajgoal = FollowJointTrajectoryGoal()
-        trajgoal.trajectory = trajectory
-        # send goal
-        self.joint_spline_trajectory_actionclient_.send_goal(trajgoal)
-        # wait for result up to 30 seconds
-        self.joint_spline_trajectory_actionclient_.wait_for_result(timeout=rospy.Duration.from_sec(50))
-        # analyze result
-        joint_spline_trajectory_result_ = self.joint_spline_trajectory_actionclient_.get_result()
-        if self.joint_spline_trajectory_actionclient_.get_state() != GoalStatus.SUCCEEDED:
-            rospy.logerr("The joint_trajectory action has failed: " + str(joint_spline_trajectory_result_.error_code) )
-            return -1
-        else:
-            rospy.logdebug("The joint_trajectory action has succeeded")
-            return 0
-
 if __name__ =="__main__":
     rospy.init_node("execution")
-    execute = Execution()
+    execute = SrOpenSuitcase()
 
     detected_suitcase = OpenSuitcase()
 
