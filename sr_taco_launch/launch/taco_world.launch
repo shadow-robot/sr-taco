@@ -33,6 +33,6 @@
 
   <!--param name="suitcase" textfile="$(find sr_taco_launch)/other/suitcase.urdf" /-->
   <param name="suitcase" command="$(find xacro)/xacro.py '$(find sr_taco_launch)/other/xacro/objects/suitcase.urdf.xacro'" />
-  <node name="spawn_suitcase" pkg="gazebo" type="spawn_model" args="-urdf -param suitcase -x 0.65 -y 0.0 -z 0.95 -model suitcase" respawn="false" output="screen" />
+  <node name="spawn_suitcase" pkg="gazebo" type="spawn_model" args="-urdf -param suitcase -x 0.85 -y 0.0 -z 1.15 -model suitcase" respawn="false" output="screen" />
 
 </launch>

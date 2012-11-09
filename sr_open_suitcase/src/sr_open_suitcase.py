@@ -35,7 +35,7 @@ import actionlib
 
 from sr_pick_and_place.execution import Execution
 
-import math
+import math, sys
 import numpy as np
 
 from sr_open_suitcase.srv import OpenSuitcase, OpenSuitcaseResponse
@@ -48,6 +48,11 @@ ARM_NAMES = ['ShoulderJRotate', 'ShoulderJSwing', 'ElbowJSwing', 'ElbowJRotate',
 class SrOpenSuitcase(object):
     """
     """
+
+    #The xyz distance we want the palm link to be from the grasping point
+    DISTANCE_TO_GRASP = [-0.05, 0.0, 0.04]
+    #The distance used when computing the approach
+    APPROACH_DISTANCE = 0.05
 
     def __init__(self, ):
         """
@@ -63,19 +68,107 @@ class SrOpenSuitcase(object):
 
         semi_circle = self.go_to_mechanism_and_grasp_(suitcase)
 
+        if semi_circle == None:
+            rospy.logerr("Failed to approach.")
+            sys.exit(1)
+
         time.sleep(1.0)
 
-        return self.lift_lid_(suitcase, semi_circle)
+        self.lift_lid_(suitcase, semi_circle)
+
+        #release the lid
+        self.execution.grasp_release_exec()
 
     def go_to_mechanism_and_grasp_(self, suitcase):
         #compute the full trajectory
         semi_circle = self.compute_semi_circle_traj_(suitcase)
 
-        #go to the first step (ie to the mechanism)
-        self.execution.plan_and_execute_step_(semi_circle)
+        #compute the pregrasp and grasp
+        grasp = Grasp()
+        grasp_pose_ = PoseStamped()
 
-        #then close the hand
-        print "TODO: grasp the mechanism"
+        #the grasp is the first item of the semi circle
+        grasp_pose_ = semi_circle[0]
+
+        # copy the grasp_pose as a pre-grasp_pose
+        pre_grasp_pose_ = copy.deepcopy(grasp_pose_)
+
+        # add desired_approach_distance along the approach vector. above the object to plan pre-grasp pose
+        # TODO: use the suitcase axis to approach from the perpendicular
+        pre_grasp_pose_.pose.position.x = pre_grasp_pose_.pose.position.x - self.APPROACH_DISTANCE
+
+        #TODO: find better postures
+        grasp.pre_grasp_posture.name = [ "FFJ0", "FFJ3", "FFJ4", "LFJ0", "LFJ3", "LFJ4", "LFJ5", "MFJ0", "MFJ3", "MFJ4", "RFJ0", "RFJ3", "RFJ4", "THJ1", "THJ2", "THJ3", "THJ4", "THJ5", "WRJ1", "WRJ2"]
+        grasp.pre_grasp_posture.position = [0.0]*18
+        grasp.pre_grasp_posture.position[ grasp.pre_grasp_posture.name.index("THJ4") ] = 58.0
+        grasp.pre_grasp_posture.position[ grasp.pre_grasp_posture.name.index("THJ5") ] = -50.0
+
+        grasp.grasp_posture.name = [ "FFJ0", "FFJ3", "FFJ4", "LFJ0", "LFJ3", "LFJ4", "LFJ5", "MFJ0", "MFJ3", "MFJ4", "RFJ0", "RFJ3", "RFJ4", "THJ1", "THJ2", "THJ3", "THJ4", "THJ5", "WRJ1", "WRJ2"]
+        grasp.grasp_posture.position = [0.0]*18
+        grasp.grasp_posture.position[ grasp.grasp_posture.name.index("THJ1") ] = 87.0
+        grasp.grasp_posture.position[ grasp.grasp_posture.name.index("THJ2") ] = 30.0
+        grasp.grasp_posture.position[ grasp.grasp_posture.name.index("THJ3") ] = -15.0
+        grasp.grasp_posture.position[ grasp.grasp_posture.name.index("THJ4") ] = 58.0
+        grasp.grasp_posture.position[ grasp.grasp_posture.name.index("THJ5") ] = 40.0
+
+        grasp.grasp_pose = grasp_pose_.pose
+
+        # for distance from 0 (grasp_pose) to desired_approach distance (pre_grasp_pose) test IK/Collision and save result
+        # decompose this in X steps depending on distance to do and max speed
+        motion_plan_res=GetMotionPlanResponse()
+        interpolated_motion_plan_res = self.execution.plan.get_interpolated_ik_motion_plan(pre_grasp_pose_, grasp_pose_, False)
+
+        # check the result (depending on number of steps etc...)
+        if (interpolated_motion_plan_res.error_code.val == interpolated_motion_plan_res.error_code.SUCCESS):
+            number_of_interpolated_steps=0
+            # check if one approach trajectory is feasible
+            for interpolation_index, traj_error_code in enumerate(interpolated_motion_plan_res.trajectory_error_codes):
+                if traj_error_code.val!=1:
+                    rospy.logerr("One unfeasible approach-phase step found at "+str(interpolation_index)+ "with val " + str(traj_error_code.val))
+                    break
+                else:
+                    number_of_interpolated_steps=interpolation_index
+
+            # if trajectory is feasible then plan reach motion to pre-grasp pose
+            if number_of_interpolated_steps+1==len(interpolated_motion_plan_res.trajectory.joint_trajectory.points):
+                rospy.loginfo("Grasp number approach is possible, checking motion plan to pre-grasp")
+                #print interpolated_motion_plan_res
+
+                # check and plan motion to this pre_grasp_pose
+                motion_plan_res = self.execution.plan.plan_arm_motion( "right_arm", "jointspace", pre_grasp_pose_ )
+
+        # execution part
+        if (motion_plan_res.error_code.val == motion_plan_res.error_code.SUCCESS):
+            #put hand in pre-grasp posture
+            if self.execution.pre_grasp_exec(grasp)<0:
+                rospy.logerr("Failed to go in pregrasp.")
+                sys.exit()
+
+            #go there
+            # filter the trajectory
+            filtered_traj = self.execution.filter_traj_(motion_plan_res)
+
+            self.execution.display_traj_( filtered_traj )
+
+            # reach pregrasp pose
+            if self.execution.send_traj_( filtered_traj )<0:
+                time.sleep(20) # TODO use actionlib here
+
+            # approach
+            if self.execution.send_traj_( interpolated_motion_plan_res.trajectory.joint_trajectory )<0:
+                rospy.logerr("Failed to approach.")
+                sys.exit()
+            time.sleep(20) # TODO use actionlib here
+
+            #grasp
+            if self.execution.grasp_exec(grasp)<0:
+                rospy.logerr("Failed to grasp.")
+                sys.exit()
+            time.sleep(20) # TODO use actionlib here
+
+        else:
+            #Failed, don't return the computed traj
+            return None
 
         #return the full traj
         return semi_circle
@@ -88,7 +181,7 @@ class SrOpenSuitcase(object):
 
         return OpenSuitcaseResponse(OpenSuitcaseResponse.SUCCESS)
 
-    def compute_semi_circle_traj_(self, suitcase, nb_steps = 10):
+    def compute_semi_circle_traj_(self, suitcase, nb_steps = 50):
         poses = []
 
         #compute a semi-circular trajectory, starting
@@ -116,8 +209,8 @@ class SrOpenSuitcase(object):
 
             ####
             # POSITION
-            target.pose.position.x = axis[0] - ((axis[0] - mechanism[0]) * math.cos(rotation_angle))
-            target.pose.position.z = axis[2] + ((axis[0] - mechanism[0]) * math.sin(rotation_angle))
+            target.pose.position.x = axis[0] - ((axis[0] - mechanism[0] - self.DISTANCE_TO_GRASP[0]) * math.cos(rotation_angle))
+            target.pose.position.z = axis[2] + ((axis[0] - mechanism[0] - self.DISTANCE_TO_GRASP[0]) * math.sin(rotation_angle)) + self.DISTANCE_TO_GRASP[2]
 
             ####
             # ORIENTATION

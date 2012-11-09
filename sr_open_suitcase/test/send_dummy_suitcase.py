@@ -29,32 +29,32 @@ if __name__ == "__main__":
 
     #where's the opening mechanism
     suitcase.opening_mechanism.pose_stamped.header.frame_id = "/world"
-    suitcase.opening_mechanism.pose_stamped.pose.position.x = 0.46
-    suitcase.opening_mechanism.pose_stamped.pose.position.y = -0.14
-    suitcase.opening_mechanism.pose_stamped.pose.position.z = 0.97
+    suitcase.opening_mechanism.pose_stamped.pose.position.x = 0.63
+    suitcase.opening_mechanism.pose_stamped.pose.position.y = -0.15
+    suitcase.opening_mechanism.pose_stamped.pose.position.z = 1.09
 
-    suitcase.opening_mechanism.pose_stamped.pose.orientation.x = 0.45
-    suitcase.opening_mechanism.pose_stamped.pose.orientation.y = 0.55
-    suitcase.opening_mechanism.pose_stamped.pose.orientation.z = 0.55
-    suitcase.opening_mechanism.pose_stamped.pose.orientation.w = 0.45
+    suitcase.opening_mechanism.pose_stamped.pose.orientation.x = 0.5
+    suitcase.opening_mechanism.pose_stamped.pose.orientation.y = 0.5
+    suitcase.opening_mechanism.pose_stamped.pose.orientation.z = 0.5
+    suitcase.opening_mechanism.pose_stamped.pose.orientation.w = 0.5
 
     # suitcase.opening_mechanism.pose_stamped.pose.orientation.x = 0.375
     # suitcase.opening_mechanism.pose_stamped.pose.orientation.y = 0.155
     # suitcase.opening_mechanism.pose_stamped.pose.orientation.z = 0.844
     # suitcase.opening_mechanism.pose_stamped.pose.orientation.w = 0.351
 
-    suitcase.opening_mechanism.dimensions.x = 0.05
-    suitcase.opening_mechanism.dimensions.y = 0.05
-    suitcase.opening_mechanism.dimensions.z = 0.05
+    suitcase.opening_mechanism.dimensions.x = 0.1
+    suitcase.opening_mechanism.dimensions.y = 0.02
+    suitcase.opening_mechanism.dimensions.z = 0.1
 
     #where are the axes
-    suitcase.lid_axis_a.x = 0.8
-    suitcase.lid_axis_a.y = -0.3
-    suitcase.lid_axis_a.z = 1.0
+    suitcase.lid_axis_a.x = 0.97
+    suitcase.lid_axis_a.y = -0.26
+    suitcase.lid_axis_a.z = 1.09
 
-    suitcase.lid_axis_b.x = 0.8
-    suitcase.lid_axis_b.y = 0.3
-    suitcase.lid_axis_b.z = 1.0
+    suitcase.lid_axis_b.x = 0.97
+    suitcase.lid_axis_b.y = 0.26
+    suitcase.lid_axis_b.z = 1.09
 
     rospy.wait_for_service("/execution/open_suitcase")
     open_suitcase = rospy.ServiceProxy("/execution/open_suitcase", OpenSuitcase)
