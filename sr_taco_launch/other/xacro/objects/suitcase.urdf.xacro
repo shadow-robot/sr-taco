@@ -201,7 +201,7 @@
 
   <joint name="lid_joint" type="revolute" >
     <axis xyz="0 -1 0"/>
-    <limit effort="1000.0" lower="${M_PI/2}" upper="${M_PI}" velocity="0.5"/>
+    <limit effort="1000.0" lower="0.2" upper="${M_PI}" velocity="0.5"/>
     <parent link="wall1_link" />
     <!--origin xyz="${suitcase_x+suitcase_width/2} ${suitcase_y} ${suitcase_z+suitcase_height}" rpy="0 0 0" /-->
     <origin xyz="0 0 ${suitcase_height}" rpy="0 0 0" />

@@ -32,6 +32,7 @@ from sr_utilities.srv import getJointState
 from visualization_msgs.msg import Marker
 from tf import transformations
 import actionlib
+from std_msgs.msg import Float64
 
 from sr_pick_and_place.execution import Execution
 
@@ -50,15 +51,21 @@ class SrOpenSuitcase(object):
     """
 
     #The xyz distance we want the palm link to be from the grasping point
-    DISTANCE_TO_GRASP = [-0.05, 0.0, 0.04]
+    DISTANCE_TO_GRASP = [-0.1, -0.01, 0.04]
     #The distance used when computing the approach
-    APPROACH_DISTANCE = 0.05
+    APPROACH_DISTANCE = 0.03
 
     def __init__(self, ):
         """
         """
         self.markers_pub_ = rospy.Publisher("~markers", Marker)
         self.execution = Execution(use_database = False)
+
+        #direct control of the elbow swing, WRJ1 and THJ5 for throwing the lid open
+        self.publishers = {}
+        self.publishers["ElbowJSwing"] = rospy.Publisher("/sa_es_position_controller/command", Float64, latch=True)
+        self.publishers["WRJ1"] = rospy.Publisher("/sh_wrj1_mixed_position_velocity_controller/command", Float64, latch=True)
+        self.publishers["THJ5"] = rospy.Publisher("/sh_wrj1_mixed_position_velocity_controller/command", Float64, latch=True)
 
         self.suitcase_src_ = rospy.Service("~open_suitcase", OpenSuitcase, self.open_lid)
 
@@ -76,8 +83,9 @@ class SrOpenSuitcase(object):
 
         self.lift_lid_(suitcase, semi_circle)
 
-        #release the lid
-        self.execution.grasp_release_exec()
+        #throw the lid open
+        self.throw_lid_open()
+
 
     def go_to_mechanism_and_grasp_(self, suitcase):
         #compute the full trajectory
@@ -105,7 +113,7 @@ class SrOpenSuitcase(object):
 
         grasp.grasp_posture.name = [ "FFJ0", "FFJ3", "FFJ4", "LFJ0", "LFJ3", "LFJ4", "LFJ5", "MFJ0", "MFJ3", "MFJ4", "RFJ0", "RFJ3", "RFJ4", "THJ1", "THJ2", "THJ3", "THJ4", "THJ5", "WRJ1", "WRJ2"]
         grasp.grasp_posture.position = [0.0]*18
-        grasp.grasp_posture.position[ grasp.grasp_posture.name.index("THJ1") ] = 87.0
+        grasp.grasp_posture.position[ grasp.grasp_posture.name.index("THJ1") ] = 57.0
         grasp.grasp_posture.position[ grasp.grasp_posture.name.index("THJ2") ] = 30.0
         grasp.grasp_posture.position[ grasp.grasp_posture.name.index("THJ3") ] = -15.0
         grasp.grasp_posture.position[ grasp.grasp_posture.name.index("THJ4") ] = 58.0
@@ -181,6 +189,21 @@ class SrOpenSuitcase(object):
 
         return OpenSuitcaseResponse(OpenSuitcaseResponse.SUCCESS)
 
+    def throw_lid_open(self):
+        #get the current joint states
+        res = self.execution.plan.get_joint_state_.call()
+        current_joint_states = res.joint_state
+
+        #flex the elbow, flip the wrist
+        elbow_target = current_joint_states.position[current_joint_states.name.index("ElbowJSwing")] + 0.5
+        wrist_target = current_joint_states.position[current_joint_states.name.index("WRJ1")] - 0.5
+        thj5_target = -0.80
+
+        self.publishers["ElbowJSwing"].publish(elbow_target)
+        self.publishers["WRJ1"].publish(wrist_target)
+        self.publishers["THJ5"].publish(thj5_target)
+
+
     def compute_semi_circle_traj_(self, suitcase, nb_steps = 50):
         poses = []
 
@@ -210,6 +233,7 @@ class SrOpenSuitcase(object):
             ####
             # POSITION
             target.pose.position.x = axis[0] - ((axis[0] - mechanism[0] - self.DISTANCE_TO_GRASP[0]) * math.cos(rotation_angle))
+            target.pose.position.y = suitcase.opening_mechanism.pose_stamped.pose.position.y + self.DISTANCE_TO_GRASP[1]
             target.pose.position.z = axis[2] + ((axis[0] - mechanism[0] - self.DISTANCE_TO_GRASP[0]) * math.sin(rotation_angle)) + self.DISTANCE_TO_GRASP[2]
 
             ####
