@@ -1,12 +1,12 @@
 <launch>
-  <!-- start gazebo with an empty plane 
+  <!-- start gazebo with an empty plane
        !!Commented out as it looks much more stable to run gazebo with an empty world first in a separate terminal
        and run taco_world.launch once Gazebo is already running. Otherwise it crashes most of the times -->
   <!--include file="$(find sr_hand)/launch/gazebo/loaders/empty_world.launch"/-->
 
   <include file="$(find sr_taco_launch)/launch/gazebo_arm_and_hand.launch" />
 
-  <include file="$(find sr_hand)/launch/sr_arm_and_hand.launch" >
+  <include file="$(find sr_hand)/launch/sr_arm_and_hand.launch" />
 
   <!--Load the kinect+base description and launch the model in gazebo -->
   <param name="kinect_description" command="$(find xacro)/xacro.py '$(find sr_taco_launch)/other/base_with_kinect.urdf.xacro'" />
@@ -33,6 +33,6 @@
 
   <!--param name="suitcase" textfile="$(find sr_taco_launch)/other/suitcase.urdf" /-->
   <param name="suitcase" command="$(find xacro)/xacro.py '$(find sr_taco_launch)/other/xacro/objects/suitcase.urdf.xacro'" />
-  <node name="spawn_suitcase" pkg="gazebo" type="spawn_model" args="-urdf -param suitcase -x 0.65 -y 0.0 -z 0.95 -model suitcase" respawn="false" output="screen" />
+  <node name="spawn_suitcase" pkg="gazebo" type="spawn_model" args="-urdf -param suitcase -x 0.85 -y 0.0 -z 1.15 -model suitcase" respawn="false" output="screen" />
 
 </launch>

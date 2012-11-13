@@ -13,9 +13,9 @@
        xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller"
        xmlns:physics="http://playerstage.sourceforge.net/gazebo/xmlschema/#physics">
 
-  <property name="suitcase_height" value="0.20" />
-  <property name="suitcase_width" value="0.30" />
-  <property name="suitcase_depth" value="0.60" />
+  <property name="suitcase_height" value="0.191" />
+  <property name="suitcase_width" value="0.288" />
+  <property name="suitcase_depth" value="0.514" />
   <property name="suitcase_x" value="0.0" />
   <property name="suitcase_y" value="0.0" />
   <property name="suitcase_z" value="0.0" />
@@ -24,9 +24,9 @@
 
   <property name="M_PI" value="3.1415926535897931" />
 
-  <property name="lock_height" value="0.05" />
-  <property name="lock_width" value="0.02" />
-  <property name="lock_depth" value="0.03" />
+  <property name="lock_height" value="0.02" />
+  <property name="lock_width" value="0.1" />
+  <property name="lock_depth" value="0.1" />
 
 
   <link name="suitcase_bottom_link">
@@ -36,13 +36,13 @@
       <inertia ixx="1" ixy="0"  ixz="0"
                iyy="1" iyz="0"
                izz="1" />
-    </inertial> 
+    </inertial>
     <visual>
       <origin xyz="${suitcase_x} ${suitcase_y} ${suitcase_z+suitcase_wall_thickness/2}" />
       <geometry>
         <box size="${suitcase_width} ${suitcase_depth} ${suitcase_wall_thickness}" />
       </geometry>
-    </visual> 
+    </visual>
     <collision>
       <origin xyz="${suitcase_x} ${suitcase_y} ${suitcase_z+suitcase_wall_thickness/2}" />
       <geometry>
@@ -62,7 +62,7 @@
     <parent link="suitcase_bottom_link" />
     <origin xyz="${suitcase_x+suitcase_width/2} ${suitcase_y} ${suitcase_z}" rpy="0 0 0" />
     <child link="wall1_link" />
-  </joint> 
+  </joint>
   <link name="wall1_link">
     <inertial>
       <mass value="3.0" />
@@ -70,13 +70,13 @@
       <inertia ixx="1" ixy="0"  ixz="0"
                iyy="1" iyz="0"
                izz="1" />
-    </inertial> 
+    </inertial>
     <visual>
       <origin xyz="0.0 0.0 ${suitcase_height/2}" rpy="0 0 0" />
       <geometry>
         <box size="${suitcase_wall_thickness} ${suitcase_depth} ${suitcase_height}" />
       </geometry>
-    </visual> 
+    </visual>
     <collision>
       <origin xyz="0.0 0.0 ${suitcase_height/2}" rpy="0.0 0.0 0.0" />
       <geometry>
@@ -97,7 +97,7 @@
     <parent link="suitcase_bottom_link" />
     <origin xyz="${suitcase_x-suitcase_width/2} ${suitcase_y} ${suitcase_z}" rpy="0 0 0" />
     <child link="wall2_link" />
-  </joint> 
+  </joint>
   <link name="wall2_link">
     <inertial>
       <mass value="3.0" />
@@ -105,13 +105,13 @@
       <inertia ixx="1" ixy="0"  ixz="0"
                iyy="1" iyz="0"
                izz="1" />
-    </inertial> 
+    </inertial>
     <visual>
       <origin xyz="0.0 0.0 ${suitcase_height/2}" rpy="0 0 0" />
       <geometry>
         <box size="${suitcase_wall_thickness} ${suitcase_depth} ${suitcase_height}" />
       </geometry>
-    </visual> 
+    </visual>
     <collision>
       <origin xyz="0.0 0.0 ${suitcase_height/2}" rpy="0.0 0.0 0.0" />
       <geometry>
@@ -132,7 +132,7 @@
     <parent link="suitcase_bottom_link" />
     <origin xyz="${suitcase_x} ${suitcase_y+suitcase_depth/2} ${suitcase_z}" rpy="0 0 0" />
     <child link="wall3_link" />
-  </joint> 
+  </joint>
   <link name="wall3_link">
     <inertial>
       <mass value="3.0" />
@@ -140,13 +140,13 @@
       <inertia ixx="1" ixy="0"  ixz="0"
                iyy="1" iyz="0"
                izz="1" />
-    </inertial> 
+    </inertial>
     <visual>
       <origin xyz="0.0 0.0 ${suitcase_height/2}" rpy="0 0 0" />
       <geometry>
         <box size="${suitcase_width} ${suitcase_wall_thickness} ${suitcase_height}" />
       </geometry>
-    </visual> 
+    </visual>
     <collision>
       <origin xyz="0.0 0.0 ${suitcase_height/2}" rpy="0.0 0.0 0.0" />
       <geometry>
@@ -167,7 +167,7 @@
     <parent link="suitcase_bottom_link" />
     <origin xyz="${suitcase_x} ${suitcase_y-suitcase_depth/2} ${suitcase_z}" rpy="0 0 0" />
     <child link="wall4_link" />
-  </joint> 
+  </joint>
   <link name="wall4_link">
     <inertial>
       <mass value="3.0" />
@@ -175,13 +175,13 @@
       <inertia ixx="1" ixy="0"  ixz="0"
                iyy="1" iyz="0"
                izz="1" />
-    </inertial> 
+    </inertial>
     <visual>
       <origin xyz="0.0 0.0 ${suitcase_height/2}" rpy="0 0 0" />
       <geometry>
         <box size="${suitcase_width} ${suitcase_wall_thickness} ${suitcase_height}" />
       </geometry>
-    </visual> 
+    </visual>
     <collision>
       <origin xyz="0.0 0.0 ${suitcase_height/2}" rpy="0.0 0.0 0.0" />
       <geometry>
@@ -201,13 +201,13 @@
 
   <joint name="lid_joint" type="revolute" >
     <axis xyz="0 -1 0"/>
-    <limit effort="1000.0" lower="${M_PI/2}" upper="${M_PI}" velocity="0.5"/>
+    <limit effort="1000.0" lower="0.2" upper="${M_PI}" velocity="0.5"/>
     <parent link="wall1_link" />
     <!--origin xyz="${suitcase_x+suitcase_width/2} ${suitcase_y} ${suitcase_z+suitcase_height}" rpy="0 0 0" /-->
     <origin xyz="0 0 ${suitcase_height}" rpy="0 0 0" />
     <child link="suitcase_lid_link" />
     <dynamics damping="50.5"/>
-  </joint> 
+  </joint>
 
   <link name="suitcase_lid_link">
     <inertial>
@@ -216,13 +216,13 @@
       <inertia ixx="1" ixy="0"  ixz="0"
                iyy="1" iyz="0"
                izz="1" />
-    </inertial> 
+    </inertial>
     <visual>
       <origin xyz="${suitcase_width/2} 0 0" />
       <geometry>
         <box size="${suitcase_width + 0.01} ${suitcase_depth + 0.01} ${suitcase_wall_thickness}" />
       </geometry>
-    </visual> 
+    </visual>
     <collision>
       <origin xyz="${suitcase_width/2} 0 0" />
       <geometry>
@@ -242,7 +242,7 @@
     <parent link="suitcase_lid_link" />
     <origin xyz="${suitcase_width} -0.15 0" rpy="0 0 0" />
     <child link="lock1_link" />
-  </joint> 
+  </joint>
   <link name="lock1_link">
     <inertial>
       <mass value="0.1" />
@@ -250,13 +250,13 @@
       <inertia ixx="0.1" ixy="0"  ixz="0"
                iyy="0.1" iyz="0"
                izz="0.1" />
-    </inertial> 
+    </inertial>
     <visual>
       <origin xyz="${lock_width/2} 0 ${lock_height/2}" rpy="0 0 0" />
       <geometry>
         <box size="${lock_width} ${lock_depth} ${lock_height}" />
       </geometry>
-    </visual> 
+    </visual>
     <collision>
       <origin xyz="${lock_width/2} 0 ${lock_height/2}" rpy="0.0 0.0 0.0" />
       <geometry>
@@ -277,7 +277,7 @@
     <parent link="suitcase_lid_link" />
     <origin xyz="${suitcase_width} 0.15 0" rpy="0 0 0" />
     <child link="lock2_link" />
-  </joint> 
+  </joint>
   <link name="lock2_link">
     <inertial>
       <mass value="0.1" />
@@ -285,13 +285,13 @@
       <inertia ixx="0.1" ixy="0"  ixz="0"
                iyy="0.1" iyz="0"
                izz="0.1" />
-    </inertial> 
+    </inertial>
     <visual>
       <origin xyz="${lock_width/2} 0 ${lock_height/2}" rpy="0 0 0" />
       <geometry>
         <box size="${lock_width} ${lock_depth} ${lock_height}" />
       </geometry>
-    </visual> 
+    </visual>
     <collision>
       <origin xyz="${lock_width/2} 0 ${lock_height/2}" rpy="0.0 0.0 0.0" />
       <geometry>

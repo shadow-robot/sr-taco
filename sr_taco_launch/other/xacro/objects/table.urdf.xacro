@@ -13,7 +13,7 @@
        xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller"
        xmlns:physics="http://playerstage.sourceforge.net/gazebo/xmlschema/#physics">
 
-  <property name="table_height" value="0.80" />
+  <property name="table_height" value="0.90" />
   <property name="table_width" value="1.0" />
   <property name="table_depth" value="0.70" />
   <property name="leg_radius" value="0.02" />
@@ -34,13 +34,13 @@
       <inertia ixx="1" ixy="0"  ixz="0"
                iyy="1" iyz="0"
                izz="1" />
-    </inertial> 
+    </inertial>
     <visual>
       <origin xyz="${table_x} ${table_y} ${table_z+table_height-table_top_thickness/2}" />
       <geometry>
         <box size="${table_width} ${table_depth} ${table_top_thickness}" />
       </geometry>
-    </visual> 
+    </visual>
     <collision>
       <origin xyz="${table_x} ${table_y} ${table_z+table_height-table_top_thickness/2}" />
       <geometry>
@@ -60,7 +60,7 @@
     <parent link="table_top_link" />
     <origin xyz="${table_x+table_width/2} ${table_y+table_depth/2} ${table_z+table_height}" rpy="0 0 0" />
     <child link="leg1_link" />
-  </joint> 
+  </joint>
   <link name="leg1_link">
     <inertial>
       <mass value="10.0" />
@@ -68,13 +68,13 @@
       <inertia ixx="0.1" ixy="0"  ixz="0"
                iyy="0.1" iyz="0"
                izz="0.01" />
-    </inertial> 
+    </inertial>
     <visual>
       <origin xyz="0.0 0.0 ${-table_height/2}" rpy="0 0 0" />
       <geometry>
         <cylinder radius="${leg_radius}" length="${table_height}" />
       </geometry>
-    </visual> 
+    </visual>
     <collision>
       <origin xyz="0.0 0.0 ${-table_height/2}" rpy="0.0 0.0 0.0" />
       <geometry>
@@ -95,7 +95,7 @@
     <parent link="table_top_link" />
     <origin xyz="${table_x-table_width/2} ${table_y+table_depth/2} ${table_z+table_height}" rpy="0 0 0" />
     <child link="leg2_link" />
-  </joint> 
+  </joint>
   <link name="leg2_link">
     <inertial>
       <mass value="10.0" />
@@ -103,13 +103,13 @@
       <inertia ixx="0.1" ixy="0"  ixz="0"
                iyy="0.1" iyz="0"
                izz="0.01" />
-    </inertial> 
+    </inertial>
     <visual>
       <origin xyz="0.0 0.0 ${-table_height/2}" rpy="0 0 0" />
       <geometry>
         <cylinder radius="${leg_radius}" length="${table_height}" />
       </geometry>
-    </visual> 
+    </visual>
     <collision>
       <origin xyz="0.0 0.0 ${-table_height/2}" rpy="0.0 0.0 0.0" />
       <geometry>
@@ -130,7 +130,7 @@
     <parent link="table_top_link" />
     <origin xyz="${table_x+table_width/2} ${table_y-table_depth/2} ${table_z+table_height}" rpy="0 0 0" />
     <child link="leg3_link" />
-  </joint> 
+  </joint>
   <link name="leg3_link">
     <inertial>
       <mass value="10.0" />
@@ -138,13 +138,13 @@
       <inertia ixx="0.1" ixy="0"  ixz="0"
                iyy="0.1" iyz="0"
                izz="0.01" />
-    </inertial> 
+    </inertial>
     <visual>
       <origin xyz="0.0 0.0 ${-table_height/2}" rpy="0 0 0" />
       <geometry>
         <cylinder radius="${leg_radius}" length="${table_height}" />
       </geometry>
-    </visual> 
+    </visual>
     <collision>
       <origin xyz="0.0 0.0 ${-table_height/2}" rpy="0.0 0.0 0.0" />
       <geometry>
@@ -165,7 +165,7 @@
     <parent link="table_top_link" />
     <origin xyz="${table_x-table_width/2} ${table_y-table_depth/2} ${table_z+table_height}" rpy="0 0 0" />
     <child link="leg4_link" />
-  </joint> 
+  </joint>
   <link name="leg4_link">
     <inertial>
       <mass value="10.0" />
@@ -173,13 +173,13 @@
       <inertia ixx="0.1" ixy="0"  ixz="0"
                iyy="0.1" iyz="0"
                izz="0.01" />
-    </inertial> 
+    </inertial>
     <visual>
       <origin xyz="0.0 0.0 ${-table_height/2}" rpy="0 0 0" />
       <geometry>
         <cylinder radius="${leg_radius}" length="${table_height}" />
       </geometry>
-    </visual> 
+    </visual>
     <collision>
       <origin xyz="0.0 0.0 ${-table_height/2}" rpy="0.0 0.0 0.0" />
       <geometry>

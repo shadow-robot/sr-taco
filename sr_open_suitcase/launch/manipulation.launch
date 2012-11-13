@@ -2,7 +2,7 @@
 <!--  <include file="$(find shadow_arm_navigation)/launch/shadow_arm_navigation.launch" /> -->
 
   <node name="interpolated_ik_node_right" pkg="interpolated_ik_motion_planner"
-	type="interpolated_ik_motion_planner.py" args="r" respawn="false">
+	type="interpolated_ik_motion_planner.py" args="r" respawn="false" output="screen">
     <param name="num_steps" value ="4" />
     <param name="robot_prefix" value = "shadow"/>
     <param name="collision_aware_ik" value = "1"/>
