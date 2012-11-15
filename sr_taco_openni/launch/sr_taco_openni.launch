@@ -1,0 +1,8 @@
+<launch>
+    <!-- Start the OpenNI camera -->
+    <include file="$(find openni_launch)/launch/openni.launch" />
+
+    <!-- Tracker using NI camera feed as input cloud -->
+    <node name="tacoSensor" pkg="sr_taco_openni" type="sr_taco_openni">
+    </node>
+</launch>
