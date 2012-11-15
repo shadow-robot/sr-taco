@@ -12,6 +12,7 @@
   <depend package="sensor_msgs"/>
   <depend package="openni_camera"/>
   <depend package="openni_launch"/>
+  <depend package="sr_pcl_tracking"/>
 
 </package>
 

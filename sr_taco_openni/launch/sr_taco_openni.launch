@@ -4,5 +4,6 @@
 
     <!-- Tracker using NI camera feed as input cloud -->
     <node name="tacoSensor" pkg="sr_taco_openni" type="sr_taco_openni">
+        <param name="downsampling_grid_size" value="0.01" />
     </node>
 </launch>

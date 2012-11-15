@@ -1,4 +1,5 @@
 #include "sr_taco_openni/sr_taco_openni.h"
+
 #include <sensor_msgs/image_encodings.h>
 
 namespace sr_taco_openni {
@@ -21,11 +22,12 @@ namespace sr_taco_openni {
     const unsigned int TacoOpenNI::taco_height = 480;
 
     TacoOpenNI::TacoOpenNI()
-        : nh_home("~"),
-        foveated("foveated"),
-        unfoveated("unfoveated")
+        : nh_home("~")
+        , foveated("foveated")
+        , unfoveated("unfoveated")
     {
         nh_home.param<string>("camera", camera, "camera");
+        nh_home.param<double>("downsampling_grid_size", downsampling_grid_size_, 0.01);
         saliency_map_spatial = boost::shared_ptr<sensor_msgs::Image>(new sensor_msgs::Image());
 
         // Just use depth not depth_registed as we don't need RGB/Depth alignment
@@ -47,9 +49,21 @@ namespace sr_taco_openni {
         saliency_map_spatial->data.resize( taco_height * saliency_map_spatial->step );
     }
         
-    void TacoOpenNI::pclIn(const sensor_msgs::PointCloud2::ConstPtr& msg) {
-        foveated.pointCloud.publish(msg);
-        unfoveated.pointCloud.publish(msg);
+    void TacoOpenNI::pclIn(const sensor_msgs::PointCloud2::ConstPtr& cloud) {
+        CloudPtr input_cloud(new Cloud);
+        pcl::fromROSMsg(*cloud, *input_cloud);
+
+        // Downsample the point cloud to speed up processing
+        pcl::VoxelGrid<PointType> grid;
+        grid.setLeafSize(downsampling_grid_size_, downsampling_grid_size_, downsampling_grid_size_);
+        grid.setInputCloud(input_cloud);
+        grid.filter(target_cloud_);
+
+        // No foveation yet so pub the same cloud twice
+        sensor_msgs::PointCloud2 out_cloud;
+        pcl::toROSMsg(target_cloud_, out_cloud);
+        unfoveated.pointCloud.publish(out_cloud);
+        foveated.pointCloud.publish(out_cloud);
     }
     
     void TacoOpenNI::cameraInfoIn(const sensor_msgs::CameraInfo::ConstPtr& msg) {
