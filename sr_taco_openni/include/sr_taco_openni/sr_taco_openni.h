@@ -55,10 +55,11 @@ class TacoOpenNI {
         double downsampling_grid_size_;
 
         // Cloud to work with, has been filtered and downsampled
-        Cloud target_cloud_;
+        CloudPtr target_cloud_;
 
         vector<Subscriber> subs;
         void pclIn(const sensor_msgs::PointCloud2::ConstPtr& msg);
+        void calculateSaliencyMap();
         void cameraInfoIn(const sensor_msgs::CameraInfo::ConstPtr& msg);
         void depthImageIn(const sensor_msgs::Image::ConstPtr& msg);
 
