@@ -109,7 +109,19 @@ public:
         save_srv_ = nh_home_.advertiseService("save_reference", &Tracker::saveReference_cb, this);
         list_srv_ = nh_home_.advertiseService("list_reference", &Tracker::listReference_cb, this);
 
-        // PCL Tracking setup
+        // Start tracking an empty cloud
+        CloudPtr ref_cloud(new Cloud);
+        trackCloud(ref_cloud);
+    }
+
+    void run () { ros::spin(); }
+
+protected:
+    /** Reset the tracker object to initial state.
+     * Note: called by constructor.
+     */
+    void initTracker()
+    {
         bool use_fixed = false;
         int thread_nr = 8;
 
@@ -171,14 +183,8 @@ public:
         coherence->setMaximumDistance(0.01);
         tracker_->setCloudCoherence(coherence);
 
-        // Start tracking an empty cloud
-        CloudPtr ref_cloud(new Cloud);
-        trackCloud(ref_cloud);
     }
 
-    void run () { ros::spin(); }
-
-protected:
     void
     cloud_cb (const sensor_msgs::PointCloud2ConstPtr& cloud)
     {
@@ -327,6 +333,8 @@ protected:
         Eigen::Affine3f trans = Eigen::Affine3f::Identity ();
         trans.translation () = Eigen::Vector3f (c[0], c[1], c[2]);
         pcl::transformPointCloud<PointType> (*ref_cloud, *transed_ref, trans.inverse ());
+
+        initTracker();
         tracker_->setReferenceCloud (transed_ref);
         tracker_->setTrans (trans);
         tracker_->setMinIndices (ref_cloud->points.size () / 2);
