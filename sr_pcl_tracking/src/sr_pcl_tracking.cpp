@@ -313,12 +313,6 @@ protected:
         if (clusters.size() > 0)
             ref_cloud = clusters[0];
 
-        ROS_INFO_STREAM("ref_cloud: "
-                << " points: " << ref_cloud->points.size()
-                << " wh:" << ref_cloud->width << "x" << ref_cloud->height
-                << " is_dense: " << (ref_cloud->is_dense ? "Yes" : "No")
-                );
-
         trackCloud(ref_cloud);
 
         return true;
@@ -335,8 +329,14 @@ protected:
         pcl::transformPointCloud<PointType> (*ref_cloud, *transed_ref, trans.inverse ());
         tracker_->setReferenceCloud (transed_ref);
         tracker_->setTrans (trans);
-        reference_ = transed_ref;
         tracker_->setMinIndices (ref_cloud->points.size () / 2);
+
+        reference_ = transed_ref;
+        ROS_INFO_STREAM("ref_cloud: "
+                << " points: " << ref_cloud->points.size()
+                << " wh:" << ref_cloud->width << "x" << ref_cloud->height
+                << " is_dense: " << (ref_cloud->is_dense ? "Yes" : "No")
+                );
     }
 
     /**
