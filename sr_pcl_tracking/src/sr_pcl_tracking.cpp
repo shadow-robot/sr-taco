@@ -198,7 +198,9 @@ protected:
         pass.setInputCloud (input_cloud);
         pass.filter (*cloud_pass_);
 
-        gridSampleApprox (cloud_pass_, *cloud_pass_downsampled_, downsampling_grid_size_);
+        // TODO: param toggle use of approx downsampling
+        // gridSampleApprox (cloud_pass_, *cloud_pass_downsampled_, downsampling_grid_size_);
+        gridSample (cloud_pass_, *cloud_pass_downsampled_, downsampling_grid_size_);
 
         if (reference_->points.size() > 0)
             tracking ();
@@ -300,7 +302,8 @@ protected:
         CloudPtr ref_cloud(new Cloud);
         std::vector<CloudPtr> clusters;
         ClusterSegmentor<PointType> cluster_segmentor;
-        cluster_segmentor.setInputCloud(cloud_pass_);
+        cluster_segmentor.setInputCloud(cloud_pass_downsampled_);
+
         ROS_INFO("Segmenting cloud...");
         if (sort_type == SEGMENT_SORT_BY_CENTERED)
             cluster_segmentor.extractByCentered(clusters);
@@ -330,9 +333,7 @@ protected:
         Eigen::Affine3f trans = Eigen::Affine3f::Identity ();
         trans.translation () = Eigen::Vector3f (c[0], c[1], c[2]);
         pcl::transformPointCloud<PointType> (*ref_cloud, *transed_ref, trans.inverse ());
-        CloudPtr transed_ref_downsampled (new Cloud);
-        gridSample (transed_ref, *transed_ref_downsampled, downsampling_grid_size_);
-        tracker_->setReferenceCloud (transed_ref_downsampled);
+        tracker_->setReferenceCloud (transed_ref);
         tracker_->setTrans (trans);
         reference_ = transed_ref;
         tracker_->setMinIndices (ref_cloud->points.size () / 2);
@@ -435,12 +436,12 @@ protected:
         // Find all the clusters. We then try to match the find cloud against each cluster.
         std::vector<CloudPtr> clusters;
         ClusterSegmentor<PointType> cluster_segmentor;
-        // XXX Use downsampled here?
-        cluster_segmentor.setInputCloud(cloud_pass_);
+        cluster_segmentor.setInputCloud(cloud_pass_downsampled_);
         cluster_segmentor.extract(clusters);
 
         // Convert the cloud we want to find.
         // (We need PointXYZ but input tracking is using PointXYZRGB)
+        // TODO: Instead of all this copy we should make TemplateAlignment templated on PointT
         pcl::PointCloud<pcl::PointXYZ>::Ptr object_template(new pcl::PointCloud<pcl::PointXYZ>);
         copyPointCloud(find_cloud, object_template);
         pcl::io::savePCDFileASCII("find_object_template.pcd", *object_template);
