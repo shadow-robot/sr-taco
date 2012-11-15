@@ -64,7 +64,7 @@ Pose.Shaft\ Radius=0.1
 Pose.Shape=0
 Pose.Topic=/sr_pcl_tracker/result/pose
 Property\ Grid\ Splitter=432,85
-Property\ Grid\ State=expanded=.Global Options,Tracker Downsampled.Enabled,Tracker Downsampled.Status;splitterratio=0.511156
+Property\ Grid\ State=expanded=.Global Options;splitterratio=0.511156
 QMainWindow=000000ff00000000fd00000003000000000000019f00000257fc0200000002fb000000100044006900730070006c006100790073010000003400000257000000fc00fffffffb0000000a0049006d00610067006500000001e8000000a30000001900ffffff000000010000012e00000255fc0200000001fc00000034000002550000000000fffffffaffffffff0100000003fb0000001200530065006c0065006300740069006f006e0000000000ffffffff0000005500fffffffb0000000a005600690065007700730000000000ffffffff0000012e00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007300000005df0000012f0000005500ffffff00000003000004970000003efc0100000001fb0000000800540069006d0065010000000000000497000002af00ffffff000002f20000025700000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
 Target\ Frame=<Fixed Frame>
 Tool\ 2D\ Nav\ GoalTopic=/move_base_simple/goal
@@ -161,13 +161,13 @@ ClassName=rviz::GridDisplay
 Name=Grid
 [Display1]
 ClassName=rviz::PointCloud2Display
-Name=Tracker Result
+Name=Camera Cloud
 [Display2]
 ClassName=rviz::PointCloud2Display
-Name=Camera Cloud
+Name=Tracker Downsampled
 [Display3]
 ClassName=rviz::PointCloud2Display
-Name=Tracker Downsampled
+Name=Tracker Result
 [Display4]
 ClassName=rviz::PointCloud2Display
 Name=Tracker Particles
