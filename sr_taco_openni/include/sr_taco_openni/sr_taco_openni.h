@@ -6,6 +6,7 @@
 #include "sensor_msgs/CameraInfo.h"
 #include "sensor_msgs/Image.h"
 
+#include <pcl_ros/point_cloud.h>
 #include <pcl/ros/conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -37,7 +38,7 @@ class TacoOpenNIPubs {
 
 class TacoOpenNI {
     public:
-        typedef pcl::PointXYZ PointType;
+        typedef pcl::PointXYZRGB PointType;
         typedef pcl::PointCloud<PointType> Cloud;
         typedef typename Cloud::Ptr CloudPtr;
         typedef typename Cloud::ConstPtr CloudConstPtr;
@@ -68,6 +69,7 @@ class TacoOpenNI {
 
         boost::shared_ptr<sensor_msgs::Image> saliency_map_spatial;
         Publisher saliency_map_spatial_pub;
+        Publisher clusters_pub_;
         
         //const width/height for our point cloud and image.
         //Should match the camera we are faking the taco with, not the actual
