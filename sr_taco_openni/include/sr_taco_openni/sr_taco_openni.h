@@ -7,6 +7,8 @@
 #include "sensor_msgs/Image.h"
 #include "message_filters/subscriber.h"
 #include "message_filters/time_synchronizer.h"
+#include <cv_bridge/CvBridge.h>
+#include <image_geometry/pinhole_camera_model.h>
 
 #include <pcl_ros/point_cloud.h>
 #include <pcl/ros/conversions.h>
@@ -79,13 +81,15 @@ class TacoOpenNI {
         vector<Subscriber> subs;
         void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud,
                        const sensor_msgs::CameraInfo::ConstPtr& info);
-        void calculateSaliencyMap();
+        void calculateSaliencyMap(const sensor_msgs::CameraInfo::ConstPtr& info);
         void cameraInfoIn(const sensor_msgs::CameraInfo::ConstPtr& msg);
         void depthImageIn(const sensor_msgs::Image::ConstPtr& msg);
 
         TacoOpenNIPubs foveated;
         TacoOpenNIPubs unfoveated;
 
+        sensor_msgs::CvBridge bridge_;
+        image_geometry::PinholeCameraModel cam_model_;
         boost::shared_ptr<sensor_msgs::Image> saliency_map_spatial;
         Publisher saliency_map_spatial_pub;
         Publisher clusters_pub_;

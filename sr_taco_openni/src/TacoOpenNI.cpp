@@ -3,7 +3,7 @@
 #include "sr_pcl_tracking/cluster_segmentor.h"
 
 #include <sensor_msgs/image_encodings.h>
-
+#include <opencv/cv.h>
 #include <pcl/range_image/range_image.h>
 
 namespace sr_taco_openni {
@@ -81,14 +81,14 @@ namespace sr_taco_openni {
         unfoveated.pointCloud.publish(out_cloud);
         foveated.pointCloud.publish(out_cloud);
 
-        calculateSaliencyMap();
+        calculateSaliencyMap(info);
         saliency_map_spatial_pub.publish(saliency_map_spatial);
 
         // Re-publish the camera info
         cameraInfoIn(info);
     }
 
-    void TacoOpenNI::calculateSaliencyMap()
+    void TacoOpenNI::calculateSaliencyMap(const sensor_msgs::CameraInfo::ConstPtr& info)
     {
         // Pull out the interesting clusters
         std::vector<CloudPtr> clusters;
@@ -113,31 +113,45 @@ namespace sr_taco_openni {
         for(size_t i = 0; i < saliency_map_spatial->data.size(); ++i)
             saliency_map_spatial->data[i] = 0;
 
-        // Try to convert cluster cloud to a depth map
-        // XXX: We get an image but it is not right :(
-        float angularResolution = (float) (  1.0f * (M_PI/180.0f));  //   1.0 degree in radians
-        float maxAngleWidth     = (float) (360.0f * (M_PI/180.0f));  // 360.0 degree in radians
-        float maxAngleHeight    = (float) (180.0f * (M_PI/180.0f));  // 180.0 degree in radians
-        Eigen::Affine3f sensorPose = (Eigen::Affine3f)Eigen::Translation3f(0.0f, 0.0f, 0.0f);
-        pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::CAMERA_FRAME;
-        float noiseLevel=0.00;
-        float minRange = 0.0f;
-        int borderSize = 0;
-        pcl::RangeImage rangeImage;
-        rangeImage.createFromPointCloud(*all_clusters, angularResolution, maxAngleWidth, maxAngleHeight,
-                                        sensorPose, coordinate_frame, noiseLevel, minRange, borderSize);
-        ROS_INFO_STREAM_ONCE("rangeImage:" << rangeImage);
-
-        // Convert range image to ros msg
-        for (uint32_t y=0; y<rangeImage.height; ++y) {
-            for (uint32_t x=0; x<rangeImage.width; ++x) {
-                if ( rangeImage.isValid(x,y) ) continue;
-                int n = y*saliency_map_spatial->width + x;
-                //ROS_INFO("xy:%i,%i n:%i", x, y, (int)n);
-                saliency_map_spatial->data[n] = 255;
-            }
+        // Convert saliency msg to cv image
+        IplImage* image = NULL;
+        try {
+            image = bridge_.imgMsgToCv(saliency_map_spatial, "mono8");
+        }
+        catch (sensor_msgs::CvBridgeException& ex) {
+            ROS_ERROR("Failed to convert image");
+            return;
         }
 
+        cam_model_.fromCameraInfo(info);
+
+        // Convert the cv image back to msg
+        bridge_.cvToImgMsg(image, "mono8");
+
+//        // Try to convert cluster cloud to a depth map
+//        // XXX: We get an image but it is not right :(
+//        float angularResolution = (float) (  1.0f * (M_PI/180.0f));  //   1.0 degree in radians
+//        float maxAngleWidth     = (float) (360.0f * (M_PI/180.0f));  // 360.0 degree in radians
+//        float maxAngleHeight    = (float) (180.0f * (M_PI/180.0f));  // 180.0 degree in radians
+//        Eigen::Affine3f sensorPose = (Eigen::Affine3f)Eigen::Translation3f(0.0f, 0.0f, 0.0f);
+//        pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::CAMERA_FRAME;
+//        float noiseLevel=0.00;
+//        float minRange = 0.0f;
+//        int borderSize = 0;
+//        pcl::RangeImage rangeImage;
+//        rangeImage.createFromPointCloud(*all_clusters, angularResolution, maxAngleWidth, maxAngleHeight,
+//                                        sensorPose, coordinate_frame, noiseLevel, minRange, borderSize);
+//        ROS_INFO_STREAM_ONCE("rangeImage:" << rangeImage);
+//
+//        // Convert range image to ros msg
+//        for (uint32_t y=0; y<rangeImage.height; ++y) {
+//            for (uint32_t x=0; x<rangeImage.width; ++x) {
+//                if ( rangeImage.isValid(x,y) ) continue;
+//                int n = y*saliency_map_spatial->width + x;
+//                //ROS_INFO("xy:%i,%i n:%i", x, y, (int)n);
+//                saliency_map_spatial->data[n] = 255;
+//            }
+//        }
     }
 
     void TacoOpenNI::cameraInfoIn(const sensor_msgs::CameraInfo::ConstPtr& msg) {
