@@ -70,6 +70,7 @@ class TacoOpenNI {
 
         // Leaf size (xyz) to downsample the camera feed
         double downsampling_grid_size_;
+        double filter_z_min_, filter_z_max_;
 
         // Cloud to work with, has been filtered and downsampled
         CloudPtr target_cloud_;

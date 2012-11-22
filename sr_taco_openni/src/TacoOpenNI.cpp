@@ -34,6 +34,9 @@ namespace sr_taco_openni {
     {
         nh_home.param<string>("camera", camera, "camera");
         nh_home.param<double>("downsampling_grid_size", downsampling_grid_size_, 0.01);
+        nh_home.param<double>("filter_z_min", filter_z_min_, 0.0);
+        nh_home.param<double>("filter_z_max", filter_z_max_, 10.0);
+
         saliency_map_spatial = boost::shared_ptr<sensor_msgs::Image>(new sensor_msgs::Image());
 
         // Setup a callback with the point cloud and camera info in sync.
@@ -64,15 +67,25 @@ namespace sr_taco_openni {
                        const sensor_msgs::CameraInfo::ConstPtr& info)
     {
         CloudPtr input_cloud(new Cloud);
+        CloudPtr tmp_cloud(new Cloud);
         pcl::fromROSMsg(*cloud, *input_cloud);
         ROS_INFO_STREAM_ONCE("input_cloud: " << *input_cloud);
+
+        // Do some z filtering, to reduce number points and focus on foreground
+        pcl::PassThrough<PointType> pass;
+        pass.setFilterFieldName ("z");
+        pass.setFilterLimits (filter_z_min_, filter_z_max_);
+        pass.setKeepOrganized (false);
+        pass.setInputCloud (input_cloud);
+        pass.filter (*tmp_cloud);
 
         // Downsample the point cloud to speed up processing
         target_cloud_.reset(new Cloud);
         pcl::VoxelGrid<PointType> grid;
-        grid.setInputCloud(input_cloud);
+        grid.setInputCloud(tmp_cloud);
         grid.setLeafSize(downsampling_grid_size_, downsampling_grid_size_, downsampling_grid_size_);
         grid.filter(*target_cloud_);
+
         ROS_INFO_STREAM_ONCE("target_cloud: " << *target_cloud_);
 
         // No foveation yet so pub the same cloud twice
