@@ -79,7 +79,6 @@ class TacoOpenNI {
         vector<Subscriber> subs;
         void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud,
                        const sensor_msgs::CameraInfo::ConstPtr& info);
-        void pclIn(const sensor_msgs::PointCloud2::ConstPtr& msg);
         void calculateSaliencyMap();
         void cameraInfoIn(const sensor_msgs::CameraInfo::ConstPtr& msg);
         void depthImageIn(const sensor_msgs::Image::ConstPtr& msg);

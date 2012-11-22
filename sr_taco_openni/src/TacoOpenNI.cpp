@@ -63,11 +63,6 @@ namespace sr_taco_openni {
     void TacoOpenNI::cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud,
                        const sensor_msgs::CameraInfo::ConstPtr& info)
     {
-        pclIn(cloud);
-        cameraInfoIn(info);
-    }
-        
-    void TacoOpenNI::pclIn(const sensor_msgs::PointCloud2::ConstPtr& cloud) {
         CloudPtr input_cloud(new Cloud);
         pcl::fromROSMsg(*cloud, *input_cloud);
         ROS_INFO_STREAM_ONCE("input_cloud: " << *input_cloud);
@@ -88,8 +83,11 @@ namespace sr_taco_openni {
 
         calculateSaliencyMap();
         saliency_map_spatial_pub.publish(saliency_map_spatial);
+
+        // Re-publish the camera info
+        cameraInfoIn(info);
     }
-    
+
     void TacoOpenNI::calculateSaliencyMap()
     {
         // Pull out the interesting clusters
