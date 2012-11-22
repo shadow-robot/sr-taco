@@ -36,10 +36,14 @@ namespace sr_taco_openni {
         nh_home.param<double>("downsampling_grid_size", downsampling_grid_size_, 0.01);
         saliency_map_spatial = boost::shared_ptr<sensor_msgs::Image>(new sensor_msgs::Image());
 
-        subs.push_back( nh.subscribe(camera + "/depth_registered/points",
-               1, &TacoOpenNI::pclIn, this) );
-        subs.push_back( nh.subscribe(camera + "/depth_registered/camera_info",
-               1, &TacoOpenNI::cameraInfoIn, this) );
+        // Setup a callback with the point cloud and camera info in sync.
+        // Needed for generating depth images (ie saliency maps) from clouds.
+        string depth = camera + "/depth_registered";
+        pointcloud_sub_ = PointCloudSubPtr( new PointCloudSub(nh, depth + "/points", 1));
+        camerainfo_sub_ = CameraInfoSubPtr(new CameraInfoSub(nh, depth + "/camera_info", 1));
+        pointcloud_sync_ = CloudSyncPtr( new CloudSync(*pointcloud_sub_, *camerainfo_sub_, 10) );
+        pointcloud_sync_->registerCallback( boost::bind(&TacoOpenNI::cloudCb, this, _1, _2) );
+
         subs.push_back( nh.subscribe(camera + "/depth_registered/image",
                1, &TacoOpenNI::depthImageIn, this) );
         
@@ -54,6 +58,13 @@ namespace sr_taco_openni {
         saliency_map_spatial->data.resize( taco_height * saliency_map_spatial->step );
 
         clusters_pub_ = nh_home.advertise<Cloud>("clusters/points", 5);
+    }
+
+    void TacoOpenNI::cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud,
+                       const sensor_msgs::CameraInfo::ConstPtr& info)
+    {
+        pclIn(cloud);
+        cameraInfoIn(info);
     }
         
     void TacoOpenNI::pclIn(const sensor_msgs::PointCloud2::ConstPtr& cloud) {
