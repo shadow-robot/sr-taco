@@ -35,6 +35,9 @@ class ClusterSegmentor
       */
     ClusterSegmentor()
       : use_convex_hull_(true)
+      , cluster_tolerance_(0.05) // 2cm
+      , min_pts_per_cluster_(50)
+      , max_pts_per_cluster_(25000)
     {}
 
     /** \brief Destructor.
@@ -57,6 +60,30 @@ class ClusterSegmentor
     /** \brief Get a pointer to the input point cloud dataset. */
     inline CloudConstPtr const
     getInputCloud () { return (input_); }
+
+    /** \brief Set the spatial cluster tolerance as a measure in the L2 Euclidean space
+    * \param tolerance the spatial cluster tolerance as a measure in the L2 Euclidean space
+    */
+    inline void setClusterTolerance (double tolerance) { cluster_tolerance_ = tolerance; }
+
+    /** \brief Get the spatial cluster tolerance as a measure in the L2 Euclidean space. */
+    inline double getClusterTolerance () { return (cluster_tolerance_); }
+
+    /** \brief Set the minimum number of points that a cluster needs to contain in order to be considered valid.
+    * \param min_cluster_size the minimum cluster size
+    */
+    inline void setMinClusterSize (int min_cluster_size) { min_pts_per_cluster_ = min_cluster_size; }
+
+    /** \brief Get the minimum number of points that a cluster needs to contain in order to be considered valid. */
+    inline int getMinClusterSize () { return (min_pts_per_cluster_); }
+
+    /** \brief Set the maximum number of points that a cluster needs to contain in order to be considered valid.
+    * \param max_cluster_size the maximum cluster size
+    */
+    inline void setMaxClusterSize (int max_cluster_size) { max_pts_per_cluster_ = max_cluster_size; }
+
+    /** \brief Get the maximum number of points that a cluster needs to contain in order to be considered valid. */
+    inline int getMaxClusterSize () { return (max_pts_per_cluster_); }
 
     /**
      * \breif Segment the target_cloud into clusters, pushing each cluster onto the results vector.
@@ -133,9 +160,9 @@ class ClusterSegmentor
       pcl::EuclideanClusterExtraction<PointType> ec;
       KdTreePtr tree (new KdTree ());
 
-      ec.setClusterTolerance (0.05); // 2cm
-      ec.setMinClusterSize (50);
-      ec.setMaxClusterSize (25000);
+      ec.setClusterTolerance (cluster_tolerance_); // 2cm
+      ec.setMinClusterSize (min_pts_per_cluster_);
+      ec.setMaxClusterSize (max_pts_per_cluster_);
       ec.setSearchMethod (tree);
       ec.setInputCloud (target_cloud_);
       ec.extract (cluster_indices);
@@ -245,6 +272,16 @@ class ClusterSegmentor
     }
 
     bool use_convex_hull_;
+
+    /** \brief The spatial cluster tolerance as a measure in the L2 Euclidean space. */
+    double cluster_tolerance_;
+
+    /** \brief The minimum number of points that a cluster needs to contain in order to be considered valid (default = 50). */
+    int min_pts_per_cluster_;
+
+    /** \brief The maximum number of points that a cluster needs to contain in order to be considered valid (default = 25000). */
+    int max_pts_per_cluster_;
+
     CloudConstPtr input_;
     CloudConstPtr target_cloud_;
     CloudPtr nonplane_cloud_;
