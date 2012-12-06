@@ -105,10 +105,16 @@ namespace sr_taco_openni {
     {
         string frame_id = target_cloud_->header.frame_id;
 
+        double min_cluster_size, max_cluster_size;
+        nh_home.param<double>("attention/segment_clusters/min_cluster_size", min_cluster_size, 50.0);
+        nh_home.param<double>("attention/segment_clusters/max_cluster_size", max_cluster_size, 25000.0);
+
         // Pull out the interesting clusters
         std::vector<CloudPtr> clusters;
         ClusterSegmentor<PointType> cluster_segmentor;
         cluster_segmentor.setInputCloud(target_cloud_);
+        cluster_segmentor.setMinClusterSize(min_cluster_size);
+        cluster_segmentor.setMaxClusterSize(max_cluster_size);
         cluster_segmentor.extract(clusters);
 
         // Merge all the clusters into a single cloud
