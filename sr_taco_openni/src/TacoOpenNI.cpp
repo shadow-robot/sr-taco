@@ -106,8 +106,10 @@ namespace sr_taco_openni {
         string frame_id = target_cloud_->header.frame_id;
 
         double min_cluster_size, max_cluster_size;
+        // Default max to 1/10th of input cloud size
+        double def_max = (double)target_cloud_->size() * 0.1;
         nh_home.param<double>("attention/segment_clusters/min_cluster_size", min_cluster_size, 50.0);
-        nh_home.param<double>("attention/segment_clusters/max_cluster_size", max_cluster_size, 25000.0);
+        nh_home.param<double>("attention/segment_clusters/max_cluster_size", max_cluster_size, def_max);
 
         // Pull out the interesting clusters
         std::vector<CloudPtr> clusters;
