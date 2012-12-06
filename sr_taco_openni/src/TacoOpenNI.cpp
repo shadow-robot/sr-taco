@@ -150,6 +150,9 @@ namespace sr_taco_openni {
 
         cam_model_.fromCameraInfo(info);
 
+        // Draw the salient points as a little circles. This should fill in the gaps
+        // from downsampling.
+        int radius = std::ceil(input_cloud_->size()/target_cloud_->size());
         PointType pt;
         BOOST_FOREACH( pt, all_clusters->points )
         {
@@ -157,11 +160,7 @@ namespace sr_taco_openni {
             cv::Point3d pt_cv(pt.x, pt.y, pt.z);
             cv::Point2d uv;
             cam_model_.project3dToPixel(pt_cv, uv);
-
-            // Draw the point as a little circle. This should fill in the gaps
-            // from downsampling.
-            static const int RADIUS = 3;
-            cvCircle(image, uv, RADIUS, CV_RGB(255,255,255), -1);
+            cvCircle(image, uv, radius, CV_RGB(255,255,255), -1);
         }
 
         // Convert the cv image back to msg
