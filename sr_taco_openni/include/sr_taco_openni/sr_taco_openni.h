@@ -72,7 +72,9 @@ class TacoOpenNI {
         double downsampling_grid_size_;
         double filter_z_min_, filter_z_max_;
 
-        // Cloud to work with, has been filtered and downsampled
+        /// Cloud that came in on input, converted to PCL type
+        CloudPtr input_cloud_;
+        /// Cloud to work with, has been filtered and downsampled
         CloudPtr target_cloud_;
 
         PointCloudSubPtr pointcloud_sub_;

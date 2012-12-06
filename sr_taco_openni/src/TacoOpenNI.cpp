@@ -66,17 +66,17 @@ namespace sr_taco_openni {
     void TacoOpenNI::cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud,
                        const sensor_msgs::CameraInfo::ConstPtr& info)
     {
-        CloudPtr input_cloud(new Cloud);
+        input_cloud_.reset(new Cloud);
         CloudPtr tmp_cloud(new Cloud);
-        pcl::fromROSMsg(*cloud, *input_cloud);
-        ROS_INFO_STREAM_ONCE("input_cloud: " << *input_cloud);
+        pcl::fromROSMsg(*cloud, *input_cloud_);
+        ROS_INFO_STREAM_ONCE("input_cloud: " << *input_cloud_);
 
         // Do some z filtering, to reduce number points and focus on foreground
         pcl::PassThrough<PointType> pass;
         pass.setFilterFieldName ("z");
         pass.setFilterLimits (filter_z_min_, filter_z_max_);
         pass.setKeepOrganized (false);
-        pass.setInputCloud (input_cloud);
+        pass.setInputCloud (input_cloud_);
         pass.filter (*tmp_cloud);
 
         // Downsample the point cloud to speed up processing
