@@ -32,3 +32,5 @@ rosbuild_add_library(sr_taco_openni_cluster_segment src/cluster_segment.cpp)
 
 rosbuild_add_executable(sr_taco_openni src/TacoOpenNINode.cpp src/TacoOpenNI.cpp)
 rosbuild_link_boost(sr_taco_openni  signals)
+
+rosbuild_add_rostest(test/cluster_segment.test)

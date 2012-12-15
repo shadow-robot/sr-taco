@@ -9,6 +9,8 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/sr_taco_openni</url>
   <depend package="roscpp"/>
+  <depend package="rospy"/>
+  <depend package="rostest"/>
   <depend package="nodelet"/>
   <depend package="sensor_msgs"/>
   <depend package="openni_camera"/>

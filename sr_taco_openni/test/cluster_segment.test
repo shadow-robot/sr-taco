@@ -1,0 +1,10 @@
+<launch>
+	<!-- Start nodelet manage then load the test nodelets into it. -->
+	<node name="nodelet_manager" pkg="nodelet" type="nodelet" args="manager" />
+	<node name="cluster_segment" pkg="nodelet" type="nodelet" args="load sr_taco_openni/cluster_segment nodelet_manager" />
+	
+	<!-- Perform some basic tests on the loaded nodelets. This is just to make sure they
+	     work as basic nodelets. Specific taco functionality should be in other tests.
+	-->
+    <test test-name="cluster_segment_test" pkg="sr_taco_openni" type="cluster_segment_test.py" />
+</launch>
