@@ -1,0 +1,6 @@
+Suitcase suitcase
+---
+int32 result
+
+int32 SUCCESS=0
+int32 FAILED=-1

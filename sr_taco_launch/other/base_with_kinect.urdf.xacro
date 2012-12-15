@@ -1,0 +1,12 @@
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="arm_and_hand">
+
+  <include filename="$(find sr_description)/materials.urdf.xacro" />
+  <include filename="$(find sr_taco_launch)/other/xacro/kinect/kinect.urdf.xacro" />
+  <include filename="$(find sr_taco_launch)/other/xacro/desk/desk2.urdf.xacro" />
+
+  <xacro:desk/>
+
+  <xacro:base_mounted_kinect parent="desk2_pillar">
+  </xacro:base_mounted_kinect>
+
+</robot>
