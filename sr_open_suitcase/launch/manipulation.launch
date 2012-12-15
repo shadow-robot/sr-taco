@@ -1,0 +1,40 @@
+<launch>
+<!--  <include file="$(find shadow_arm_navigation)/launch/shadow_arm_navigation.launch" /> -->
+
+  <node name="interpolated_ik_node_right" pkg="interpolated_ik_motion_planner"
+	type="interpolated_ik_motion_planner.py" args="r" respawn="false" output="screen">
+    <param name="num_steps" value ="4" />
+    <param name="robot_prefix" value = "shadow"/>
+    <param name="collision_aware_ik" value = "1"/>
+    <remap from="~ik_start_angles" to="/right_arm_ik_start_angles"/>
+  </node>
+
+  <!-- specifies the machines on which the nodes will be run -->
+  <include file="$(find sr_object_manipulation_launch)/machines/threedsensor.machine"/>
+  <include file="$(find sr_object_manipulation_launch)/machines/dataprocessing.machine"/>
+  <include file="$(find sr_object_manipulation_launch)/machines/household_database.machine"/>
+  <include file="$(find sr_object_manipulation_launch)/machines/robot.machine"/>
+
+
+  <!-- <include file="$(find openni_launch)/launch/openni.launch"/>-->
+
+  <!-- start attaching the platform to various required frames -->
+  <include file="$(find sr_object_manipulation_launch)/launch/static_transform.launch"/>
+
+  <!-- start linking the hand and arm -->
+   <!-- On real robot tactile prefix is / or /kcl -->
+  <group unless="$(optenv SIMULATED 0)">
+    <include file="$(find sr_object_manipulation_launch)/launch/arm_and_hand_motor.launch">
+      <arg name="tactile_prefix" value="" />
+    </include>
+  </group>
+  <group if="$(optenv SIMULATED 0)">
+    <include file="$(find sr_object_manipulation_launch)/launch/arm_and_hand_motor.launch">
+      <arg name="tactile_prefix" value="/sr_tactile" />
+    </include>
+  </group>
+
+  <!-- starts the arm navigation -->
+    <!-- We expect a merger to merge the joint_states on /joint_states -->
+    <include file="$(find shadow_arm_navigation)/launch/shadow_arm_navigation.launch" />
+</launch>

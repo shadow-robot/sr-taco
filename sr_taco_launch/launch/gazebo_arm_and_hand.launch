@@ -1,0 +1,28 @@
+<launch>
+
+  <!-- start gazebo with an empty plane 
+       Commented out as it looks much more stable to run gazebo with an empty world first in a separate terminal
+       and run taco_world.launch once Gazebo is already running. Otherwise it crashes most of the times -->
+  <!--include file="$(find sr_hand)/launch/gazebo/loaders/empty_world.launch"/-->
+
+  <!-- spawn the support model -->
+  <include file="$(find sr_description)/loaders/load_support_model.launch" />
+  <node name="spawn_support" pkg="gazebo" type="spawn_model" args="-urdf -param support_description -z 0.0 -model support_model" respawn="false" output="screen" />
+
+  <!-- spawn the arm and hand model -->
+  <include file="$(find sr_taco_launch)/loaders/load_arm_and_hand_model.launch" />
+  <node name="spawn_hand" pkg="gazebo" type="spawn_model" args="-urdf -param robot_description -z 0.0 -model shadow_model -J ShoulderJSwing 0.78 -J ElbowJSwing 2.0" respawn="false" output="screen" />
+
+  <!-- Controllers for the arm and hand -->
+  <include file="$(find sr_hand)/launch/gazebo/loaders/hand_controllers.launch"/>
+  <include file="$(find sr_hand)/launch/gazebo/loaders/arm_controllers.launch"/>
+
+  <!-- launch more exotic controllers (trajectory, cartesian, etc...) -->
+  <include file="$(find sr_hand)/launch/gazebo/loaders/arm_controllers_extended.launch"/>
+
+  <node pkg="robot_state_publisher" type="state_publisher"
+        name="robot_state_publisher_full_pos">
+    <param name="publish_frequency" type="double" value="20.0" />
+  </node>
+
+</launch>

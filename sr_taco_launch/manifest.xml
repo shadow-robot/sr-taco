@@ -1,0 +1,18 @@
+<package>
+  <description brief="sr_taco_launch">
+
+     sr_taco_launch
+
+  </description>
+  <author>toni</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/sr_taco_launch</url>
+  <depend package="gazebo"/>
+  <depend package="gazebo_worlds"/>
+  <depend package="sr_hand"/>
+  <depend package="sr_description"/>
+
+</package>
+
+

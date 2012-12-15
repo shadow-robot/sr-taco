@@ -13,7 +13,7 @@
 load from menu.
 
 5. Generated 3DDirection IK:
- > ./openrave.py --database inversekinematics --robot=`rospack find sr_visual_servoing`/openrave/arm_and_hand_motor.xml --iktype=Direction3D
+ > ./openrave.py --database inversekinematics --robot=`rospack find sr_visual_servoing`/openrave/arm_and_hand_motor.xml --iktype=Transform6D
 
 
 =====
