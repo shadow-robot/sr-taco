@@ -9,6 +9,7 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/sr_taco_openni</url>
   <depend package="roscpp"/>
+  <depend package="nodelet"/>
   <depend package="sensor_msgs"/>
   <depend package="openni_camera"/>
   <depend package="openni_launch"/>
@@ -19,6 +20,10 @@
   <depend package="tf"/>
 
   <depend package="sr_pcl_tracking"/>
+
+  <export>
+      <nodelet plugin="${prefix}/nodelet_plugins.xml" />
+  </export>
 
 </package>
 
