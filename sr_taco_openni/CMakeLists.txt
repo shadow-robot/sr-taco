@@ -30,3 +30,5 @@ rosbuild_add_boost_directories()
 
 rosbuild_add_executable(sr_taco_openni src/TacoOpenNINode.cpp src/TacoOpenNI.cpp)
 rosbuild_link_boost(sr_taco_openni  signals)
+
+rosbuild_add_rostest(test/sr_taco_openni.test)

@@ -1,0 +1,13 @@
+<launch>
+    <!-- Start the sensor.
+    XXX: Requires an openni camera be present, which is bad for an automated test,
+    especially given how unstable restarting openni is.
+    TODO: Re-code this to use a small, looping bag file to run the test.
+    -->
+    <include file="$(find sr_taco_openni)/launch/sr_taco_openni.launch" />
+
+    <!-- Perform some basic tests on the node. Make sure it is publishing
+    expected topics etc.
+    -->
+    <test test-name="sr_taco_openni_test" pkg="sr_taco_openni" type="sr_taco_openni_test.py" />
+</launch>
