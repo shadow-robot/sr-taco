@@ -5,14 +5,40 @@ import rospy
 import sys
 import unittest
 
-from nodelet.srv import *
+from sensor_msgs.msg import PointCloud2, Image, CameraInfo 
 
 class TestSrTacoOpenni(unittest.TestCase):
-    def test_publishers(self):
-        """
-        Test that the sensor is publishing the expected topics. 
-        """
-        self.assertTrue(True, 'Not true')
+    def assertTopicPublishing(self, topic, topic_type, timeout = 3.0):
+        """Test if a topic is publishing something of the correct type."""
+        is_publishing = False;
+        err = None
+        try:
+            rospy.wait_for_message(topic, topic_type, timeout = timeout)
+        except Exception as err:
+            pass
+        else:
+            is_publishing = True;
+        self.assertTrue(is_publishing, topic + " is not publishing : " + str(err));
+        return is_publishing
+
+    def test_camera_info_publishers(self):
+        self.assertTopicPublishing("/tacoSensor/unfoveated/depth/camera_info", CameraInfo)
+        self.assertTopicPublishing("/tacoSensor/unfoveated/intensity/camera_info", CameraInfo)
+        self.assertTopicPublishing("/tacoSensor/foveated/depth/camera_info", CameraInfo)
+        self.assertTopicPublishing("/tacoSensor/foveated/intensity/camera_info", CameraInfo)
+    
+    def test_cloud_publishers(self):
+        self.assertTopicPublishing("/tacoSensor/unfoveated/pointcloud2", PointCloud2)
+        self.assertTopicPublishing("/tacoSensor/foveated/pointcloud2", PointCloud2)
+        
+    def test_image_publishers(self):
+        self.assertTopicPublishing("/tacoSensor/unfoveated/depth/image", Image)
+        self.assertTopicPublishing("/tacoSensor/unfoveated/intensity/image", Image)
+        self.assertTopicPublishing("/tacoSensor/foveated/depth/image", Image)
+        self.assertTopicPublishing("/tacoSensor/foveated/intensity/image", Image)
+            
+    def test_saliency_publishers(self):
+        self.assertTopicPublishing("/tacoSensor/saliency_map_spatial/image", Image)
  
 if __name__ == '__main__':
     import rostest
