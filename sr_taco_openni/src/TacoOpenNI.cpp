@@ -47,7 +47,7 @@ namespace sr_taco_openni {
         pointcloud_sync_ = CloudSyncPtr( new CloudSync(*pointcloud_sub_, *camerainfo_sub_, 10) );
         pointcloud_sync_->registerCallback( boost::bind(&TacoOpenNI::cloudCb, this, _1, _2) );
 
-        subs.push_back( nh.subscribe(camera + "/depth_registered/image",
+        subs.push_back( nh.subscribe(depth + "/image",
                1, &TacoOpenNI::depthImageIn, this) );
         
         saliency_map_spatial_pub = nh_home.advertise<sensor_msgs::Image>(
