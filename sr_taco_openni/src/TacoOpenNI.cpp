@@ -41,7 +41,7 @@ namespace sr_taco_openni {
 
         // Setup a callback with the point cloud and camera info in sync.
         // Needed for generating depth images (ie saliency maps) from clouds.
-        string depth = camera + "/depth_registered";
+        string depth = camera + "/depth";
         pointcloud_sub_ = PointCloudSubPtr( new PointCloudSub(nh, depth + "/points", 1));
         camerainfo_sub_ = CameraInfoSubPtr(new CameraInfoSub(nh, depth + "/camera_info", 1));
         pointcloud_sync_ = CloudSyncPtr( new CloudSync(*pointcloud_sub_, *camerainfo_sub_, 10) );
@@ -177,6 +177,17 @@ namespace sr_taco_openni {
     void TacoOpenNI::depthImageIn(const sensor_msgs::Image::ConstPtr& msg) {
         foveated.depthImage.publish(msg);
         unfoveated.depthImage.publish(msg);
+
+        // Just pub a blank image for now, not sure what we need here and we
+        // don't use the intensity image atm.
+        sensor_msgs::Image::Ptr blank_img(new sensor_msgs::Image);
+        blank_img->width = taco_width;
+        blank_img->height = taco_height;
+        blank_img->encoding = sensor_msgs::image_encodings::MONO8;
+        blank_img->step = taco_width; // * 1 as using mono
+        blank_img->data.resize( taco_height * blank_img->step );
+        foveated.intensityImage.publish(blank_img);
+        unfoveated.intensityImage.publish(blank_img);
     }
 
 } // sr_taco_openni::

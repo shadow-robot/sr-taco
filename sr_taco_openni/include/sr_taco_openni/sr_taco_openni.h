@@ -43,7 +43,7 @@ class TacoOpenNIPubs {
 class TacoOpenNI {
     public:
         // PCL
-        typedef pcl::PointXYZRGB PointType;
+        typedef pcl::PointXYZ PointType;
         typedef pcl::PointCloud<PointType> Cloud;
         typedef typename Cloud::Ptr CloudPtr;
         typedef typename Cloud::ConstPtr CloudConstPtr;

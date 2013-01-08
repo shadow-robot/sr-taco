@@ -36,6 +36,7 @@ class TestSrTacoOpenni(unittest.TestCase):
         self.assertTopicPublishing("/tacoSensor/unfoveated/intensity/image", Image)
         self.assertTopicPublishing("/tacoSensor/foveated/depth/image", Image)
         self.assertTopicPublishing("/tacoSensor/foveated/intensity/image", Image)
+        # TODO: Test the images are the right size and depth.
             
     def test_saliency_publishers(self):
         self.assertTopicPublishing("/tacoSensor/saliency_map_spatial/image", Image)
