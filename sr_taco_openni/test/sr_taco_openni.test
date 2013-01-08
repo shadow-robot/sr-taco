@@ -1,10 +1,12 @@
 <launch>
-    <!-- Start the sensor.
-    XXX: Requires an openni camera be present, which is bad for an automated test,
-    especially given how unstable restarting openni is.
-    TODO: Re-code this to use a small, looping bag file to run the test.
+    <!-- Run a small bag in a loop that publishes the topics we need from the
+    camera.
     -->
-    <include file="$(find sr_taco_openni)/launch/sr_taco_openni.launch" />
+    <node pkg="rosbag" type="play" args="--loop $(find sr_taco_openni)/test/simple_kinect.bag" name="rosbag" />
+    <!-- Start the tracker, that will use the bag as input -->
+    <node name="tacoSensor" pkg="sr_taco_openni" type="sr_taco_openni">
+        <param name="downsampling_grid_size" value="0.01" />
+    </node>
 
     <!-- Perform some basic tests on the node. Make sure it is publishing
     expected topics etc.
