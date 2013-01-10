@@ -22,7 +22,7 @@ namespace sr_taco_openni
     private:
       virtual void onInit()
       {
-        NODELET_INFO("Hello from nodelet number 1 :D");
+        NODELET_INFO("Starting ClusterSegment attention manager.");
       }
 
   };
