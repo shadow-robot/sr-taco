@@ -9,7 +9,6 @@
 #include "sr_pcl_tracking/cluster_segmentor.h"
 #include <opencv/cv.h>
 #include <cv_bridge/CvBridge.h>
-#include <sensor_msgs/image_encodings.h>
 #include "sensor_msgs/PointCloud2.h"
 #include "sensor_msgs/CameraInfo.h"
 #include "sensor_msgs/Image.h"
@@ -64,8 +63,6 @@ namespace sr_taco_openni
         NODELET_INFO("Starting ClusterSegment attention manager.");
         nh_ = getNodeHandle();
 
-        saliency_map_spatial_ = SaliencyMapPtr(new SaliencyMap());
-
         // Setup a callback with the point cloud and camera info in sync.
         // Needed for generating depth images (ie saliency maps) from clouds.
         string in = "/tacoSensor/unfoveated";
@@ -76,12 +73,6 @@ namespace sr_taco_openni
 
         saliency_map_spatial_pub_ = nh_.advertise<sensor_msgs::Image>(
                 "saliency_map_spatial/image", 5);
-        saliency_map_spatial_->width = taco_width;
-        saliency_map_spatial_->height = taco_height;
-        //we're using mono8 as the saliency map can contain labels (change if needed)
-        saliency_map_spatial_->encoding = sensor_msgs::image_encodings::MONO8;
-        saliency_map_spatial_->step = taco_width; // * 1 as using mono
-        saliency_map_spatial_->data.resize( taco_height * saliency_map_spatial_->step );
 
         clusters_pub_ = nh_.advertise<Cloud>("clusters/points", 5);
       }
@@ -90,6 +81,7 @@ namespace sr_taco_openni
       {
         NODELET_INFO_STREAM_ONCE("cloudCb:" << *cloud << "info: " << *info);
 
+        SaliencyMapPtr map = newSaliencyMap();
         string frame_id = cloud->header.frame_id;
 
         double min_cluster_size, max_cluster_size;
@@ -120,15 +112,10 @@ namespace sr_taco_openni
         all_clusters->header.frame_id = frame_id;
         clusters_pub_.publish(all_clusters);
 
-        // Setup empty map
-        saliency_map_spatial_->header.stamp = ros::Time::now();
-        for(size_t i = 0; i < saliency_map_spatial_->data.size(); ++i)
-            saliency_map_spatial_->data[i] = 0;
-
         // Convert saliency msg to cv image
         IplImage* image = NULL;
         try {
-            image = bridge_.imgMsgToCv(saliency_map_spatial_, "mono8");
+            image = bridge_.imgMsgToCv(map, "mono8");
         }
         catch (sensor_msgs::CvBridgeException& ex) {
             ROS_ERROR("Failed to convert image");
@@ -154,7 +141,7 @@ namespace sr_taco_openni
 
         // Convert the cv image back to msg and publish
         bridge_.cvToImgMsg(image, "mono8");
-        saliency_map_spatial_pub_.publish(saliency_map_spatial_);
+        saliency_map_spatial_pub_.publish(map);
       }
 
   };
