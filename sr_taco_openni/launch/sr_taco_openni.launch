@@ -2,8 +2,6 @@
     <!-- Start the OpenNI camera -->
     <include file="$(find openni_launch)/launch/openni.launch" />
 
-    <!-- Tracker using NI camera feed as input cloud -->
-    <node name="tacoSensor" pkg="sr_taco_openni" type="sr_taco_openni">
-        <param name="downsampling_grid_size" value="0.01" />
-    </node>
+    <!-- Start the nodelet cloud using NI camera feed as input cloud -->
+    <include file="$(find sr_taco_openni)/launch/sr_taco_openni_nodelets.launch" />
 </launch>

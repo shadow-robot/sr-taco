@@ -1,0 +1,13 @@
+
+<!-- Launch the manager and cloud of nodelets that make up the Taco sensor.
+    You should launch something that looks like an openni camera for these to
+    use.
+-->
+<launch>
+    <node name="tacoSensor_nodelet_manager" pkg="nodelet" type="nodelet" args="manager" />
+    <!-- <group ns="tacoSensor"> -->
+        <node name="tacoSensor" pkg="nodelet" type="nodelet" args="load sr_taco_openni/taco_openni_nodelet tacoSensor_nodelet_manager">
+            <param name="downsampling_grid_size" value="0.01" />
+        </node>
+        <!-- </group> -->
+</launch>

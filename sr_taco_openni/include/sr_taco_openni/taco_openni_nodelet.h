@@ -32,7 +32,7 @@ class TacoOpenNIPubs {
         /** Setup the pubs for the type ("foveated","unfoveated") passed
          */
         TacoOpenNIPubs() {}
-        TacoOpenNIPubs(string);
+        TacoOpenNIPubs(NodeHandle, string);
         ~TacoOpenNIPubs() {}
 
         Publisher pointCloud;

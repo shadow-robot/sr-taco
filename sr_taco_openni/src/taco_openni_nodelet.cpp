@@ -15,8 +15,7 @@ namespace sr_taco_openni {
 
 // TacoOpenNIPubs -------------------------------------------------------------
 
-    TacoOpenNIPubs::TacoOpenNIPubs(string type) {
-        NodeHandle nh("~");
+    TacoOpenNIPubs::TacoOpenNIPubs(NodeHandle nh, string type) {
         pointCloud = nh.advertise<sensor_msgs::PointCloud2>( type+"/pointcloud2", 5);
         depthInfo = nh.advertise<sensor_msgs::CameraInfo>( type+"/depth/camera_info", 5);
         depthImage = nh.advertise<sensor_msgs::Image>( type+"/depth/image", 5);
@@ -34,8 +33,8 @@ namespace sr_taco_openni {
         NODELET_INFO("Starting main Taco nodelet");
 
         nh_home = getPrivateNodeHandle();
-        foveated = TacoOpenNIPubs("foveated");
-        unfoveated = TacoOpenNIPubs("unfoveated");
+        foveated = TacoOpenNIPubs(nh_home, "foveated");
+        unfoveated = TacoOpenNIPubs(nh_home, "unfoveated");
 
         nh_home.param<string>("camera", camera, "camera");
         nh_home.param<double>("downsampling_grid_size", downsampling_grid_size_, 0.01);
