@@ -35,20 +35,19 @@ namespace sr_taco_openni {
         nh_home.param<double>("filter_z_min", filter_z_min_, 0.0);
         nh_home.param<double>("filter_z_max", filter_z_max_, 10.0);
 
-        // Setup a callback with the point cloud and camera info in sync.
-        // Needed for generating depth images (ie saliency maps) from clouds.
         string depth = camera + "/depth";
-        pointcloud_sub_ = PointCloudSubPtr( new PointCloudSub(nh, depth + "/points", 1));
-        camerainfo_sub_ = CameraInfoSubPtr(new CameraInfoSub(nh, depth + "/camera_info", 1));
-        pointcloud_sync_ = CloudSyncPtr( new CloudSync(*pointcloud_sub_, *camerainfo_sub_, 10) );
-        pointcloud_sync_->registerCallback( boost::bind(&TacoOpenNINodelet::cloudCb, this, _1, _2) );
+
+        subs.push_back( nh.subscribe(depth + "/points",
+               1, &TacoOpenNINodelet::cloudCb, this) );
+
+        subs.push_back( nh.subscribe(depth + "/camera_info",
+               1, &TacoOpenNINodelet::cameraInfoIn, this) );
 
         subs.push_back( nh.subscribe(depth + "/image",
                1, &TacoOpenNINodelet::depthImageIn, this) );
     }
 
-    void TacoOpenNINodelet::cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud,
-                       const sensor_msgs::CameraInfo::ConstPtr& info)
+    void TacoOpenNINodelet::cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud)
     {
         input_cloud_.reset(new Cloud);
         CloudPtr tmp_cloud(new Cloud);
@@ -77,9 +76,6 @@ namespace sr_taco_openni {
         pcl::toROSMsg(*target_cloud_, *out_cloud);
         unfoveated_.pointCloud.publish(out_cloud);
         foveated_.pointCloud.publish(out_cloud);
-
-        // Re-publish the camera info
-        cameraInfoIn(info);
     }
 
     void TacoOpenNINodelet::cameraInfoIn(const sensor_msgs::CameraInfo::ConstPtr& msg) {

@@ -6,8 +6,6 @@
 #include "sensor_msgs/PointCloud2.h"
 #include "sensor_msgs/CameraInfo.h"
 #include "sensor_msgs/Image.h"
-#include "message_filters/subscriber.h"
-#include "message_filters/time_synchronizer.h"
 
 #include <pcl_ros/point_cloud.h>
 #include <pcl/ros/conversions.h>
@@ -48,17 +46,6 @@ class TacoOpenNINodelet : public nodelet::Nodelet {
         typedef typename Cloud::Ptr CloudPtr;
         typedef typename Cloud::ConstPtr CloudConstPtr;
 
-        // ROS
-        typedef message_filters::Subscriber<sensor_msgs::PointCloud2> PointCloudSub;
-        typedef typename boost::shared_ptr<PointCloudSub> PointCloudSubPtr;
-
-        typedef message_filters::Subscriber<sensor_msgs::CameraInfo> CameraInfoSub;
-        typedef typename boost::shared_ptr<CameraInfoSub> CameraInfoSubPtr;
-
-        typedef message_filters::TimeSynchronizer<sensor_msgs::PointCloud2, sensor_msgs::CameraInfo> CloudSync;
-        typedef typename boost::shared_ptr<CloudSync> CloudSyncPtr;
-        typedef typename boost::shared_ptr<const CloudSync> CloudSyncConstPtr;
-
         virtual ~TacoOpenNINodelet() {}
 
         virtual void onInit();
@@ -78,13 +65,10 @@ class TacoOpenNINodelet : public nodelet::Nodelet {
         /// Cloud to work with, has been filtered and downsampled
         CloudPtr target_cloud_;
 
-        PointCloudSubPtr pointcloud_sub_;
-        CameraInfoSubPtr camerainfo_sub_;
-        CloudSyncPtr pointcloud_sync_;
-
+        // Stash all our subscribers to keep them alive.
         vector<Subscriber> subs;
-        void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud,
-                       const sensor_msgs::CameraInfo::ConstPtr& info);
+
+        void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud);
         void cameraInfoIn(const sensor_msgs::CameraInfo::ConstPtr& msg);
         void depthImageIn(const sensor_msgs::Image::ConstPtr& msg);
 
