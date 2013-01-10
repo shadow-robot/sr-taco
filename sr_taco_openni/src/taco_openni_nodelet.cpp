@@ -1,10 +1,13 @@
-#include "sr_taco_openni/sr_taco_openni.h"
+#include "sr_taco_openni/taco_openni_nodelet.h"
+#include <pluginlib/class_list_macros.h>
 
 #include "sr_pcl_tracking/cluster_segmentor.h"
 
 #include <sensor_msgs/image_encodings.h>
 #include <opencv/cv.h>
 #include <pcl/range_image/range_image.h>
+
+PLUGINLIB_DECLARE_CLASS(sr_taco_openni, taco_openni_nodelet, sr_taco_openni::TacoOpenNINodelet, nodelet::Nodelet)
 
 namespace sr_taco_openni {
 
@@ -22,16 +25,18 @@ namespace sr_taco_openni {
     }
 
 
-// TacoOpenNI ----------------------------------------------------------------
+// TacoOpenNINodelet ----------------------------------------------------------------
 
-    const unsigned int TacoOpenNI::taco_width  = 640;
-    const unsigned int TacoOpenNI::taco_height = 480;
+    const unsigned int TacoOpenNINodelet::taco_width  = 640;
+    const unsigned int TacoOpenNINodelet::taco_height = 480;
 
-    TacoOpenNI::TacoOpenNI()
-        : nh_home("~")
-        , foveated("foveated")
-        , unfoveated("unfoveated")
-    {
+    void TacoOpenNINodelet::onInit() {
+        NODELET_INFO("Starting main Taco nodelet");
+
+        nh_home = getPrivateNodeHandle();
+        foveated = TacoOpenNIPubs("foveated");
+        unfoveated = TacoOpenNIPubs("unfoveated");
+
         nh_home.param<string>("camera", camera, "camera");
         nh_home.param<double>("downsampling_grid_size", downsampling_grid_size_, 0.01);
         nh_home.param<double>("filter_z_min", filter_z_min_, 0.0);
@@ -45,11 +50,11 @@ namespace sr_taco_openni {
         pointcloud_sub_ = PointCloudSubPtr( new PointCloudSub(nh, depth + "/points", 1));
         camerainfo_sub_ = CameraInfoSubPtr(new CameraInfoSub(nh, depth + "/camera_info", 1));
         pointcloud_sync_ = CloudSyncPtr( new CloudSync(*pointcloud_sub_, *camerainfo_sub_, 10) );
-        pointcloud_sync_->registerCallback( boost::bind(&TacoOpenNI::cloudCb, this, _1, _2) );
+        pointcloud_sync_->registerCallback( boost::bind(&TacoOpenNINodelet::cloudCb, this, _1, _2) );
 
         subs.push_back( nh.subscribe(depth + "/image",
-               1, &TacoOpenNI::depthImageIn, this) );
-        
+               1, &TacoOpenNINodelet::depthImageIn, this) );
+
         saliency_map_spatial_pub = nh_home.advertise<sensor_msgs::Image>(
                 "saliency_map_spatial/image", 5);
         saliency_map_spatial->width = taco_width;
@@ -63,7 +68,7 @@ namespace sr_taco_openni {
         clusters_pub_ = nh_home.advertise<Cloud>("clusters/points", 5);
     }
 
-    void TacoOpenNI::cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud,
+    void TacoOpenNINodelet::cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud,
                        const sensor_msgs::CameraInfo::ConstPtr& info)
     {
         input_cloud_.reset(new Cloud);
@@ -101,7 +106,7 @@ namespace sr_taco_openni {
         cameraInfoIn(info);
     }
 
-    void TacoOpenNI::calculateSaliencyMap(const sensor_msgs::CameraInfo::ConstPtr& info)
+    void TacoOpenNINodelet::calculateSaliencyMap(const sensor_msgs::CameraInfo::ConstPtr& info)
     {
         string frame_id = target_cloud_->header.frame_id;
 
@@ -167,14 +172,14 @@ namespace sr_taco_openni {
         bridge_.cvToImgMsg(image, "mono8");
     }
 
-    void TacoOpenNI::cameraInfoIn(const sensor_msgs::CameraInfo::ConstPtr& msg) {
+    void TacoOpenNINodelet::cameraInfoIn(const sensor_msgs::CameraInfo::ConstPtr& msg) {
         foveated.depthInfo.publish(msg);
         foveated.intensityInfo.publish(msg);
         unfoveated.depthInfo.publish(msg);
         unfoveated.intensityInfo.publish(msg);
     }
         
-    void TacoOpenNI::depthImageIn(const sensor_msgs::Image::ConstPtr& msg) {
+    void TacoOpenNINodelet::depthImageIn(const sensor_msgs::Image::ConstPtr& msg) {
         foveated.depthImage.publish(msg);
         unfoveated.depthImage.publish(msg);
 

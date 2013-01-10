@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ros/ros.h"
+#include "nodelet/nodelet.h"
 #include <boost/smart_ptr.hpp>
 #include "sensor_msgs/PointCloud2.h"
 #include "sensor_msgs/CameraInfo.h"
@@ -30,6 +31,7 @@ class TacoOpenNIPubs {
     public:
         /** Setup the pubs for the type ("foveated","unfoveated") passed
          */
+        TacoOpenNIPubs() {}
         TacoOpenNIPubs(string);
         ~TacoOpenNIPubs() {}
 
@@ -40,7 +42,7 @@ class TacoOpenNIPubs {
         Publisher intensityImage;
 };
 
-class TacoOpenNI {
+class TacoOpenNINodelet : public nodelet::Nodelet {
     public:
         // PCL
         typedef pcl::PointXYZ PointType;
@@ -59,8 +61,9 @@ class TacoOpenNI {
         typedef typename boost::shared_ptr<CloudSync> CloudSyncPtr;
         typedef typename boost::shared_ptr<const CloudSync> CloudSyncConstPtr;
 
-        TacoOpenNI(); 
-        ~TacoOpenNI() {}
+        virtual ~TacoOpenNINodelet() {}
+
+        virtual void onInit();
 
     private:
         NodeHandle nh, nh_home;

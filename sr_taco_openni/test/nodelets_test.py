@@ -17,7 +17,7 @@ class TestClusterSegment(unittest.TestCase):
         list = rospy.ServiceProxy('/nodelet_manager/list', NodeletList)
         resp = list()
         nodelets = resp.nodelets
-        self.assertEqual(nodelets, ['/cluster_segment'],
+        self.assertEqual(sorted(nodelets), sorted(['/taco_openni', '/cluster_segment']),
                          'Nodelet cluster_segment not is listed. Got: %s'%nodelets)
  
 if __name__ == '__main__':
