@@ -1,8 +1,6 @@
-/*
- * cluster_segment.cpp
- *
- *  Created on: 14 Dec 2012
- *      Author: mda
+/**
+ * @author: mda
+ * @date 14 Dec 2012
  */
 
 #include <sr_taco_openni/attention_manager.h>
@@ -27,6 +25,11 @@ namespace sr_taco_openni
 
   /**
    * @brief AttentionManager that extracts clusters after removing planar surfaces.
+   *
+   * This is a nodelet to run along with the main taco_openni_nodelet.
+   *
+   * Publishes a saliency_map_spatial/image.
+   * Publishes clusters/points for debug use, this is not part of the tacoSensor API.
    */
   class ClusterSegment : public AttentionManager
   {

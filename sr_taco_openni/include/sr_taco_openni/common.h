@@ -1,5 +1,5 @@
 /**
- * @brief Common constants etc for the sr_taco_openni package.
+ * @brief Common constants, typedefs etc for the sr_taco_openni package.
  * @author: mda
  * @date 10 Jan 2013
  */

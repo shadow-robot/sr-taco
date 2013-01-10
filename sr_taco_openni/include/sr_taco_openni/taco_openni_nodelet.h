@@ -17,13 +17,17 @@ namespace sr_taco_openni {
 using namespace std;
 using namespace ros;
 
-// Util class to hold the publishers.
-// Will get one for foviated and one for unfoviated
+/**
+ * @brief Util class to hold some publishers need by TacoOpenNINodelet.
+ *
+ * Will get one for foviated and one for unfoviated
+ */
 class TacoOpenNIPubs {
     public:
-        /** Setup the pubs for the type ("foveated","unfoveated") passed
-         */
         TacoOpenNIPubs() {}
+        /** Setup the pubs for the type ("foveated","unfoveated") passed using
+         * the node handle passed.
+         */
         TacoOpenNIPubs(NodeHandle, string);
         ~TacoOpenNIPubs() {}
 
@@ -34,6 +38,19 @@ class TacoOpenNIPubs {
         Publisher intensityImage;
 };
 
+/**
+ * @brief The main tacoSensor nodelet.
+ *
+ * Subscribers to the camera topics (e.g. a Kinect) and re-publishes messages
+ * on the TACO topics.
+ *
+ * Point clouds are downsampled and z filtered, to reduce their size and
+ * increase the speed they can be processed, before being republished.
+ *
+ * AttentionManager nodelets should subscribe to the unfoveated cloud published
+ * by this nodelet so they see the down sampled version and it makes it easy
+ * to change the source of the cloud (e.g. from a Kinect to a bag recording).
+ */
 class TacoOpenNINodelet : public nodelet::Nodelet {
     public:
         virtual ~TacoOpenNINodelet() {}
@@ -43,11 +60,13 @@ class TacoOpenNINodelet : public nodelet::Nodelet {
     private:
         NodeHandle nh, nh_home;
 
-        // Namespace to find the camera in.
+        /// Namespace to find the camera in.
         string camera;
 
-        // Leaf size (xyz) to downsample the camera feed
+        /// Leaf size (xyz) to downsample the camera feed
         double downsampling_grid_size_;
+
+        /// Z filter the cloud in this z range, which is by depth.
         double filter_z_min_, filter_z_max_;
 
         /// Cloud that came in on input, converted to PCL type
@@ -55,15 +74,14 @@ class TacoOpenNINodelet : public nodelet::Nodelet {
         /// Cloud to work with, has been filtered and downsampled
         CloudPtr target_cloud_;
 
+        TacoOpenNIPubs foveated_, unfoveated_;
+
         // Stash all our subscribers to keep them alive.
         vector<Subscriber> subs;
 
         void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud);
-        void cameraInfoIn(const sensor_msgs::CameraInfo::ConstPtr& msg);
-        void depthImageIn(const sensor_msgs::Image::ConstPtr& msg);
-
-        TacoOpenNIPubs foveated_;
-        TacoOpenNIPubs unfoveated_;
+        void cameraInfoCb(const sensor_msgs::CameraInfo::ConstPtr& msg);
+        void depthImageCb(const sensor_msgs::Image::ConstPtr& msg);
 };
 
 } // sr_taco_openni::

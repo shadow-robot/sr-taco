@@ -40,10 +40,10 @@ namespace sr_taco_openni {
                1, &TacoOpenNINodelet::cloudCb, this) );
 
         subs.push_back( nh.subscribe(depth + "/camera_info",
-               1, &TacoOpenNINodelet::cameraInfoIn, this) );
+               1, &TacoOpenNINodelet::cameraInfoCb, this) );
 
         subs.push_back( nh.subscribe(depth + "/image",
-               1, &TacoOpenNINodelet::depthImageIn, this) );
+               1, &TacoOpenNINodelet::depthImageCb, this) );
     }
 
     void TacoOpenNINodelet::cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud)
@@ -77,14 +77,14 @@ namespace sr_taco_openni {
         foveated_.pointCloud.publish(out_cloud);
     }
 
-    void TacoOpenNINodelet::cameraInfoIn(const sensor_msgs::CameraInfo::ConstPtr& msg) {
+    void TacoOpenNINodelet::cameraInfoCb(const sensor_msgs::CameraInfo::ConstPtr& msg) {
         foveated_.depthInfo.publish(msg);
         foveated_.intensityInfo.publish(msg);
         unfoveated_.depthInfo.publish(msg);
         unfoveated_.intensityInfo.publish(msg);
     }
         
-    void TacoOpenNINodelet::depthImageIn(const sensor_msgs::Image::ConstPtr& msg) {
+    void TacoOpenNINodelet::depthImageCb(const sensor_msgs::Image::ConstPtr& msg) {
         foveated_.depthImage.publish(msg);
         unfoveated_.depthImage.publish(msg);
 
