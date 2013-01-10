@@ -93,8 +93,8 @@ namespace sr_taco_openni {
         ROS_INFO_STREAM_ONCE("target_cloud: " << *target_cloud_);
 
         // No foveation yet so pub the same cloud twice
-        sensor_msgs::PointCloud2 out_cloud;
-        pcl::toROSMsg(*target_cloud_, out_cloud);
+        sensor_msgs::PointCloud2Ptr out_cloud(new sensor_msgs::PointCloud2);
+        pcl::toROSMsg(*target_cloud_, *out_cloud);
         unfoveated_.pointCloud.publish(out_cloud);
         foveated_.pointCloud.publish(out_cloud);
 
