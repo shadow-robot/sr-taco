@@ -64,7 +64,7 @@ namespace sr_taco_openni
         NODELET_INFO("Starting ClusterSegment attention manager.");
         nh_ = getNodeHandle();
 
-        saliency_map_spatial_ = boost::shared_ptr<sensor_msgs::Image>(new sensor_msgs::Image());
+        saliency_map_spatial_ = SaliencyMapPtr(new SaliencyMap());
 
         // Setup a callback with the point cloud and camera info in sync.
         // Needed for generating depth images (ie saliency maps) from clouds.

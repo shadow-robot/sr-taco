@@ -36,5 +36,7 @@ namespace sr_taco_openni
   typedef typename Cloud::Ptr CloudPtr;
   typedef typename Cloud::ConstPtr CloudConstPtr;
 
+  typedef sensor_msgs::Image SaliencyMap;
+  typedef typename boost::shared_ptr<SaliencyMap> SaliencyMapPtr;
 }
 
