@@ -8,6 +8,7 @@
 #pragma once
 
 #include <nodelet/nodelet.h>
+#include "sr_taco_openni/common.h"
 
 namespace sr_taco_openni
 {
