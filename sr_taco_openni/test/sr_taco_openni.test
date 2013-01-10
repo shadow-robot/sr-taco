@@ -1,15 +1,13 @@
 <launch>
-    <!-- Run a small bag in a loop that publishes the topics we need from the
-    camera.
-    -->
+    <!-- Run a small bag in a loop that publishes the topics we need from the camera.  -->
     <node pkg="rosbag" type="play" args="--loop $(find sr_taco_openni)/test/simple_kinect.bag" name="rosbag" />
-    <!-- Start the tracker, that will use the bag as input -->
-    <node name="tacoSensor" pkg="sr_taco_openni" type="sr_taco_openni">
-        <param name="downsampling_grid_size" value="0.01" />
-    </node>
+    <!-- Start the sensor, that will use the bag as input -->
+    <include file="$(find sr_taco_openni)/launch/sr_taco_openni_nodelets.launch">
+        <!-- <param name="downsampling_grid_size" value="0.01" /> -->
+    </include>
 
     <!-- Perform some basic tests on the node. Make sure it is publishing
-    expected topics etc.
+         expected topics etc.
     -->
     <test test-name="sr_taco_openni_test" pkg="sr_taco_openni" type="sr_taco_openni_test.py" />
 </launch>
