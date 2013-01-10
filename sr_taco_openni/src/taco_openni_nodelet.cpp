@@ -33,15 +33,15 @@ namespace sr_taco_openni {
         NODELET_INFO("Starting main Taco nodelet");
 
         nh_home = getPrivateNodeHandle();
-        foveated = TacoOpenNIPubs(nh_home, "foveated");
-        unfoveated = TacoOpenNIPubs(nh_home, "unfoveated");
+        foveated_ = TacoOpenNIPubs(nh_home, "foveated");
+        unfoveated_ = TacoOpenNIPubs(nh_home, "unfoveated");
 
         nh_home.param<string>("camera", camera, "camera");
         nh_home.param<double>("downsampling_grid_size", downsampling_grid_size_, 0.01);
         nh_home.param<double>("filter_z_min", filter_z_min_, 0.0);
         nh_home.param<double>("filter_z_max", filter_z_max_, 10.0);
 
-        saliency_map_spatial = boost::shared_ptr<sensor_msgs::Image>(new sensor_msgs::Image());
+        saliency_map_spatial_ = boost::shared_ptr<sensor_msgs::Image>(new sensor_msgs::Image());
 
         // Setup a callback with the point cloud and camera info in sync.
         // Needed for generating depth images (ie saliency maps) from clouds.
@@ -54,15 +54,15 @@ namespace sr_taco_openni {
         subs.push_back( nh.subscribe(depth + "/image",
                1, &TacoOpenNINodelet::depthImageIn, this) );
 
-        saliency_map_spatial_pub = nh_home.advertise<sensor_msgs::Image>(
+        saliency_map_spatial_pub_ = nh_home.advertise<sensor_msgs::Image>(
                 "saliency_map_spatial/image", 5);
-        saliency_map_spatial->width = taco_width;
-        saliency_map_spatial->height = taco_height;
+        saliency_map_spatial_->width = taco_width;
+        saliency_map_spatial_->height = taco_height;
         //we're using mono8 as the saliency map can contain labels (change if
         //needed)
-        saliency_map_spatial->encoding = sensor_msgs::image_encodings::MONO8;
-        saliency_map_spatial->step = taco_width; // * 1 as using mono
-        saliency_map_spatial->data.resize( taco_height * saliency_map_spatial->step );
+        saliency_map_spatial_->encoding = sensor_msgs::image_encodings::MONO8;
+        saliency_map_spatial_->step = taco_width; // * 1 as using mono
+        saliency_map_spatial_->data.resize( taco_height * saliency_map_spatial_->step );
 
         clusters_pub_ = nh_home.advertise<Cloud>("clusters/points", 5);
     }
@@ -95,11 +95,11 @@ namespace sr_taco_openni {
         // No foveation yet so pub the same cloud twice
         sensor_msgs::PointCloud2 out_cloud;
         pcl::toROSMsg(*target_cloud_, out_cloud);
-        unfoveated.pointCloud.publish(out_cloud);
-        foveated.pointCloud.publish(out_cloud);
+        unfoveated_.pointCloud.publish(out_cloud);
+        foveated_.pointCloud.publish(out_cloud);
 
         calculateSaliencyMap(info);
-        saliency_map_spatial_pub.publish(saliency_map_spatial);
+        saliency_map_spatial_pub_.publish(saliency_map_spatial_);
 
         // Re-publish the camera info
         cameraInfoIn(info);
@@ -138,14 +138,14 @@ namespace sr_taco_openni {
         clusters_pub_.publish(all_clusters);
 
         // Setup empty map
-        saliency_map_spatial->header.stamp = ros::Time::now();
-        for(size_t i = 0; i < saliency_map_spatial->data.size(); ++i)
-            saliency_map_spatial->data[i] = 0;
+        saliency_map_spatial_->header.stamp = ros::Time::now();
+        for(size_t i = 0; i < saliency_map_spatial_->data.size(); ++i)
+            saliency_map_spatial_->data[i] = 0;
 
         // Convert saliency msg to cv image
         IplImage* image = NULL;
         try {
-            image = bridge_.imgMsgToCv(saliency_map_spatial, "mono8");
+            image = bridge_.imgMsgToCv(saliency_map_spatial_, "mono8");
         }
         catch (sensor_msgs::CvBridgeException& ex) {
             ROS_ERROR("Failed to convert image");
@@ -172,15 +172,15 @@ namespace sr_taco_openni {
     }
 
     void TacoOpenNINodelet::cameraInfoIn(const sensor_msgs::CameraInfo::ConstPtr& msg) {
-        foveated.depthInfo.publish(msg);
-        foveated.intensityInfo.publish(msg);
-        unfoveated.depthInfo.publish(msg);
-        unfoveated.intensityInfo.publish(msg);
+        foveated_.depthInfo.publish(msg);
+        foveated_.intensityInfo.publish(msg);
+        unfoveated_.depthInfo.publish(msg);
+        unfoveated_.intensityInfo.publish(msg);
     }
         
     void TacoOpenNINodelet::depthImageIn(const sensor_msgs::Image::ConstPtr& msg) {
-        foveated.depthImage.publish(msg);
-        unfoveated.depthImage.publish(msg);
+        foveated_.depthImage.publish(msg);
+        unfoveated_.depthImage.publish(msg);
 
         // Just pub a blank image for now, not sure what we need here and we
         // don't use the intensity image atm.
@@ -190,8 +190,8 @@ namespace sr_taco_openni {
         blank_img->encoding = sensor_msgs::image_encodings::MONO8;
         blank_img->step = taco_width; // * 1 as using mono
         blank_img->data.resize( taco_height * blank_img->step );
-        foveated.intensityImage.publish(blank_img);
-        unfoveated.intensityImage.publish(blank_img);
+        foveated_.intensityImage.publish(blank_img);
+        unfoveated_.intensityImage.publish(blank_img);
     }
 
 } // sr_taco_openni::

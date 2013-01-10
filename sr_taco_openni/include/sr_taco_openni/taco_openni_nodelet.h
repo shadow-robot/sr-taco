@@ -91,13 +91,13 @@ class TacoOpenNINodelet : public nodelet::Nodelet {
         void cameraInfoIn(const sensor_msgs::CameraInfo::ConstPtr& msg);
         void depthImageIn(const sensor_msgs::Image::ConstPtr& msg);
 
-        TacoOpenNIPubs foveated;
-        TacoOpenNIPubs unfoveated;
+        TacoOpenNIPubs foveated_;
+        TacoOpenNIPubs unfoveated_;
 
         sensor_msgs::CvBridge bridge_;
         image_geometry::PinholeCameraModel cam_model_;
-        boost::shared_ptr<sensor_msgs::Image> saliency_map_spatial;
-        Publisher saliency_map_spatial_pub;
+        boost::shared_ptr<sensor_msgs::Image> saliency_map_spatial_;
+        Publisher saliency_map_spatial_pub_;
         Publisher clusters_pub_;
         
         //const width/height for our point cloud and image.
