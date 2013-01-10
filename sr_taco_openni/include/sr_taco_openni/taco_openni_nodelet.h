@@ -99,12 +99,6 @@ class TacoOpenNINodelet : public nodelet::Nodelet {
         boost::shared_ptr<sensor_msgs::Image> saliency_map_spatial_;
         Publisher saliency_map_spatial_pub_;
         Publisher clusters_pub_;
-        
-        //const width/height for our point cloud and image.
-        //Should match the camera we are faking the taco with, not the actual
-        //taco cam. e.g. 640*480 works for a kinect.
-        static const unsigned int taco_width;
-        static const unsigned int taco_height;
 };
 
 } // sr_taco_openni::

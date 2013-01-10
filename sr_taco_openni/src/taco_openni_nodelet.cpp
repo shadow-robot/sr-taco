@@ -1,4 +1,5 @@
 #include "sr_taco_openni/taco_openni_nodelet.h"
+#include "sr_taco_openni/common.h"
 #include <pluginlib/class_list_macros.h>
 
 #include "sr_pcl_tracking/cluster_segmentor.h"
@@ -25,9 +26,6 @@ namespace sr_taco_openni {
 
 
 // TacoOpenNINodelet ----------------------------------------------------------------
-
-    const unsigned int TacoOpenNINodelet::taco_width  = 640;
-    const unsigned int TacoOpenNINodelet::taco_height = 480;
 
     void TacoOpenNINodelet::onInit() {
         NODELET_INFO("Starting main Taco nodelet");
