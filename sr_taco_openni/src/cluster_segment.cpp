@@ -18,14 +18,6 @@
 #include <image_geometry/pinhole_camera_model.h>
 #include "message_filters/subscriber.h"
 #include "message_filters/time_synchronizer.h"
-#include <pcl_ros/point_cloud.h>
-#include <pcl/ros/conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl/common/centroid.h>
-#include <pcl/io/pcd_io.h>
-#include <pcl/filters/passthrough.h>
-#include <pcl/filters/voxel_grid.h>
 
 namespace sr_taco_openni
 {
@@ -39,12 +31,6 @@ namespace sr_taco_openni
   class ClusterSegment : public AttentionManager
   {
     public:
-      // PCL
-      typedef pcl::PointXYZ PointType;
-      typedef pcl::PointCloud<PointType> Cloud;
-      typedef typename Cloud::Ptr CloudPtr;
-      typedef typename Cloud::ConstPtr CloudConstPtr;
-
       typedef message_filters::Subscriber<Cloud> PointCloudSub;
       typedef typename boost::shared_ptr<PointCloudSub> PointCloudSubPtr;
 

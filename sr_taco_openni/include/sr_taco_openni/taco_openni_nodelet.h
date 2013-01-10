@@ -7,12 +7,8 @@
 #include "sensor_msgs/CameraInfo.h"
 #include "sensor_msgs/Image.h"
 
-#include <pcl_ros/point_cloud.h>
-#include <pcl/ros/conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl/common/centroid.h>
-#include <pcl/io/pcd_io.h>
+#include "sr_taco_openni/common.h"
+
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/voxel_grid.h>
 
@@ -40,12 +36,6 @@ class TacoOpenNIPubs {
 
 class TacoOpenNINodelet : public nodelet::Nodelet {
     public:
-        // PCL
-        typedef pcl::PointXYZ PointType;
-        typedef pcl::PointCloud<PointType> Cloud;
-        typedef typename Cloud::Ptr CloudPtr;
-        typedef typename Cloud::ConstPtr CloudConstPtr;
-
         virtual ~TacoOpenNINodelet() {}
 
         virtual void onInit();
