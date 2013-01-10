@@ -96,8 +96,8 @@ namespace sr_taco_openni {
         unfoveated_.pointCloud.publish(out_cloud);
         foveated_.pointCloud.publish(out_cloud);
 
-        calculateSaliencyMap(info);
-        saliency_map_spatial_pub_.publish(saliency_map_spatial_);
+        //calculateSaliencyMap(info);
+        //saliency_map_spatial_pub_.publish(saliency_map_spatial_);
 
         // Re-publish the camera info
         cameraInfoIn(info);

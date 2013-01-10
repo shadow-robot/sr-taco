@@ -31,6 +31,7 @@ namespace sr_taco_openni
 {
   using namespace std;
   using namespace ros;
+  using namespace sr_pcl_tracking;
 
   /**
    * @brief AttentionManager that extracts clusters after removing planar surfaces.
@@ -44,13 +45,13 @@ namespace sr_taco_openni
       typedef typename Cloud::Ptr CloudPtr;
       typedef typename Cloud::ConstPtr CloudConstPtr;
 
-      typedef message_filters::Subscriber<sensor_msgs::PointCloud2> PointCloudSub;
+      typedef message_filters::Subscriber<Cloud> PointCloudSub;
       typedef typename boost::shared_ptr<PointCloudSub> PointCloudSubPtr;
 
       typedef message_filters::Subscriber<sensor_msgs::CameraInfo> CameraInfoSub;
       typedef typename boost::shared_ptr<CameraInfoSub> CameraInfoSubPtr;
 
-      typedef message_filters::TimeSynchronizer<sensor_msgs::PointCloud2, sensor_msgs::CameraInfo> CloudSync;
+      typedef message_filters::TimeSynchronizer<Cloud, sensor_msgs::CameraInfo> CloudSync;
       typedef typename boost::shared_ptr<CloudSync> CloudSyncPtr;
       typedef typename boost::shared_ptr<const CloudSync> CloudSyncConstPtr;
 
@@ -72,7 +73,7 @@ namespace sr_taco_openni
       virtual void onInit()
       {
         NODELET_INFO("Starting ClusterSegment attention manager.");
-        nh_ = getPrivateNodeHandle();
+        nh_ = getNodeHandle();
 
         saliency_map_spatial_ = boost::shared_ptr<sensor_msgs::Image>(new sensor_msgs::Image());
 
@@ -96,10 +97,75 @@ namespace sr_taco_openni
         clusters_pub_ = nh_.advertise<Cloud>("clusters/points", 5);
       }
 
-      void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud,
-                     const sensor_msgs::CameraInfo::ConstPtr& info)
+      void cloudCb(const CloudConstPtr& cloud, const sensor_msgs::CameraInfo::ConstPtr& info)
       {
-        NODELET_INFO_STREAM_ONCE("cloudCb:" << cloud << "info: " << info);
+        NODELET_INFO_STREAM_ONCE("cloudCb:" << *cloud << "info: " << *info);
+
+        string frame_id = cloud->header.frame_id;
+
+        double min_cluster_size, max_cluster_size;
+        // Default max to 1/10th of input cloud size
+        double def_max = (double)cloud->size() * 0.1;
+        nh_.param<double>("attention/segment_clusters/min_cluster_size", min_cluster_size, 50.0);
+        nh_.param<double>("attention/segment_clusters/max_cluster_size", max_cluster_size, def_max);
+
+        // Pull out the interesting clusters
+        std::vector<CloudPtr> clusters;
+        ClusterSegmentor<PointType> cluster_segmentor;
+        cluster_segmentor.setInputCloud(cloud);
+        cluster_segmentor.setMinClusterSize(min_cluster_size);
+        cluster_segmentor.setMaxClusterSize(max_cluster_size);
+        cluster_segmentor.extract(clusters);
+
+        // Merge all the clusters into a single cloud
+        Cloud::Ptr all_clusters(new Cloud);
+        for (size_t i=0; i<clusters.size(); ++i)
+        {
+            Cloud cloud = *(clusters[i]);
+            *all_clusters += cloud;
+        }
+        ROS_INFO_STREAM_ONCE("all_clusters: " << all_clusters);
+
+        // Publish the cluster cloud for debug use
+        all_clusters->header.stamp = ros::Time::now();
+        all_clusters->header.frame_id = frame_id;
+        clusters_pub_.publish(all_clusters);
+
+        // Setup empty map
+        saliency_map_spatial_->header.stamp = ros::Time::now();
+        for(size_t i = 0; i < saliency_map_spatial_->data.size(); ++i)
+            saliency_map_spatial_->data[i] = 0;
+
+        // Convert saliency msg to cv image
+        IplImage* image = NULL;
+        try {
+            image = bridge_.imgMsgToCv(saliency_map_spatial_, "mono8");
+        }
+        catch (sensor_msgs::CvBridgeException& ex) {
+            ROS_ERROR("Failed to convert image");
+            return;
+        }
+
+        cam_model_.fromCameraInfo(info);
+
+        // Draw the salient points as a little circles. This should fill in the gaps
+        // from down sampling.
+        // XXX : Now we are a nodelet how can we do this?
+        //int radius = std::ceil(input_cloud_->size()/target_cloud_->size());
+        int radius = 3;
+        PointType pt;
+        BOOST_FOREACH( pt, all_clusters->points )
+        {
+            // Point should be in the camera frame. Project that onto the image.
+            cv::Point3d pt_cv(pt.x, pt.y, pt.z);
+            cv::Point2d uv;
+            cam_model_.project3dToPixel(pt_cv, uv);
+            cvCircle(image, uv, radius, CV_RGB(255,255,255), -1);
+        }
+
+        // Convert the cv image back to msg and publish
+        bridge_.cvToImgMsg(image, "mono8");
+        saliency_map_spatial_pub_.publish(saliency_map_spatial_);
       }
 
   };
