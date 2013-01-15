@@ -44,7 +44,7 @@ namespace sr_taco_openni
 
       virtual void onInit()
       {
-        NODELET_INFO("Starting ClusterSegment attention manager.");
+        NODELET_INFO("Starting ExampleCirle attention manager.");
         nh_ = getNodeHandle();
 
         nh_.param<int>("attention/example_circle/radius", radius_, 100);
