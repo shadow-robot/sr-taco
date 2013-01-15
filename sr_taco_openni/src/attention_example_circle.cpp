@@ -35,14 +35,21 @@ namespace sr_taco_openni
 
       sensor_msgs::CvBridge bridge_;
 
+      /// Radius of the circle to draw
       int radius_;
+      /// x position of the circle. Default is middle.
+      int x_;
+      /// y position of the circle. Default is middle.
+      int y_;
 
       virtual void onInit()
       {
         NODELET_INFO("Starting ClusterSegment attention manager.");
         nh_ = getNodeHandle();
 
-        nh_.param<int>("attention/example_circle/radius", radius_, 10);
+        nh_.param<int>("attention/example_circle/radius", radius_, 100);
+        nh_.param<int>("attention/example_circle/x", x_, taco_width/2);
+        nh_.param<int>("attention/example_circle/y", y_, taco_height/2);
 
         // Setup a callback so we pub in step with the cloud. ie in its frame.
         pointcloud_sub_ = nh_.subscribe("/tacoSensor/unfoveated/pointcloud2", 1, &AttentionExampleCircle::cloudCb, this);
@@ -68,7 +75,7 @@ namespace sr_taco_openni
             return;
         }
 
-        cv::Point2d pt(100,100);
+        cv::Point2d pt(x_,y_);
         cvCircle(image, pt, radius_, CV_RGB(255,255,255), -1);
 
         // Convert the cv image back to msg and publish
