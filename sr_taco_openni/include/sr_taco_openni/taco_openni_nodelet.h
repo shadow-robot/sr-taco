@@ -2,6 +2,7 @@
 
 #include "ros/ros.h"
 #include "nodelet/nodelet.h"
+#include "nodelet/NodeletLoad.h"
 #include <boost/smart_ptr.hpp>
 #include "sensor_msgs/PointCloud2.h"
 #include "sensor_msgs/CameraInfo.h"
@@ -56,12 +57,20 @@ class TacoOpenNINodelet : public nodelet::Nodelet {
         virtual ~TacoOpenNINodelet() {}
 
         virtual void onInit();
+        virtual bool setFoveationMode(string);
+        virtual string getFoveationMode();
 
     private:
         NodeHandle nh, nh_home;
 
+        /// Name of the nodelet manager we are part of and managing (for loading attention manager nodelets).
+        string manager_;
+
         /// Namespace to find the camera in.
         string camera;
+
+        /// The attention manager to use.
+        string foveation_mode_;
 
         /// Leaf size (xyz) to downsample the camera feed
         double downsampling_grid_size_;

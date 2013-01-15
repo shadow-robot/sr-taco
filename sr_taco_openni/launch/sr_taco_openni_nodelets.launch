@@ -9,10 +9,17 @@
     <node name="tacoSensor_nodelet_manager" pkg="nodelet" type="nodelet" args="manager" output="screen" />
     <node name="tacoSensor" pkg="nodelet" type="nodelet" args="load sr_taco_openni/taco_openni_nodelet tacoSensor_nodelet_manager">
         <param name="downsampling_grid_size" value="0.01" />
+        <param name="foveation_mode" value="cluster_segment" />
+        <!-- <param name="foveation_mode" value="attention_example_circle" /> -->
     </node>
     <!-- Start an attention manager -->
     <group ns="tacoSensor">
-        <node name="cluster_segment" pkg="nodelet" type="nodelet" args="load sr_taco_openni/cluster_segment /tacoSensor_nodelet_manager">
+        <!-- <node name="cluster_segment" pkg="nodelet" type="nodelet" args="load sr_taco_openni/cluster_segment /tacoSensor_nodelet_manager">
         </node>
+        -->
+        <!-- <node name="attention_example_circle" pkg="nodelet" type="nodelet"
+        	  args="load sr_taco_openni/attention_example_circle /tacoSensor_nodelet_manager">
+        </node>
+        -->
     </group>
 </launch>
