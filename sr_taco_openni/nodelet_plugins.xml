@@ -2,7 +2,7 @@
 Make the plugins visible to the ros tool chain.
 See Also:
 * Export section in manifest.xml
-* Plugin declarations in src/cluster_segment.cpp src/taco_openni_nodelet.cpp
+* Plugin declarations in src/taco_openni_nodelet.cpp, src/attention_*.cpp
 -->
 <library path="lib/libsr_taco_openni_nodelet">
   <class name="sr_taco_openni/taco_openni_nodelet" type="sr_taco_openni::TacoOpenNINodelet" base_class_type="nodelet::Nodelet">
@@ -13,5 +13,11 @@ See Also:
 <library path="lib/libsr_taco_openni_cluster_segment">
   <class name="sr_taco_openni/cluster_segment" type="sr_taco_openni::ClusterSegment" base_class_type="nodelet::Nodelet">
     <description>Extracts clusters after removing planar surfaces.</description>
+  </class>
+</library>
+
+<library path="lib/libsr_taco_openni_attention_example_circle">
+  <class name="sr_taco_openni/attention_example_circle" type="sr_taco_openni::AttentionExampleCircle" base_class_type="nodelet::Nodelet">
+    <description>Example that just adds a circle to the saliency map.</description>
   </class>
 </library>

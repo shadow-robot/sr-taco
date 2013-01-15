@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <ros/ros.h>
 #include <nodelet/nodelet.h>
 #include "sr_taco_openni/common.h"
 #include <sensor_msgs/image_encodings.h>

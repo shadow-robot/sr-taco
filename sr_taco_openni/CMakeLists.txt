@@ -31,7 +31,9 @@ rosbuild_add_boost_directories()
 rosbuild_add_library(sr_taco_openni_nodelet src/taco_openni_nodelet.cpp)
 rosbuild_link_boost(sr_taco_openni_nodelet signals)
 
+# The attention managers
 rosbuild_add_library(sr_taco_openni_cluster_segment src/cluster_segment.cpp)
+rosbuild_add_library(sr_taco_openni_attention_example_circle src/attention_example_circle.cpp)
 
 #
 # Tests
