@@ -28,7 +28,12 @@ rosbuild_add_boost_directories()
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #target_link_libraries(example ${PROJECT_NAME})
 
-rosbuild_add_executable(sr_taco_openni src/TacoOpenNINode.cpp src/TacoOpenNI.cpp)
-rosbuild_link_boost(sr_taco_openni  signals)
+rosbuild_add_library(sr_taco_openni_nodelet src/taco_openni_nodelet.cpp)
+rosbuild_link_boost(sr_taco_openni_nodelet signals)
 
+rosbuild_add_library(sr_taco_openni_cluster_segment src/cluster_segment.cpp)
+
+#
+# Tests
+rosbuild_add_rostest(test/nodelets.test)
 rosbuild_add_rostest(test/sr_taco_openni.test)

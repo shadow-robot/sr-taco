@@ -1,0 +1,17 @@
+<!--
+Make the plugins visible to the ros tool chain.
+See Also:
+* Export section in manifest.xml
+* Plugin declarations in src/cluster_segment.cpp src/taco_openni_nodelet.cpp
+-->
+<library path="lib/libsr_taco_openni_nodelet">
+  <class name="sr_taco_openni/taco_openni_nodelet" type="sr_taco_openni::TacoOpenNINodelet" base_class_type="nodelet::Nodelet">
+    <description>Main nodelet for the Taco sensor.</description>
+  </class>
+</library>
+
+<library path="lib/libsr_taco_openni_cluster_segment">
+  <class name="sr_taco_openni/cluster_segment" type="sr_taco_openni::ClusterSegment" base_class_type="nodelet::Nodelet">
+    <description>Extracts clusters after removing planar surfaces.</description>
+  </class>
+</library>
