@@ -6,6 +6,10 @@
 
   <include file="$(find sr_taco_launch)/launch/gazebo_arm_and_hand.launch" />
 
+  <group if="$(optenv SIMULATED 0)">
+    <node pkg="topic_tools" type="mux" name="remap_gazebo_js" args="/joint_states /gazebo/joint_states" output="screen"/>
+  </group>
+
   <include file="$(find sr_hand)/launch/sr_arm_and_hand.launch" />
 
   <!--Load the kinect+base description and launch the model in gazebo -->
