@@ -65,6 +65,7 @@ namespace sr_taco
       data_.velocity /= dt;
     }
 
+    frame_id_ = pose->header.frame_id;
     data_.pose.pose.pose = pose->pose;
 
     last_pose_.header = pose->header;
@@ -80,6 +81,7 @@ namespace sr_taco
                                                                       data_.twist.linear.z );
 
     data_.pose = result;
+    data_.pose.header.frame_id = frame_id_;
 
     return data_;
   }
@@ -121,7 +123,7 @@ namespace sr_taco
 
     //publish the markers
     visualization_msgs::Marker marker_arrow, marker_sphere;
-    marker_arrow.header.frame_id = "/shadowarm_base";
+    marker_arrow.header.frame_id = data.pose.header.frame_id;
     marker_arrow.header.stamp = ros::Time();
     marker_arrow.ns = "analyse_moving_object_a";
     marker_arrow.id = 0;
@@ -147,7 +149,7 @@ namespace sr_taco
     marker_arrow.color.b = 0.0;
     marker_pub_.publish(marker_arrow);
 
-    marker_sphere.header.frame_id = "/shadowarm_base";
+    marker_sphere.header.frame_id = data.pose.header.frame_id;
     marker_sphere.header.stamp = ros::Time();
     marker_sphere.ns = "analyse_moving_object_s";
     marker_sphere.id = 1;

@@ -69,6 +69,8 @@ namespace sr_taco
     AnalysedData data_;
 
     boost::shared_ptr<PredictionModel> model_;
+
+    std::string frame_id_;
   };
 
   class AnalyseMovingObjectNode
