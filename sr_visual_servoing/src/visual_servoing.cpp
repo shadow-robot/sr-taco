@@ -53,7 +53,7 @@ namespace sr_taco
     visual_servoing_feedback_.distance = -1.0;
 
     //initialises subscribers and timer
-    joint_states_sub_ = nh_tilde_.subscribe("/gazebo/joint_states", 2, &VisualServoing::joint_states_cb_, this);
+    joint_states_sub_ = nh_tilde_.subscribe("/joint_states", 2, &VisualServoing::joint_states_cb_, this);
 
     odom_sub_ = nh_tilde_.subscribe("/analyse_moving_object/odometry", 2, &VisualServoing::new_odom_cb_, this);
   }
