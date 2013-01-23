@@ -108,8 +108,12 @@ namespace sr_taco
     OpenRAVE::ViewerBasePtr rave_viewer_;
     OpenRAVE::IkSolverBasePtr rave_ik_solver_;
 
-    ///The approximative velocity of the arm
-    static const double arm_velocity_const_;
+    ///The cartesian velocity of the arm
+    double arm_velocity_;
+    double compute_cartesian_velocity_(OpenRAVE::Transform end_effector);
+    OpenRAVE::Transform last_end_effector_pose_;
+    ros::Time last_time_;
+    ros::Publisher cartesian_vel_pub_;
 
     ///The latest object position and twist
     nav_msgs::Odometry tracked_object_;

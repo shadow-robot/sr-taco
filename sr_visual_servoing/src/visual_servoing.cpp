@@ -38,11 +38,10 @@
 
 namespace sr_taco
 {
-  // TODO: get a better (cartesian!) velocity measurement
-  const double VisualServoing::arm_velocity_const_ = 0.4;
-
   VisualServoing::VisualServoing()
-    : nh_tilde_("~"), object_msg_received_(false),
+    : nh_tilde_("~"),
+      arm_velocity_(-1.0),
+      object_msg_received_(false),
       joint_states_msg_received_(false)
   {
     init_openrave_();
@@ -53,6 +52,7 @@ namespace sr_taco
     visual_servoing_feedback_.distance = -1.0;
 
     //initialises subscribers and timer
+    cartesian_vel_pub_ = nh_tilde_.advertise<std_msgs::Float64>("cartesian_velocity", 2);
     joint_states_sub_ = nh_tilde_.subscribe("/joint_states", 2, &VisualServoing::joint_states_cb_, this);
 
     odom_sub_ = nh_tilde_.subscribe("/analyse_moving_object/odometry", 2, &VisualServoing::new_odom_cb_, this);
@@ -138,6 +138,13 @@ namespace sr_taco
     OpenRAVE::Transform end_effector = rave_manipulator_->GetEndEffectorTransform();
     end_effector.trans += rave_manipulator_->GetLocalToolTransform().trans;
 
+    arm_velocity_ = compute_cartesian_velocity_(end_effector);
+    std_msgs::Float64 msg;
+    msg.data = arm_velocity_;
+    cartesian_vel_pub_.publish(msg);
+
+    last_end_effector_pose_ = end_effector;
+
     OpenRAVE::Transform object, twist;
     object.trans.x = tracked_object_.pose.pose.position.x;
     object.trans.y = tracked_object_.pose.pose.position.y;
@@ -162,10 +169,12 @@ namespace sr_taco
 
     OpenRAVE::Transform target;
     // object + twist * time it would take to get to the object
-    double reaching_time = distance / arm_velocity_const_;
+    double reaching_time = distance / arm_velocity_;
     target.trans = object.trans + twist.trans * reaching_time;
 
-    ROS_DEBUG_STREAM("Distance = " << distance << " (reaching in approx "<< reaching_time << "s), end effector: "<< end_effector.trans <<" / object: "<< object.trans <<" / twist: " << twist.trans << "=> " << target.trans);
+    ROS_DEBUG_STREAM("Distance = " << distance << " (reaching in approx "<< reaching_time
+                     << "s at"<< arm_velocity_ <<"m.s-1), end effector: "<< end_effector.trans <<" / object: "<< object.trans
+                     <<" / twist: " << twist.trans << "=> " << target.trans);
 
     //Fixed orientation of the wrist
     target.rot.w = 0.5599;
@@ -228,6 +237,22 @@ namespace sr_taco
       }
     }
   }
+
+  double VisualServoing::compute_cartesian_velocity_(OpenRAVE::Transform end_effector)
+  {
+    double velocity = 0.0;
+    if( arm_velocity_ == -1.0 ) //last pose was not initialised return a velocity of 0
+      return velocity;
+
+    double distance = OpenRAVE::geometry::MATH_SQRT( (last_end_effector_pose_.trans - end_effector.trans).lengthsqr3() );
+    ros::Time current_time = ros::Time::now();
+    ros::Duration time_difference = current_time - last_time_;
+    last_time_ = current_time;
+    velocity = distance / (time_difference.toSec());
+
+    return velocity;
+  }
+
 
   void VisualServoing::joint_states_cb_(const sensor_msgs::JointStateConstPtr& msg)
   {
