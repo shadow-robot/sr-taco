@@ -31,7 +31,6 @@ namespace sr_taco_openni {
 
         nh_home.param<string>("manager", manager_, "/tacoSensor_nodelet_manager");
         nh_home.param<string>("camera", camera, "camera");
-        nh_home.param<string>("foveation_mode", foveation_mode_, "cluster_segment");
         nh_home.param<double>("downsampling_grid_size", downsampling_grid_size_, 0.01);
         nh_home.param<double>("filter_z_min", filter_z_min_, 0.0);
         nh_home.param<double>("filter_z_max", filter_z_max_, 10.0);
@@ -47,7 +46,10 @@ namespace sr_taco_openni {
         subs.push_back( nh.subscribe(depth + "/image",
                1, &TacoOpenNINodelet::depthImageCb, this) );
 
-        setFoveationMode(foveation_mode_);
+        // We do it this way so we don't try to unload a known existant nodelet
+        string startup_foveation_mode;
+        nh_home.param<string>("foveation_mode", startup_foveation_mode, "cluster_segment");
+        setFoveationMode(startup_foveation_mode);
     }
 
     string TacoOpenNINodelet::getFoveationMode()
