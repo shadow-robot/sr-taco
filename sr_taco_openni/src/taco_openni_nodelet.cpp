@@ -46,7 +46,7 @@ namespace sr_taco_openni {
         subs.push_back( nh.subscribe(depth + "/image",
                1, &TacoOpenNINodelet::depthImageCb, this) );
 
-        // We do it this way so we don't try to unload a known existant nodelet
+        // We do it this way so we don't try to unload a known existent nodelet
         string startup_foveation_mode;
         nh_home.param<string>("foveation_mode", startup_foveation_mode, "cluster_segment");
         setFoveationMode(startup_foveation_mode);
@@ -60,10 +60,12 @@ namespace sr_taco_openni {
     bool TacoOpenNINodelet::setFoveationMode(string name)
     {
       NODELET_INFO_STREAM("Setting foveation mode to " << name);
+      nh_home = getPrivateNodeHandle();
       if (foveation_mode_ != "")
         unloadAttention(name);
       loadAttention(name);
       foveation_mode_ = name;
+      nh_home.setParam("foveation_mode", foveation_mode_);
       return true;
     }
 
