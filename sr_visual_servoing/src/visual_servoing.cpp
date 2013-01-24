@@ -38,6 +38,9 @@
 
 namespace sr_taco
 {
+  //TODO get rid of this const, use a tf lookup or something
+  const double VisualServoing::ARM_HEIGHT_CONST_ = 1.02;
+
   VisualServoing::VisualServoing()
     : nh_tilde_("~"),
       arm_velocity_(-1.0),
@@ -52,7 +55,6 @@ namespace sr_taco
     visual_servoing_feedback_.distance = -1.0;
 
     //initialises subscribers and timer
-    cartesian_vel_pub_ = nh_tilde_.advertise<std_msgs::Float64>("cartesian_velocity", 2);
     joint_states_sub_ = nh_tilde_.subscribe("/joint_states", 2, &VisualServoing::joint_states_cb_, this);
 
     odom_sub_ = nh_tilde_.subscribe("/analyse_moving_object/odometry", 2, &VisualServoing::new_odom_cb_, this);
@@ -87,11 +89,26 @@ namespace sr_taco
 
   void VisualServoing::new_odom_cb_(const nav_msgs::OdometryConstPtr& msg)
   {
+    //transform pose into shadowarm_base frame: this is the main frame for the IK
+    geometry_msgs::PoseStamped pose_in_base, pose_origin;
+    try
+    {
+      pose_origin.pose = msg->pose.pose;
+      pose_origin.header = msg->header;
+      tf_listener_.waitForTransform("shadowarm_base", msg->header.frame_id, ros::Time(0), ros::Duration(0.1));
+      tf_listener_.transformPose("shadowarm_base", pose_origin, pose_in_base);
+    }
+    catch(tf::TransformException ex)
+    {
+      ROS_WARN("%s", ex.what());
+    }
+
     //update the target
-    tracked_object_.pose = msg->pose;
+    tracked_object_.pose = pose_in_base.pose;
     tracked_object_.twist = msg->twist;
     tracked_object_.child_frame_id = msg->child_frame_id;
     tracked_object_.header = msg->header;
+    tracked_object_.header.frame_id = "shadowarm_base";
 
     object_msg_received_ = true;
   }
@@ -116,13 +133,14 @@ namespace sr_taco
     visual_servoing_feedback_.grasp_pose.position.x = trans.trans.x;
     visual_servoing_feedback_.grasp_pose.position.y = trans.trans.y;
 
-    //TODO: get rid of this static offset
-    visual_servoing_feedback_.grasp_pose.position.z = trans.trans.z - 1.02;
+    visual_servoing_feedback_.grasp_pose.position.z = trans.trans.z - ARM_HEIGHT_CONST_;
 
     visual_servoing_feedback_.grasp_pose.orientation.x = trans.rot.x;
     visual_servoing_feedback_.grasp_pose.orientation.y = trans.rot.y;
     visual_servoing_feedback_.grasp_pose.orientation.z = trans.rot.z;
     visual_servoing_feedback_.grasp_pose.orientation.w = trans.rot.w;
+
+    visual_servoing_feedback_.cartesian_velocity = arm_velocity_;
 
     //update the distance between the object and the tooltip in the feedback
     visual_servoing_feedback_.distance = compute_distance_(visual_servoing_feedback_.grasp_pose.position, visual_servoing_feedback_.object_pose.position );
@@ -139,9 +157,6 @@ namespace sr_taco
     end_effector.trans += rave_manipulator_->GetLocalToolTransform().trans;
 
     arm_velocity_ = compute_cartesian_velocity_(end_effector);
-    std_msgs::Float64 msg;
-    msg.data = arm_velocity_;
-    cartesian_vel_pub_.publish(msg);
 
     last_end_effector_pose_ = end_effector;
 
@@ -149,9 +164,7 @@ namespace sr_taco
     object.trans.x = tracked_object_.pose.pose.position.x;
     object.trans.y = tracked_object_.pose.pose.position.y;
 
-    //TODO: get rid of this static transform.
-    // 1.02 is the height of the arm in the scene
-    object.trans.z = tracked_object_.pose.pose.position.z + 1.02;
+    object.trans.z = tracked_object_.pose.pose.position.z + ARM_HEIGHT_CONST_;
 
     twist.trans.x = tracked_object_.twist.twist.linear.x;
     twist.trans.y = tracked_object_.twist.twist.linear.y;

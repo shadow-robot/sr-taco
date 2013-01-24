@@ -42,6 +42,8 @@
 
 #include <openrave-core.h>
 
+#include <tf/transform_listener.h>
+
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Point.h>
@@ -65,6 +67,8 @@ namespace sr_taco
     sr_visual_servoing::VisualServoingFeedback get_closer();
 
   protected:
+    static const double ARM_HEIGHT_CONST_;
+
     ros::NodeHandle nh_tilde_;
 
     ///subscribes to the joint_states, updating the vector of current_positions_
@@ -113,10 +117,10 @@ namespace sr_taco
     double compute_cartesian_velocity_(OpenRAVE::Transform end_effector);
     OpenRAVE::Transform last_end_effector_pose_;
     ros::Time last_time_;
-    ros::Publisher cartesian_vel_pub_;
 
     ///The latest object position and twist
     nav_msgs::Odometry tracked_object_;
+    tf::TransformListener tf_listener_;
 
     ///The targets we'll send to the robot
     std::vector<double> robot_targets_;

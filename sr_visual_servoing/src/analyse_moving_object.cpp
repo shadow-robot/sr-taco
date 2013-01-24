@@ -81,6 +81,8 @@ namespace sr_taco
                                                                       data_.twist.linear.z );
 
     data_.pose = result;
+
+
     data_.pose.header.frame_id = frame_id_;
 
     return data_;
@@ -91,7 +93,6 @@ namespace sr_taco
   AnalyseMovingObjectNode::AnalyseMovingObjectNode()
     : nh_tilde_("~")
   {
-    odom_msg_.header.frame_id = "/shadowarm_base";
     odom_msg_.child_frame_id = "/tracked_object";
     odometry_pub_ = nh_tilde_.advertise<nav_msgs::Odometry>("odometry", 2);
 
@@ -115,6 +116,8 @@ namespace sr_taco
   void AnalyseMovingObjectNode::update_model_(const ros::TimerEvent& e)
   {
     AnalysedData data = analyser_.update_model();
+
+    odom_msg_.header.frame_id = data.pose.header.frame_id;
 
     //publish the odometry message
     odom_msg_.pose.pose = data.pose.pose.pose;
