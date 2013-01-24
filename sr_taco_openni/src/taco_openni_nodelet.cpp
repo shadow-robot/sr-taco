@@ -57,28 +57,24 @@ namespace sr_taco_openni {
 
     bool TacoOpenNINodelet::setFoveationMode(string name)
     {
-      string type = "sr_taco_openni/"+name;
-      NODELET_INFO_STREAM("Setting foveation mode to " << name << " (" << type << ")");
-//      // Call the service on our nodelet manager to load the new manager.
-//      ros::ServiceClient load_client = nh_home.serviceClient<nodelet::NodeletLoad>(manager_ + "/load_nodelet");
-//      if ( !load_client.waitForExistence(ros::Duration(5.0)) )
-//      {
-//        NODELET_ERROR_STREAM("Nodelet manager " << manager_ << " is not responding.");
-//        return false;
-//      }
-//      NODELET_INFO_STREAM("Manager contacted " << manager_);
-//      nodelet::NodeletLoad load_srv;
-//      load_srv.request.name = name;
-//      load_srv.request.type = type;
-//      if ( !load_client.call(load_srv) )
-//      {
-//        NODELET_FATAL_STREAM("Service call failed to load nodelet "<< name << " of type " << type << " into manager" << manager_);
-//        return false;
-//      }
+      NODELET_INFO_STREAM("Setting foveation mode to " << name);
+      if (foveation_mode_ != "")
+        unloadAttention(name);
+      loadAttention(name);
+      foveation_mode_ = name;
+      return true;
+    }
 
-      // XXX Hack! Use fork/exec to call the nodelet exe.
-      // The above service call only breifly starts the nodelet as the calling process needs
-      // to hang around so we fork off a proc to do that. See: $(rospack find nodelet)/src/nodelet.cpp
+    bool TacoOpenNINodelet::loadAttention(const string &name)
+    {
+      nh_home = getPrivateNodeHandle();
+      string type = "sr_taco_openni/"+name;
+      string ns   = nh_home.getNamespace();
+
+      // XXX Hack! We can't call the nodelet load service directly as we need
+      // a process to keep the nodelet alive, so we off a proc to do that.
+      // See: http://answers.ros.org/question/52462/how-to-load-a-nodelet-into-a-manager-from-cpp/
+      // See: $(rospack find nodelet)/src/nodelet.cpp
       // rosrun nodelet nodelet load sr_taco_openni/attention_example_circle /tacoSensor_nodelet_manager __name:=attention_example_circle __ns:=/tacoSensor
       pid_t pid = fork();
       switch (pid)
@@ -88,17 +84,33 @@ namespace sr_taco_openni {
           return false;
         case 0: // CHILD process
           string name_arg = "__name:=" + name;
-          string ns_arg = "__ns:=/tacoSensor";
+          string ns_arg = "__ns:=" + ns;
           execlp("rosrun", "rosrun", "nodelet", "nodelet", "load",  type.c_str(), manager_.c_str(), name_arg.c_str(), ns_arg.c_str(), NULL);
-          // Exec will only return on error.
-          NODELET_ERROR("Exec failed!");
-          return false;
+          NODELET_ERROR("Exec failed!"); // Exec will only return on error.
+          exit(23); // Kill this process, we don't want two taco nodes running!
         // default: // PARENT process - keep running!
       }
-
-      NODELET_INFO_STREAM("Loaded nodelet " << name << " of type " << type << " into nodelet manager " << manager_);
-      foveation_mode_ = name;
       return true;
+    }
+
+    // Based on code from $(rospack find nodelet)/src/nodelet.cpp
+    bool TacoOpenNINodelet::unloadAttention(const string &name)
+    {
+      // XXX Hack! Calling the unload service just seems to hang but the command line works.
+      pid_t pid = fork();
+      switch (pid)
+      {
+        case -1: // ERROR
+          NODELET_ERROR("Fork failed");
+          return false;
+        case 0: // CHILD process
+          // TODO: Should really be checking return codes (system) here instead of fire and forget.
+          execlp("rosrun", "rosrun", "nodelet", "nodelet", "unload", name.c_str(), manager_.c_str(), NULL);
+          NODELET_ERROR("Exec failed!"); // Exec will only return on error.
+          exit(23); // Kill this process, we don't want two taco nodes running!
+        // default: // PARENT process - keep running!
+      }
+      return (true);
     }
 
     void TacoOpenNINodelet::cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud)
