@@ -179,7 +179,7 @@ namespace sr_taco
   {
     //add system noise for dispersing the model if no value was received.
     // base the predicted movement of the model on the current linear twist
-    // the velocity is devided by the refresh frequency as the velocity
+    // the velocity is divided by the refresh frequency as the velocity
     // is expressed in m.s-1
     MatrixWrapper::ColumnVector vel(3); vel = 0;
     vel(1) = twist_x / refresh_frequency_;
@@ -197,6 +197,12 @@ namespace sr_taco
     results_.pose.pose.position.x = posterior_->ExpectedValueGet()(1);
     results_.pose.pose.position.y = posterior_->ExpectedValueGet()(2);
     results_.pose.pose.position.z = posterior_->ExpectedValueGet()(3);
+
+    //TODO compute orientation as well?
+    results_.pose.pose.orientation.x = 0.0;
+    results_.pose.pose.orientation.y = 0.0;
+    results_.pose.pose.orientation.z = 0.0;
+    results_.pose.pose.orientation.w = 1.0;
 
     //The covariance from the pose is a 6x6 matrix
     // but we've only got a 3x3 matrix as we're estimating the position only

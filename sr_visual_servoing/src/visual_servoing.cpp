@@ -89,27 +89,12 @@ namespace sr_taco
 
   void VisualServoing::new_odom_cb_(const nav_msgs::OdometryConstPtr& msg)
   {
-    //transform pose into shadowarm_base frame: this is the main frame for the IK
-    geometry_msgs::PoseStamped pose_in_base, pose_origin;
-    try
-    {
-      pose_origin.pose = msg->pose.pose;
-      pose_origin.header = msg->header;
-      tf_listener_.waitForTransform("shadowarm_base", msg->header.frame_id, ros::Time(0), ros::Duration(0.1));
-      tf_listener_.transformPose("shadowarm_base", pose_origin, pose_in_base);
-    }
-    catch(tf::TransformException ex)
-    {
-      ROS_WARN("%s", ex.what());
-    }
-
     //update the target
-    tracked_object_.pose = pose_in_base.pose;
+    tracked_object_.pose = msg->pose;
     tracked_object_.twist = msg->twist;
     tracked_object_.child_frame_id = msg->child_frame_id;
     tracked_object_.header = msg->header;
     tracked_object_.header.frame_id = "shadowarm_base";
-
     object_msg_received_ = true;
   }
 

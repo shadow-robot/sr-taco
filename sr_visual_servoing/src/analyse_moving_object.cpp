@@ -40,6 +40,20 @@ namespace sr_taco
 
   void AnalyseMovingObject::new_measurement(const geometry_msgs::PoseStampedConstPtr& pose)
   {
+    //transform pose into shadowarm_base frame: this is the main frame for the IK
+    geometry_msgs::PoseStamped pose_in_base;
+    try
+    {
+      tf_listener_.waitForTransform("/shadowarm_base", pose->header.frame_id, ros::Time(0), ros::Duration(0.1));
+      //tf_listener_.transformPose(pose->header.frame_id, *pose.get(), pose_in_base);
+      tf_listener_.transformPose("/shadowarm_base", *pose.get(), pose_in_base);
+    }
+    catch(const tf::TransformException& ex)
+    {
+      ROS_ERROR("%s", ex.what());
+      return;
+    }
+
     if( is_first_ )
     {
       //we ignore the first message for the twist as we don't have enough data
@@ -48,30 +62,31 @@ namespace sr_taco
     else
     {
       //compute twist from pose and last pose
-      double dt = (pose->header.stamp - last_pose_.header.stamp).toSec();
-      data_.twist.linear.x = pose->pose.position.x - last_pose_.pose.position.x;
+      double dt = (pose_in_base.header.stamp - last_pose_.header.stamp).toSec();
+      data_.twist.linear.x = pose_in_base.pose.position.x - last_pose_.pose.position.x;
       data_.twist.linear.x /= dt;
 
-      data_.twist.linear.y = pose->pose.position.y - last_pose_.pose.position.y;
+      data_.twist.linear.y = pose_in_base.pose.position.y - last_pose_.pose.position.y;
       data_.twist.linear.y /= dt;
 
-      data_.twist.linear.z = pose->pose.position.z - last_pose_.pose.position.z;
+      data_.twist.linear.z = pose_in_base.pose.position.z - last_pose_.pose.position.z;
       data_.twist.linear.z /= dt;
 
       //TODO: compute angular twist
 
       //compute the velocity
-      data_.velocity = sr_utils::compute_distance(pose->pose.position, last_pose_.pose.position);
+      data_.velocity = sr_utils::compute_distance(pose_in_base.pose.position, last_pose_.pose.position);
       data_.velocity /= dt;
     }
 
-    frame_id_ = pose->header.frame_id;
-    data_.pose.pose.pose = pose->pose;
+    frame_id_ = pose_in_base.header.frame_id;
+    data_.pose.pose.pose = pose_in_base.pose;
 
-    last_pose_.header = pose->header;
-    last_pose_.pose = pose->pose;
+    last_pose_.header = pose_in_base.header;
+    last_pose_.pose = pose_in_base.pose;
 
-    model_->new_measurement(data_.pose.pose.pose.position.x, data_.pose.pose.pose.position.y, data_.pose.pose.pose.position.z);
+    model_->new_measurement(data_.pose.pose.pose.position.x, data_.pose.pose.pose.position.y,
+                            data_.pose.pose.pose.position.z);
   }
 
   AnalysedData AnalyseMovingObject::update_model()
@@ -81,9 +96,9 @@ namespace sr_taco
                                                                       data_.twist.linear.z );
 
     data_.pose = result;
-
-
     data_.pose.header.frame_id = frame_id_;
+
+    //ROS_ERROR_STREAM(" new result: " << data_.pose.pose.pose);
 
     return data_;
   }

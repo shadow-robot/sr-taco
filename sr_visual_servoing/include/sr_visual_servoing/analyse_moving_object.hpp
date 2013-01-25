@@ -37,6 +37,8 @@
 
 #include <sr_visual_servoing/prediction_model.hpp>
 
+#include <tf/transform_listener.h>
+
 namespace sr_taco
 {
   struct AnalysedData
@@ -67,6 +69,8 @@ namespace sr_taco
     bool is_first_;
 
     AnalysedData data_;
+
+    tf::TransformListener tf_listener_;
 
     boost::shared_ptr<PredictionModel> model_;
     std::string frame_id_;

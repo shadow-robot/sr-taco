@@ -42,8 +42,6 @@
 
 #include <openrave-core.h>
 
-#include <tf/transform_listener.h>
-
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Point.h>
@@ -120,7 +118,6 @@ namespace sr_taco
 
     ///The latest object position and twist
     nav_msgs::Odometry tracked_object_;
-    tf::TransformListener tf_listener_;
 
     ///The targets we'll send to the robot
     std::vector<double> robot_targets_;
