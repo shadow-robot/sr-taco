@@ -40,6 +40,8 @@ namespace sr_taco
 
   void AnalyseMovingObject::new_measurement(const geometry_msgs::PoseStampedConstPtr& pose)
   {
+    ROS_DEBUG_STREAM("----\n NEW MEAS: " << *pose.get() );
+
     //transform pose into shadowarm_base frame: this is the main frame for the IK
     geometry_msgs::PoseStamped pose_in_base;
     try
@@ -54,6 +56,7 @@ namespace sr_taco
       return;
     }
 
+    ROS_DEBUG_STREAM("  in base: " << pose_in_base );
     if( is_first_ )
     {
       //we ignore the first message for the twist as we don't have enough data
@@ -134,6 +137,12 @@ namespace sr_taco
 
     odom_msg_.header.frame_id = data.pose.header.frame_id;
 
+    //seq is set to 0 when the prediction model failed.
+    if( data.pose.header.seq == 0 )
+      return;
+
+    ROS_DEBUG_STREAM("publishing marker for object: " << data.pose.pose.pose.position);
+
     //publish the odometry message
     odom_msg_.pose.pose = data.pose.pose.pose;
     odom_msg_.twist.twist = data.twist;
@@ -156,10 +165,7 @@ namespace sr_taco
     marker_arrow.points[1].z += 1.5*data.twist.linear.z;
 
     marker_arrow.scale.x = 0.05;
-    if( fabs(data.velocity) < 0.03)
-      marker_arrow.scale.y = 0.03;
-    else
-      marker_arrow.scale.y = 2.0*fabs(data.velocity);
+    marker_arrow.scale.y = std::max(data.velocity, 0.03);
 
     marker_arrow.color.a = 1.0;
     marker_arrow.color.r = 0.86;
@@ -177,9 +183,9 @@ namespace sr_taco
     marker_sphere.pose = data.pose.pose.pose;
 
     //scale of the sphere based on the covariance
-    marker_sphere.scale.x = data.pose.pose.covariance[0];
-    marker_sphere.scale.y = data.pose.pose.covariance[7];
-    marker_sphere.scale.z = data.pose.pose.covariance[14];
+    marker_sphere.scale.x = std::max(data.pose.pose.covariance[0], 0.01);
+    marker_sphere.scale.y = std::max(data.pose.pose.covariance[7], 0.01);
+    marker_sphere.scale.z = std::max(data.pose.pose.covariance[14], 0.01);
 
     marker_sphere.color.a = 0.5;
     marker_sphere.color.r = 0.34;

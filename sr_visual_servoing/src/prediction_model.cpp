@@ -37,10 +37,25 @@
 namespace sr_taco
 {
   PredictionModel::PredictionModel()
+    : nh_("~"), measurement_(3), meas_used_(true)
   {
-    ros::NodeHandle nh("~");
+    reset_model_();
 
-    nh.param<double>("refresh_frequency", refresh_frequency_, 100.0);
+    timer_ = nh_.createTimer(ros::Duration(0.1), &PredictionModel::reset, this, true);
+  }
+
+  PredictionModel::~PredictionModel()
+  {
+  };
+
+  void PredictionModel::reset(const ros::TimerEvent&)
+  {
+    reset_model_();
+  }
+
+  void PredictionModel::reset_model_()
+  {
+    nh_.param<double>("refresh_frequency", refresh_frequency_, 100.0);
 
     MatrixWrapper::Matrix matrix_pos(3,3);
     matrix_pos(1,1) = 1.0;
@@ -80,17 +95,17 @@ namespace sr_taco
     double param;
     MatrixWrapper::SymmetricMatrix sys_noise_cov(3);
     sys_noise_cov = 0.0;
-    nh.param<double>("prediction_model/system/sigma/x", param, 0.2);
+    nh_.param<double>("prediction_model/system/sigma/x", param, 0.2);
     sys_noise_cov(1,1) = param / refresh_frequency_;
     sys_noise_cov(1,2) = 0.0;
     sys_noise_cov(1,3) = 0.0;
     sys_noise_cov(2,1) = 0.0;
-    nh.param<double>("prediction_model/system/sigma/y", param, 0.2);
+    nh_.param<double>("prediction_model/system/sigma/y", param, 0.2);
     sys_noise_cov(2,2) = param / refresh_frequency_;
     sys_noise_cov(2,3) = 0.0;
     sys_noise_cov(3,1) = 0.0;
     sys_noise_cov(3,2) = 0.0;
-    nh.param<double>("prediction_model/system/sigma/z", param, 0.2);
+    nh_.param<double>("prediction_model/system/sigma/z", param, 0.2);
     sys_noise_cov(3,3) = param / refresh_frequency_;
 
     system_uncertainty_.reset( new BFL::Gaussian(sys_noise_mu, sys_noise_cov) );
@@ -108,17 +123,17 @@ namespace sr_taco
 
     MatrixWrapper::SymmetricMatrix meas_noise_cov(3);
     meas_noise_cov = 0.0;
-    nh.param<double>("prediction_model/measurement/sigma/x", param, 0.2);
+    nh_.param<double>("prediction_model/measurement/sigma/x", param, 0.2);
     meas_noise_cov(1,1) = param;
     meas_noise_cov(1,2) = 0.0;
     meas_noise_cov(1,3) = 0.0;
     meas_noise_cov(2,1) = 0.0;
-    nh.param<double>("prediction_model/measurement/sigma/y", param, 0.2);
+    nh_.param<double>("prediction_model/measurement/sigma/y", param, 0.2);
     meas_noise_cov(2,2) = param;
     meas_noise_cov(2,3) = 0.0;
     meas_noise_cov(3,1) = 0.0;
     meas_noise_cov(3,2) = 0.0;
-    nh.param<double>("prediction_model/measurement/sigma/z", param, 0.2);
+    nh_.param<double>("prediction_model/measurement/sigma/z", param, 0.2);
     meas_noise_cov(3,3) = param;
 
     measurement_uncertainty_.reset( new BFL::Gaussian(meas_noise_mu, meas_noise_cov) );
@@ -130,49 +145,47 @@ namespace sr_taco
     // (we don't know where the object is so using a really flat
     // centered Gaussian)
     MatrixWrapper::ColumnVector prior_mu(3);
-    nh.param<double>("prediction_model/prior/mu/x", param, 0.0);
+    nh_.param<double>("prediction_model/prior/mu/x", param, 0.0);
     prior_mu(1) = param;
-    nh.param<double>("prediction_model/prior/mu/y", param, 0.0);
+    nh_.param<double>("prediction_model/prior/mu/y", param, 0.0);
     prior_mu(2) = param;
-    nh.param<double>("prediction_model/prior/mu/z", param, 0.0);
+    nh_.param<double>("prediction_model/prior/mu/z", param, 0.0);
     prior_mu(3) = param;
 
     MatrixWrapper::SymmetricMatrix prior_cov(3);
-    nh.param<double>("prediction_model/prior/sigma/x", param, 50.0);
+    nh_.param<double>("prediction_model/prior/sigma/x", param, 50.0);
     prior_cov(1,1) = param;
     prior_cov(1,2) = 0.0;
     prior_cov(1,3) = 0.0;
     prior_cov(2,1) = 0.0;
-    nh.param<double>("prediction_model/prior/sigma/y", param, 50.0);
+    nh_.param<double>("prediction_model/prior/sigma/y", param, 50.0);
     prior_cov(2,2) = param;
     prior_cov(2,3) = 0.0;
     prior_cov(3,1) = 0.0;
     prior_cov(3,2) = 0.0;
-    nh.param<double>("prediction_model/prior/sigma/z", param, 50.0);
+    nh_.param<double>("prediction_model/prior/sigma/z", param, 50.0);
     prior_cov(3,3) = param;
 
     prior_.reset(new BFL::Gaussian(prior_mu, prior_cov));
 
     //finally initialising the filter
     kalman_filter_.reset(new BFL::ExtendedKalmanFilter(prior_.get()));
-  };
-
-  PredictionModel::~PredictionModel()
-  {
-
-  };
+  }
 
   void PredictionModel::new_measurement(double x, double y, double z)
   {
-    MatrixWrapper::ColumnVector measurement(3);
-    measurement(1) = x;
-    measurement(2) = y;
-    measurement(3) = z;
+    if( (x != x) | (y != y) | (z != z) )
+    {
+      ROS_WARN_STREAM("We received NaN, ignoring the new measurement: " << x << " " << y << " " << z );
+      return;
+    }
 
-    ROS_DEBUG_STREAM("Updating filter with new measurement = " << x << " " << y << " " << z);
+    measurement_(1) = x;
+    measurement_(2) = y;
+    measurement_(3) = z;
 
-    kalman_filter_->Update( measurement_model_.get(),
-                            measurement );
+    //we have received a new measurement
+    meas_used_ = false;
   }
 
   geometry_msgs::PoseWithCovarianceStamped PredictionModel::update( double twist_x, double twist_y, double twist_z )
@@ -186,8 +199,22 @@ namespace sr_taco
     vel(2) = twist_y / refresh_frequency_;
     vel(3) = twist_z / refresh_frequency_;
 
-    ROS_DEBUG_STREAM("Updating model with velocities: " << vel);
-    kalman_filter_->Update(system_model_.get(), vel);
+    //we have a new measurement waiting to be processed
+    if( !meas_used_ )
+    {
+      ROS_DEBUG_STREAM("New measurement = " << measurement_ << " / vel: " <<  vel);
+
+      kalman_filter_->Update( system_model_.get(), vel,
+                              measurement_model_.get(),
+                              measurement_);
+      meas_used_ = true;
+    }
+    else
+    {
+      //no measurement only dispersion
+      ROS_DEBUG_STREAM("Dispersion model, velocities: " << vel);
+      kalman_filter_->Update(system_model_.get(), vel);
+    }
 
     //get the result
     posterior_ = kalman_filter_->PostGet();
@@ -197,6 +224,25 @@ namespace sr_taco
     results_.pose.pose.position.x = posterior_->ExpectedValueGet()(1);
     results_.pose.pose.position.y = posterior_->ExpectedValueGet()(2);
     results_.pose.pose.position.z = posterior_->ExpectedValueGet()(3);
+
+    double x, y, z;
+    x = posterior_->ExpectedValueGet()(1);
+    y = posterior_->ExpectedValueGet()(2);
+    z = posterior_->ExpectedValueGet()(3);
+    if( (x != x) | (y != y) | (z != z) )
+    {
+      ROS_WARN_STREAM("There was a problem, we predicted some NaN: " << x << " " << y << " " << z <<" / resetting filter." );
+      reset_model_();
+      timer_ = nh_.createTimer(ros::Duration(0.1), &PredictionModel::reset, this, true);
+      //hack to mark it as failed
+      results_.header.seq = 0;
+      return results_;
+    }
+    else
+    {
+      //hack to mark it as success
+      results_.header.seq = 1;
+    }
 
     //TODO compute orientation as well?
     results_.pose.pose.orientation.x = 0.0;

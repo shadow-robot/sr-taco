@@ -38,6 +38,7 @@
 #include <boost/smart_ptr.hpp>
 
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <ros/ros.h>
 
 /**
  * Our model:
@@ -67,6 +68,8 @@ namespace sr_taco
     geometry_msgs::PoseWithCovarianceStamped update(double twist_x, double twist_y, double twist_z);
 
   protected:
+    ros::NodeHandle nh_;
+
     //the system model
     boost::shared_ptr<BFL::Gaussian> system_uncertainty_;
     boost::shared_ptr<BFL::LinearAnalyticConditionalGaussian> system_pdf_;
@@ -86,8 +89,18 @@ namespace sr_taco
     ///The result
     BFL::Pdf<MatrixWrapper::ColumnVector>* posterior_;
 
+    ///Resets the kalman filter
+    void reset_model_();
+    ros::Timer timer_;
+    void reset(const ros::TimerEvent&);
+
     ///The result to be sent back to the ROS node
     geometry_msgs::PoseWithCovarianceStamped results_;
+
+    ///last received measurement
+    MatrixWrapper::ColumnVector measurement_;
+    ///set to true when a new meas is received, false once it has been processed
+    bool meas_used_;
 
     ///Frequency at which the model is refreshed (as an inpact when updating the model due to the velocity)
     double refresh_frequency_;
