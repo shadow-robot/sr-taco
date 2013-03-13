@@ -40,6 +40,23 @@ namespace sr_taco
 
   void AnalyseMovingObject::new_measurement(const geometry_msgs::PoseStampedConstPtr& pose)
   {
+    ROS_DEBUG_STREAM("----\n NEW MEAS: " << *pose.get() );
+
+    //transform pose into shadowarm_base frame: this is the main frame for the IK
+    geometry_msgs::PoseStamped pose_in_base;
+    try
+    {
+      tf_listener_.waitForTransform("/shadowarm_base", pose->header.frame_id, ros::Time(0), ros::Duration(0.1));
+      //tf_listener_.transformPose(pose->header.frame_id, *pose.get(), pose_in_base);
+      tf_listener_.transformPose("/shadowarm_base", *pose.get(), pose_in_base);
+    }
+    catch(const tf::TransformException& ex)
+    {
+      ROS_ERROR("%s", ex.what());
+      return;
+    }
+
+    ROS_DEBUG_STREAM("  in base: " << pose_in_base );
     if( is_first_ )
     {
       //we ignore the first message for the twist as we don't have enough data
@@ -48,29 +65,31 @@ namespace sr_taco
     else
     {
       //compute twist from pose and last pose
-      double dt = (pose->header.stamp - last_pose_.header.stamp).toSec();
-      data_.twist.linear.x = pose->pose.position.x - last_pose_.pose.position.x;
+      double dt = (pose_in_base.header.stamp - last_pose_.header.stamp).toSec();
+      data_.twist.linear.x = pose_in_base.pose.position.x - last_pose_.pose.position.x;
       data_.twist.linear.x /= dt;
 
-      data_.twist.linear.y = pose->pose.position.y - last_pose_.pose.position.y;
+      data_.twist.linear.y = pose_in_base.pose.position.y - last_pose_.pose.position.y;
       data_.twist.linear.y /= dt;
 
-      data_.twist.linear.z = pose->pose.position.z - last_pose_.pose.position.z;
+      data_.twist.linear.z = pose_in_base.pose.position.z - last_pose_.pose.position.z;
       data_.twist.linear.z /= dt;
 
       //TODO: compute angular twist
 
       //compute the velocity
-      data_.velocity = sr_utils::compute_distance(pose->pose.position, last_pose_.pose.position);
+      data_.velocity = sr_utils::compute_distance(pose_in_base.pose.position, last_pose_.pose.position);
       data_.velocity /= dt;
     }
 
-    data_.pose.pose.pose = pose->pose;
+    frame_id_ = pose_in_base.header.frame_id;
+    data_.pose.pose.pose = pose_in_base.pose;
 
-    last_pose_.header = pose->header;
-    last_pose_.pose = pose->pose;
+    last_pose_.header = pose_in_base.header;
+    last_pose_.pose = pose_in_base.pose;
 
-    model_->new_measurement(data_.pose.pose.pose.position.x, data_.pose.pose.pose.position.y, data_.pose.pose.pose.position.z);
+    model_->new_measurement(data_.pose.pose.pose.position.x, data_.pose.pose.pose.position.y,
+                            data_.pose.pose.pose.position.z);
   }
 
   AnalysedData AnalyseMovingObject::update_model()
@@ -80,6 +99,9 @@ namespace sr_taco
                                                                       data_.twist.linear.z );
 
     data_.pose = result;
+    data_.pose.header.frame_id = frame_id_;
+
+    //ROS_ERROR_STREAM(" new result: " << data_.pose.pose.pose);
 
     return data_;
   }
@@ -89,7 +111,6 @@ namespace sr_taco
   AnalyseMovingObjectNode::AnalyseMovingObjectNode()
     : nh_tilde_("~")
   {
-    odom_msg_.header.frame_id = "/shadowarm_base";
     odom_msg_.child_frame_id = "/tracked_object";
     odometry_pub_ = nh_tilde_.advertise<nav_msgs::Odometry>("odometry", 2);
 
@@ -114,6 +135,14 @@ namespace sr_taco
   {
     AnalysedData data = analyser_.update_model();
 
+    odom_msg_.header.frame_id = data.pose.header.frame_id;
+
+    //seq is set to 0 when the prediction model failed.
+    if( data.pose.header.seq == 0 )
+      return;
+
+    ROS_DEBUG_STREAM("publishing marker for object: " << data.pose.pose.pose.position);
+
     //publish the odometry message
     odom_msg_.pose.pose = data.pose.pose.pose;
     odom_msg_.twist.twist = data.twist;
@@ -121,7 +150,7 @@ namespace sr_taco
 
     //publish the markers
     visualization_msgs::Marker marker_arrow, marker_sphere;
-    marker_arrow.header.frame_id = "/shadowarm_base";
+    marker_arrow.header.frame_id = data.pose.header.frame_id;
     marker_arrow.header.stamp = ros::Time();
     marker_arrow.ns = "analyse_moving_object_a";
     marker_arrow.id = 0;
@@ -136,10 +165,7 @@ namespace sr_taco
     marker_arrow.points[1].z += 1.5*data.twist.linear.z;
 
     marker_arrow.scale.x = 0.05;
-    if( fabs(data.velocity) < 0.03)
-      marker_arrow.scale.y = 0.03;
-    else
-      marker_arrow.scale.y = 2.0*fabs(data.velocity);
+    marker_arrow.scale.y = std::max(data.velocity, 0.03);
 
     marker_arrow.color.a = 1.0;
     marker_arrow.color.r = 0.86;
@@ -147,7 +173,7 @@ namespace sr_taco
     marker_arrow.color.b = 0.0;
     marker_pub_.publish(marker_arrow);
 
-    marker_sphere.header.frame_id = "/shadowarm_base";
+    marker_sphere.header.frame_id = data.pose.header.frame_id;
     marker_sphere.header.stamp = ros::Time();
     marker_sphere.ns = "analyse_moving_object_s";
     marker_sphere.id = 1;
@@ -157,9 +183,9 @@ namespace sr_taco
     marker_sphere.pose = data.pose.pose.pose;
 
     //scale of the sphere based on the covariance
-    marker_sphere.scale.x = data.pose.pose.covariance[0];
-    marker_sphere.scale.y = data.pose.pose.covariance[7];
-    marker_sphere.scale.z = data.pose.pose.covariance[14];
+    marker_sphere.scale.x = std::max(data.pose.pose.covariance[0], 0.01);
+    marker_sphere.scale.y = std::max(data.pose.pose.covariance[7], 0.01);
+    marker_sphere.scale.z = std::max(data.pose.pose.covariance[14], 0.01);
 
     marker_sphere.color.a = 0.5;
     marker_sphere.color.r = 0.34;
