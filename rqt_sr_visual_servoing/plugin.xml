@@ -1,0 +1,20 @@
+<library path="src">
+  <class name="Shadow Visual Servoing" type="rqt_sr_visual_servoing.gui.RqtSrVisualServoing" base_class_type="rqt_gui_py::Plugin">
+    <description>
+      Gui plugin for the sr_visual_servoing package.
+    </description>
+    <qtgui>
+      <!-- optional grouping...
+      <group>
+        <label>Group</label>
+      </group>
+      <group>
+        <label>Subgroup</label>
+      </group>
+      -->
+      <label>Sr Visual Servoing</label>
+      <icon type="theme">system-help</icon>
+      <statustip>Start, stop the servoing and monitor status.</statustip>
+    </qtgui>
+  </class>
+</library>
