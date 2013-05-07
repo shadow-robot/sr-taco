@@ -92,6 +92,8 @@ class RqtSrVisualServoing(Plugin):
 
     def stop_clicked(self):
         self.client.cancel_all_goals()
+        self.ui.statusValue.setText("Stopped")
+        self.feedback_model.clear()
 
     def _feedback_cb(self, feedback):
         # We can't update the UI in this thread so stash the data and emit a
@@ -106,6 +108,7 @@ class RqtSrVisualServoing(Plugin):
 
         # Update the feedback model, which triggers the view to update
         m = self.feedback_model
+        m.setHorizontalHeaderLabels(['Name','Value'])
 
         m.setItem(0,0,QStandardItem('distance'))
         m.setItem(0,1,QStandardItem(str(fb.distance)))
