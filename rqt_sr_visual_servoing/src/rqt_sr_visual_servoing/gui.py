@@ -68,10 +68,14 @@ class RqtSrVisualServoing(Plugin):
         # ROS setup
         self.last_feedback = None
         self.client = actionlib.SimpleActionClient('visual_servo', VisualServoingAction)
+        msg = ""
         if self.client.wait_for_server(rospy.Duration(2.0)):
-            rospy.loginfo("Found action server, servoing appears to be running")
+            msg = "Found action server, servoing appears to be running"
+            rospy.loginfo(msg)
         else:
-            rospy.logerr("Can't find action server, servoing not running")
+            msg = "Can't find action server, servoing not running"
+            rospy.logerr(msg)
+        self.ui.statusValue.setText(msg)
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here
@@ -94,6 +98,7 @@ class RqtSrVisualServoing(Plugin):
     def start_clicked(self):
         goal = VisualServoingActionGoal()
         self.client.send_goal(goal, feedback_cb = self._feedback_cb)
+        self.ui.statusValue.setText("Starting")
 
     def stop_clicked(self):
         self.client.cancel_all_goals()
