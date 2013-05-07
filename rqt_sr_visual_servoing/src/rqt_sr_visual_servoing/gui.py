@@ -29,23 +29,27 @@ class RqtSrVisualServoing(Plugin):
         #     print 'unknowns: ', unknowns
 
         # Create QWidget
-        self._widget = QWidget()
+        self.ui = QWidget()
         # Get path to UI file which is a sibling of this file
         # in this example the .ui and .py file are in the same folder
         ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'gui.ui')
         # Extend the widget with all attributes and children from UI file
-        loadUi(ui_file, self._widget)
+        loadUi(ui_file, self.ui)
         # Give QObjects reasonable names
-        self._widget.setObjectName('RqtSrVisualServoingUi')
-        # Show _widget.windowTitle on left-top of each plugin (when 
-        # it's set in _widget). This is useful when you open multiple 
-        # plugins at once. Also if you open multiple instances of your 
-        # plugin at once, these lines add number to make it easy to 
-        # tell from pane to pane.
+        self.ui.setObjectName('RqtSrVisualServoingUi')
+        # Show ui.windowTitle on left-top of each plugin (when it's set in ui).
+        # This is useful when you open multiple plugins at once. Also if you
+        # open multiple instances of your plugin at once, these lines add
+        # number to make it easy to tell from pane to pane.
         if context.serial_number() > 1:
-            self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
+            self.ui.setWindowTitle(self.ui.windowTitle() + (' (%d)' % context.serial_number()))
+
+        # Wire up the buttons
+        self.ui.startBtn.clicked.connect( self.start_clicked )
+        self.ui.stopBtn.clicked.connect( self.stop_clicked )
+
         # Add widget to the user interface
-        context.add_widget(self._widget)
+        context.add_widget(self.ui)
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here
@@ -64,3 +68,9 @@ class RqtSrVisualServoing(Plugin):
     #def trigger_configuration(self):
         # Comment in to signal that the plugin has a way to configure it
         # Usually used to open a configuration dialog
+
+    def start_clicked(self):
+        rospy.loginfo("TODO: start")
+
+    def stop_clicked(self):
+        rospy.loginfo("TODO: stop")

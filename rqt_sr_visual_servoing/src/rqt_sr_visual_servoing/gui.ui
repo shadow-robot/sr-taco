@@ -17,14 +17,14 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QPushButton" name="stopBtn">
+      <widget class="QPushButton" name="startBtn">
        <property name="text">
         <string>Start</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="startBtn">
+      <widget class="QPushButton" name="stopBtn">
        <property name="text">
         <string>Stop</string>
        </property>
