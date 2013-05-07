@@ -9,7 +9,7 @@ from sr_visual_servoing.msg import *
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import SIGNAL
-from python_qt_binding.QtGui import QWidget
+from python_qt_binding.QtGui import QWidget, QStandardItemModel, QStandardItem
 
 class RqtSrVisualServoing(Plugin):
 
@@ -55,6 +55,11 @@ class RqtSrVisualServoing(Plugin):
         # Add widget to the user interface
         context.add_widget(self.ui)
 
+        # Setup a model for the feedback and link to the view.
+        self.feedback_model = QStandardItemModel(0,2)
+        self.feedback_model.setHorizontalHeaderLabels(['Name','Value'])
+        self.ui.feedbackView.setModel(self.feedback_model)
+
         # ROS setup
         self.last_feedback = None
         self.client = actionlib.SimpleActionClient('visual_servo', VisualServoingAction)
@@ -98,8 +103,44 @@ class RqtSrVisualServoing(Plugin):
         """Listen for feedback signals and update the interface."""
         fb = self.last_feedback
         self.ui.statusValue.setText(str(self.client.get_goal_status_text()))
-        self.ui.distanceValue.setText(str(fb.distance))
-        self.ui.objectPosePosXValue.setText(str(fb.object_pose.position.x))
-        self.ui.objectPosePosYValue.setText(str(fb.object_pose.position.y))
-        self.ui.objectPosePosZValue.setText(str(fb.object_pose.position.z))
+
+        # Update the feedback model, which triggers the view to update
+        m = self.feedback_model
+
+        m.setItem(0,0,QStandardItem('distance'))
+        m.setItem(0,1,QStandardItem(str(fb.distance)))
+
+        m.setItem(1,0,QStandardItem('object_pose.position.x'))
+        m.setItem(1,1,QStandardItem(str(fb.object_pose.position.x)))
+        m.setItem(2,0,QStandardItem('object_pose.position.y'))
+        m.setItem(2,1,QStandardItem(str(fb.object_pose.position.y)))
+        m.setItem(3,0,QStandardItem('object_pose.position.z'))
+        m.setItem(3,1,QStandardItem(str(fb.object_pose.position.z)))
+
+        m.setItem(4,0,QStandardItem('object_pose.orientation.x'))
+        m.setItem(4,1,QStandardItem(str(fb.object_pose.orientation.x)))
+        m.setItem(5,0,QStandardItem('object_pose.orientation.y'))
+        m.setItem(5,1,QStandardItem(str(fb.object_pose.orientation.y)))
+        m.setItem(6,0,QStandardItem('object_pose.orientation.z'))
+        m.setItem(6,1,QStandardItem(str(fb.object_pose.orientation.z)))
+        m.setItem(7,0,QStandardItem('object_pose.orientation.w'))
+        m.setItem(7,1,QStandardItem(str(fb.object_pose.orientation.w)))
+
+        m.setItem(8,0,QStandardItem('grasp_pose.position.x'))
+        m.setItem(8,1,QStandardItem(str(fb.grasp_pose.position.x)))
+        m.setItem(9,0,QStandardItem('grasp_pose.position.y'))
+        m.setItem(9,1,QStandardItem(str(fb.grasp_pose.position.y)))
+        m.setItem(10,0,QStandardItem('grasp_pose.position.z'))
+        m.setItem(10,1,QStandardItem(str(fb.grasp_pose.position.z)))
+
+        m.setItem(11,0,QStandardItem('grasp_pose.orientation.x'))
+        m.setItem(11,1,QStandardItem(str(fb.grasp_pose.orientation.x)))
+        m.setItem(12,0,QStandardItem('grasp_pose.orientation.y'))
+        m.setItem(12,1,QStandardItem(str(fb.grasp_pose.orientation.y)))
+        m.setItem(13,0,QStandardItem('grasp_pose.orientation.z'))
+        m.setItem(13,1,QStandardItem(str(fb.grasp_pose.orientation.z)))
+        m.setItem(14,0,QStandardItem('grasp_pose.orientation.w'))
+        m.setItem(14,1,QStandardItem(str(fb.grasp_pose.orientation.w)))
+
+        self.ui.feedbackView.resizeColumnsToContents()
 
