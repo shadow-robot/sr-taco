@@ -21,12 +21,18 @@
        <property name="text">
         <string>Start</string>
        </property>
+       <property name="icon">
+        <iconset theme="media-playback-start"/>
+       </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="stopBtn">
        <property name="text">
         <string>Stop</string>
+       </property>
+       <property name="icon">
+        <iconset theme="media-playback-stop"/>
        </property>
       </widget>
      </item>
