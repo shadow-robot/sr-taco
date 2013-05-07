@@ -97,5 +97,9 @@ class RqtSrVisualServoing(Plugin):
     def feedback(self, data):
         """Listen for feedback signals and update the interface."""
         fb = self.last_feedback
+        self.ui.statusValue.setText(str(self.client.get_goal_status_text()))
         self.ui.distanceValue.setText(str(fb.distance))
+        self.ui.objectPosePosXValue.setText(str(fb.object_pose.position.x))
+        self.ui.objectPosePosYValue.setText(str(fb.object_pose.position.y))
+        self.ui.objectPosePosZValue.setText(str(fb.object_pose.position.z))
 
