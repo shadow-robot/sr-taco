@@ -9,3 +9,5 @@ float64 distance
 geometry_msgs/Pose object_pose
 #the pose of the grasping point
 geometry_msgs/Pose grasp_pose
+#the arm cartesian velocity at the end effector
+float64 cartesian_velocity

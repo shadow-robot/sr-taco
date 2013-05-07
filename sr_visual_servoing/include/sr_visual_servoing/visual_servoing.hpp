@@ -65,6 +65,8 @@ namespace sr_taco
     sr_visual_servoing::VisualServoingFeedback get_closer();
 
   protected:
+    static const double ARM_HEIGHT_CONST_;
+
     ros::NodeHandle nh_tilde_;
 
     ///subscribes to the joint_states, updating the vector of current_positions_
@@ -108,8 +110,11 @@ namespace sr_taco
     OpenRAVE::ViewerBasePtr rave_viewer_;
     OpenRAVE::IkSolverBasePtr rave_ik_solver_;
 
-    ///The approximative velocity of the arm
-    static const double arm_velocity_const_;
+    ///The cartesian velocity of the arm
+    double arm_velocity_;
+    double compute_cartesian_velocity_(OpenRAVE::Transform end_effector);
+    OpenRAVE::Transform last_end_effector_pose_;
+    ros::Time last_time_;
 
     ///The latest object position and twist
     nav_msgs::Odometry tracked_object_;

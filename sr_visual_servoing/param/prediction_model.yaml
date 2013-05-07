@@ -16,8 +16,8 @@ prediction_model:
       y: 0.0
       z: 0.0
     sigma: #dispersion of the prior gaussian (m)
-      x: 10.0
-      y: 10.0
-      z: 10.0
+      x: 3.0
+      y: 3.0
+      z: 3.0
 
 refresh_frequency: 100.0
