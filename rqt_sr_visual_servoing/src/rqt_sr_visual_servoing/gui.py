@@ -8,6 +8,7 @@ from sr_visual_servoing.msg import *
 
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
+from python_qt_binding.QtCore import SIGNAL
 from python_qt_binding.QtGui import QWidget
 
 class RqtSrVisualServoing(Plugin):
@@ -49,10 +50,13 @@ class RqtSrVisualServoing(Plugin):
         self.ui.startBtn.clicked.connect( self.start_clicked )
         self.ui.stopBtn.clicked.connect( self.stop_clicked )
 
+        self.ui.connect( self.ui, SIGNAL('feedback(QString)'), self.feedback )
+
         # Add widget to the user interface
         context.add_widget(self.ui)
 
         # ROS setup
+        self.last_feedback = None
         self.client = actionlib.SimpleActionClient('visual_servo', VisualServoingAction)
         if self.client.wait_for_server(rospy.Duration(2.0)):
             rospy.loginfo("Found action server, servoing appears to be running")
@@ -79,7 +83,19 @@ class RqtSrVisualServoing(Plugin):
 
     def start_clicked(self):
         goal = VisualServoingActionGoal()
-        self.client.send_goal(goal)
+        self.client.send_goal(goal, feedback_cb = self._feedback_cb)
 
     def stop_clicked(self):
         self.client.cancel_all_goals()
+
+    def _feedback_cb(self, feedback):
+        # We can't update the UI in this thread so stash the data and emit a
+        # signal that can be traped by the main thread and update the ui.
+        self.last_feedback = feedback
+        self.ui.emit( SIGNAL('feedback(QString)'), "" )
+
+    def feedback(self, data):
+        """Listen for feedback signals and update the interface."""
+        fb = self.last_feedback
+        self.ui.distanceValue.setText(str(fb.distance))
+
