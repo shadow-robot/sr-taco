@@ -3,7 +3,8 @@ import roslib
 roslib.load_manifest('rqt_sr_visual_servoing')
 
 import os
-import rospy
+import rospy, actionlib
+from sr_visual_servoing.msg import *
 
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
@@ -51,6 +52,13 @@ class RqtSrVisualServoing(Plugin):
         # Add widget to the user interface
         context.add_widget(self.ui)
 
+        # ROS setup
+        self.client = actionlib.SimpleActionClient('visual_servo', VisualServoingAction)
+        if self.client.wait_for_server(rospy.Duration(2.0)):
+            rospy.loginfo("Found action server, servoing appears to be running")
+        else:
+            rospy.logerr("Can't find action server, servoing not running")
+
     def shutdown_plugin(self):
         # TODO unregister all publishers here
         pass
@@ -70,7 +78,8 @@ class RqtSrVisualServoing(Plugin):
         # Usually used to open a configuration dialog
 
     def start_clicked(self):
-        rospy.loginfo("TODO: start")
+        goal = VisualServoingActionGoal()
+        self.client.send_goal(goal)
 
     def stop_clicked(self):
-        rospy.loginfo("TODO: stop")
+        self.client.cancel_all_goals()

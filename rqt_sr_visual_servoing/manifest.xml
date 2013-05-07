@@ -11,6 +11,8 @@
   <depend package="rospy"/>
   <depend package="rqt_gui"/>
   <depend package="rqt_gui_py"/>
+  <depend package="actionlib"/>
+  <depend package="sr_visual_servoing"/>
   <export>
     <rqt_gui plugin="${prefix}/plugin.xml"/>
   </export>
