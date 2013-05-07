@@ -9,7 +9,7 @@ from sr_visual_servoing.msg import *
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import SIGNAL
-from python_qt_binding.QtGui import QWidget, QStandardItemModel, QStandardItem
+from python_qt_binding.QtGui import QWidget, QIcon, QStandardItemModel, QStandardItem
 
 class RqtSrVisualServoing(Plugin):
 
@@ -50,7 +50,10 @@ class RqtSrVisualServoing(Plugin):
         self.ui.startBtn.clicked.connect( self.start_clicked )
         self.ui.stopBtn.clicked.connect( self.stop_clicked )
 
-        self.ui.connect( self.ui, SIGNAL('feedback(QString)'), self.feedback )
+        # Annoyingly setting the icon theme in designer only works in designer,
+        # we have to set it again here for it to work at run time
+        self.ui.startBtn.setIcon(QIcon.fromTheme('media-playback-start'))
+        self.ui.stopBtn.setIcon(QIcon.fromTheme('media-playback-stop'))
 
         # Add widget to the user interface
         context.add_widget(self.ui)
@@ -59,6 +62,7 @@ class RqtSrVisualServoing(Plugin):
         self.feedback_model = QStandardItemModel(0,2)
         self.feedback_model.setHorizontalHeaderLabels(['Name','Value'])
         self.ui.feedbackView.setModel(self.feedback_model)
+        self.ui.connect( self.ui, SIGNAL('feedback(QString)'), self.feedback )
 
         # ROS setup
         self.last_feedback = None
