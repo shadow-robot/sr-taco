@@ -1,9 +1,10 @@
 # when using rosbuild these lines are required to make sure that all dependent Python packages are on the PYTHONPATH:
+PKG='rqt_sr_visual_servoing'
 import roslib
-roslib.load_manifest('rqt_sr_visual_servoing')
+roslib.load_manifest(PKG)
 
 import os
-import rospy, actionlib
+import rospy, rospkg, actionlib
 from sr_visual_servoing.msg import *
 
 from qt_gui.plugin import Plugin
@@ -32,11 +33,11 @@ class RqtSrVisualServoing(Plugin):
 
         # Create QWidget
         self.ui = QWidget()
-        # Get path to UI file which is a sibling of this file
-        # in this example the .ui and .py file are in the same folder
-        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'gui.ui')
+        # Get path to UI file which is in our packages resource directory
+        rp = rospkg.RosPack()
+        self.ui_file = os.path.join(rp.get_path(PKG), 'resource', 'gui.ui')
         # Extend the widget with all attributes and children from UI file
-        loadUi(ui_file, self.ui)
+        loadUi(self.ui_file, self.ui)
         # Give QObjects reasonable names
         self.ui.setObjectName('RqtSrVisualServoingUi')
         # Show ui.windowTitle on left-top of each plugin (when it's set in ui).
@@ -62,7 +63,7 @@ class RqtSrVisualServoing(Plugin):
         self.feedback_model = QStandardItemModel(0,2)
         self.feedback_model.setHorizontalHeaderLabels(['Name','Value'])
         self.ui.feedbackView.setModel(self.feedback_model)
-        self.ui.connect( self.ui, SIGNAL('feedback(QString)'), self.feedback )
+        self.ui.connect( self.ui, SIGNAL('feedback(QString)'), self.update_feedback )
 
         # ROS setup
         self.last_feedback = None
@@ -105,7 +106,7 @@ class RqtSrVisualServoing(Plugin):
         self.last_feedback = feedback
         self.ui.emit( SIGNAL('feedback(QString)'), "" )
 
-    def feedback(self, data):
+    def update_feedback(self, data):
         """Listen for feedback signals and update the interface."""
         fb = self.last_feedback
         self.ui.statusValue.setText(str(self.client.get_goal_status_text()))
