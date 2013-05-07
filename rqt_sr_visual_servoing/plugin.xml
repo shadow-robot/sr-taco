@@ -4,17 +4,12 @@
       Gui plugin for the sr_visual_servoing package.
     </description>
     <qtgui>
-      <!-- optional grouping...
       <group>
-        <label>Group</label>
+        <label>Shadow Robot TACO</label>
       </group>
-      <group>
-        <label>Subgroup</label>
-      </group>
-      -->
-      <label>Sr Visual Servoing</label>
-      <icon type="theme">system-help</icon>
-      <statustip>Start, stop the servoing and monitor status.</statustip>
+      <label>Visual Servoing</label>
+      <icon type="theme">system-run</icon>
+      <statustip>Start, stop the servoing and monitor feedback.</statustip>
     </qtgui>
   </class>
 </library>
