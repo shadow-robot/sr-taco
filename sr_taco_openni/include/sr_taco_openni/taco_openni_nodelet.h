@@ -2,7 +2,6 @@
 
 #include "ros/ros.h"
 #include "nodelet/nodelet.h"
-#include "nodelet/NodeletLoad.h"
 #include <boost/smart_ptr.hpp>
 #include "sensor_msgs/PointCloud2.h"
 #include "sensor_msgs/CameraInfo.h"
@@ -91,6 +90,9 @@ class TacoOpenNINodelet : public nodelet::Nodelet {
         void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud);
         void cameraInfoCb(const sensor_msgs::CameraInfo::ConstPtr& msg);
         void depthImageCb(const sensor_msgs::Image::ConstPtr& msg);
+
+        bool loadAttention(const string &name);
+        bool unloadAttention(const string &name);
 };
 
 } // sr_taco_openni::
