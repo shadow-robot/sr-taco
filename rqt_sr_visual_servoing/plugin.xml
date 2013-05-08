@@ -1,0 +1,15 @@
+<library path="src">
+  <class name="Shadow Visual Servoing" type="rqt_sr_visual_servoing.gui.RqtSrVisualServoing" base_class_type="rqt_gui_py::Plugin">
+    <description>
+      Gui plugin for the sr_visual_servoing package.
+    </description>
+    <qtgui>
+      <group>
+        <label>Shadow Robot TACO</label>
+      </group>
+      <label>Visual Servoing</label>
+      <icon type="theme">system-run</icon>
+      <statustip>Start, stop the servoing and monitor feedback.</statustip>
+    </qtgui>
+  </class>
+</library>
