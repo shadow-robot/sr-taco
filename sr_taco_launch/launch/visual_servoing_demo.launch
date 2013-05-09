@@ -3,6 +3,10 @@
 -->
 <launch>
     <include file="$(find sr_taco_launch)/launch/taco_world.launch" />
+    <!-- You need to adjust the kinect transform to match your setup.
+            $ rosed sr_taco_launch static_tf_real_kinect.launch
+            $ roslaunch sr_taco_launch static_tf_real_kinect.launch
+    -->
 
     <include file="$(find sr_object_manipulation_launch)/launch/sr_object_manipulation.launch" />
     <include file="$(find sr_pcl_tracking)/launch/openni_tracker.launch" />
