@@ -1,0 +1,11 @@
+<!--
+    Launch the complete visual servoing demo.
+-->
+<launch>
+    <include file="$(find sr_taco_launch)/launch/taco_world.launch" />
+
+    <include file="$(find sr_object_manipulation_launch)/launch/sr_object_manipulation.launch" />
+    <include file="$(find sr_pcl_tracking)/launch/openni_tracker.launch" />
+
+    <include file="$(find sr_visual_servoing)/launch/analyse.launch" />
+</launch>
