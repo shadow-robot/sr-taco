@@ -9,6 +9,9 @@
 #include <std_srvs/Empty.h>
 #include <geometry_msgs/PoseStamped.h>
 
+#include <dynamic_reconfigure/server.h>
+#include "sr_pcl_tracking/SrPclTrackerConfig.h"
+
 #include <boost/format.hpp>
 #include <boost/filesystem.hpp>
 #include <wordexp.h>
@@ -96,6 +99,8 @@ public:
             nh_home_.setParam("filter_z_max", filter_z_max_);
 
         // Setup ROS topics and services
+        config_server_.setCallback( boost::bind(&Tracker::config_cb, this, _1, _2) );
+
         input_sub_ = nh_home_.subscribe("input/points", 1, &Tracker::cloud_cb, this);
 
         output_downsampled_pub_ = nh_home_.advertise<sensor_msgs::PointCloud2>("cloud_downsampled/points", 1);
@@ -183,6 +188,15 @@ protected:
         coherence->setMaximumDistance(0.01);
         tracker_->setCloudCoherence(coherence);
 
+    }
+
+    void
+    config_cb(SrPclTrackerConfig &config, uint32_t level)
+    {
+        //ROS_INFO("Reconfigure Request: %f %f %f", config.downsampling_grid_size, config.filter_z_min, config.filter_z_max );
+        downsampling_grid_size_ = config.downsampling_grid_size;
+        filter_z_min_ = config.filter_z_min;
+        filter_z_max_ = config.filter_z_max;
     }
 
     void
@@ -504,6 +518,7 @@ protected:
     }
 
     ros::NodeHandle nh_, nh_home_;
+    dynamic_reconfigure::Server<SrPclTrackerConfig> config_server_;
     ros::Subscriber input_sub_;
     ros::Publisher output_downsampled_pub_, particle_cloud_pub_, result_cloud_pub_, result_pose_pub_;
     ros::ServiceServer track_nearest_srv_, track_centered_srv_, load_srv_, save_srv_, list_srv_;
