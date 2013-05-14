@@ -33,3 +33,8 @@ rosbuild_add_executable(example src/example.cpp)
 
 rosbuild_add_executable(sr_pcl_tracker src/sr_pcl_tracking.cpp)
 rosbuild_link_boost(sr_pcl_tracker filesystem system)
+
+#add dynamic reconfigure api
+rosbuild_find_ros_package(dynamic_reconfigure)
+include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
+gencfg()
