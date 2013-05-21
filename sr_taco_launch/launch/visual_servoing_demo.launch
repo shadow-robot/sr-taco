@@ -9,7 +9,10 @@
     -->
 
     <include file="$(find sr_object_manipulation_launch)/launch/sr_object_manipulation.launch" />
-    <include file="$(find sr_pcl_tracking)/launch/openni_tracker.launch" />
+    <!-- openni_tracker is commented out because we want to run it in another machine (10.1.142 at the time)
+        but the "machine" tag only works for nodes at the moment, not for launchfiles.
+        So it needs to be manually started in the other machine -->
+    <!--include file="$(find sr_pcl_tracking)/launch/openni_tracker.launch" / -->
 
     <include file="$(find sr_visual_servoing)/launch/analyse.launch" />
 </launch>

@@ -34,9 +34,8 @@
     <node pkg="tf" type="static_transform_publisher" name="fixed_frame_kinect" args="0.5 2.0 0 0 0 0 world /desk2_support 100" />
   </group>
   <group unless="$(optenv SIMULATED_KINECT 0)">
-    <include file="$(find sr_taco_launch)/launch/static_tf_real_kinect.launch" />
     <!-- publishes fixed transform: to link the world to the kinect (kinect_base+kinect) -->
-    <node pkg="tf" type="static_transform_publisher" name="fixed_frame_kinect" args="0.5 2.0 0 0 0 0 world /camera_link 100" />
+    <include file="$(find sr_taco_launch)/launch/static_tf_real_kinect.launch" />
   </group>
   
 
