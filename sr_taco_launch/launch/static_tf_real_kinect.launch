@@ -1,3 +1,3 @@
 <launch>
-  <node pkg="tf" type="static_transform_publisher" name="world_to_kinect" args="-0.5 0.0 1.8 0 0.6 0 world /camera_link 100" />
+  <node pkg="tf" type="static_transform_publisher" name="world_to_kinect" args="0.403637510577 0.947657172908 1.19702229666 0.125733590046 0.189027167713 -0.521504188138 0.822391220765 world /camera_link 100" />
 </launch>
