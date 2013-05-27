@@ -1,8 +1,0 @@
-<launch>
-  <node pkg="sr_visual_servoing" name="analyse_moving_object" type="analyse_moving_object" output="screen">
-    <rosparam command="load" file="$(find sr_visual_servoing)/param/prediction_model.yaml"/>
-    <remap from="/object/position" to="/sr_pcl_tracker/result/pose"/>
-  </node>
-
-  <node pkg="sr_visual_servoing" name="visual_servoing" type="visual_servoing" output="screen"/>
-</launch>
