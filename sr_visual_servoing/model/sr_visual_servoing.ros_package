@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ros:Package xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:ros="http://ros/1.0" name="sr_visual_servoing" author="Ugo Cupcic &lt;software@shadowrobot.com>" description="This package is used to servo the shadow arm and hand on a moving object." license="GPL">
+  <node name="sr_visual_servoing" namespace="sr_taco">
+    <subscriber name="joint_states_sub_" eventHandler="joint_states" msg="sensor_msgs::JointState"/>
+    <subscriber name="odometry_sub_" eventHandler="analyse_moving_object/odometry" msg="nav_msgs::Odometry"/>
+  </node>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>sr_utilities</depend>
+  <depend>tf</depend>
+  <depend>kdl_parser</depend>
+  <depend>bfl</depend>
+  <depend>actionlib</depend>
+  <depend>actionlib_msgs</depend>
+</ros:Package>
