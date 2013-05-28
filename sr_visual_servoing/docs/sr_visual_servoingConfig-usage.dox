@@ -1,0 +1,6 @@
+\subsubsection usage Usage
+\verbatim
+<node name="sr_visual_servoing" pkg="sr_visual_servoing" type="sr_visual_servoing">
+</node>
+\endverbatim
+

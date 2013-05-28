@@ -1,0 +1,29 @@
+<package>
+  <description brief="sr_visual_servoing">This package is used to servo the shadow arm and hand on a moving object.</description>
+  <author>Ugo Cupcic / software@shadowrobot.com</author>
+  <license>GPL</license>
+  <review status="unreviewed" notes=""/>
+  <url></url>
+  <depend package="roscpp"/>
+  <depend package="std_msgs"/>
+  <depend package="rospy"/>
+  <depend package="dynamic_reconfigure"/>
+  	<depend package="std_msgs"/>
+  	<depend package="sensor_msgs"/>
+  	<depend package="geometry_msgs"/>
+  	<depend package="nav_msgs"/>
+  	<depend package="visualization_msgs"/>
+  	<depend package="std_srvs"/>
+  	<depend package="sr_utilities"/>
+  	<depend package="tf"/>
+  	<depend package="kdl_parser"/>
+  	<depend package="bfl"/>
+  	<depend package="actionlib"/>
+  	<depend package="actionlib_msgs"/>
+  /* protected region additional manifest statements on begin */
+  /* protected region additional manifest statements end */
+  
+  
+</package>
+
+

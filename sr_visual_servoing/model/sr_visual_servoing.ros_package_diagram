@@ -7,22 +7,16 @@
       <styles xmi:type="notation:SortingStyle" xmi:id="_TRD-Q8bREeKrUrNdzND75w"/>
       <styles xmi:type="notation:FilteringStyle" xmi:id="_TRD-RMbREeKrUrNdzND75w"/>
     </children>
-    <children xmi:type="notation:Node" xmi:id="_np6RQMbSEeKrUrNdzND75w" type="3007">
-      <children xmi:type="notation:DecorationNode" xmi:id="_np64UMbSEeKrUrNdzND75w" type="5007"/>
-      <styles xmi:type="notation:DescriptionStyle" xmi:id="_np6RQcbSEeKrUrNdzND75w"/>
-      <styles xmi:type="notation:FontStyle" xmi:id="_np6RQsbSEeKrUrNdzND75w" fontName="Ubuntu"/>
-      <element xmi:type="ros:Subscriber" href="sr_visual_servoing.ros_package#//@node.0/@subscriber.0"/>
-      <layoutConstraint xmi:type="notation:Bounds" xmi:id="_np6RQ8bSEeKrUrNdzND75w"/>
-    </children>
-    <children xmi:type="notation:Node" xmi:id="_pdV9wMbSEeKrUrNdzND75w" type="3007">
-      <children xmi:type="notation:DecorationNode" xmi:id="_pdV9xMbSEeKrUrNdzND75w" type="5007"/>
-      <styles xmi:type="notation:DescriptionStyle" xmi:id="_pdV9wcbSEeKrUrNdzND75w"/>
-      <styles xmi:type="notation:FontStyle" xmi:id="_pdV9wsbSEeKrUrNdzND75w" fontName="Ubuntu"/>
-      <element xmi:type="ros:Subscriber" href="sr_visual_servoing.ros_package#//@node.0/@subscriber.1"/>
-      <layoutConstraint xmi:type="notation:Bounds" xmi:id="_pdV9w8bSEeKrUrNdzND75w"/>
+    <children xmi:type="notation:Node" xmi:id="_TLCOUMdLEeKj_YFiw34GSg" type="3005">
+      <children xmi:type="notation:DecorationNode" xmi:id="_TLCOVcdLEeKj_YFiw34GSg" type="5005"/>
+      <styles xmi:type="notation:DescriptionStyle" xmi:id="_TLCOUcdLEeKj_YFiw34GSg"/>
+      <styles xmi:type="notation:FontStyle" xmi:id="_TLCOUsdLEeKj_YFiw34GSg" fontName="Ubuntu"/>
+      <styles xmi:type="notation:LineStyle" xmi:id="_TLCOU8dLEeKj_YFiw34GSg"/>
+      <element xmi:type="ros:ActionServer" href="sr_visual_servoing.ros_package#//@node.0/@actionserver.0"/>
+      <layoutConstraint xmi:type="notation:Bounds" xmi:id="_TLCOVMdLEeKj_YFiw34GSg"/>
     </children>
     <element xmi:type="ros:Node" href="sr_visual_servoing.ros_package#//@node.0"/>
-    <layoutConstraint xmi:type="notation:Bounds" xmi:id="_TRDXMcbREeKrUrNdzND75w" x="296" y="117"/>
+    <layoutConstraint xmi:type="notation:Bounds" xmi:id="_TRDXMcbREeKrUrNdzND75w" x="273" y="273"/>
   </children>
   <styles xmi:type="notation:DiagramStyle" xmi:id="_SLrqkcbREeKrUrNdzND75w"/>
   <element xmi:type="ros:Package" href="sr_visual_servoing.ros_package#/"/>
