@@ -232,6 +232,7 @@ namespace sr_taco
       {
         msg.data = robot_targets_[i];
         std::string jname = target_names_[i];
+        //ROS_INFO_STREAM("Moving "<<jname<<" val:"<<msg.data);
         if ( robot_publishers_.count(jname)>0 ) {
             robot_publishers_[jname].publish( msg );
         }
