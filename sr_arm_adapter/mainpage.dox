@@ -1,0 +1,14 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b sr_arm_adapter - Maps gazebo style arm topics (one per joint) to single sendupdate as used by the hardware.
+
+<!-- 
+Provide an overview of your package.
+-->
+
+-->
+
+
+*/
