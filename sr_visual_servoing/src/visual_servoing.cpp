@@ -231,11 +231,12 @@ namespace sr_taco
       for (unsigned int i = 0; i < target_names_.size(); ++i)
       {
         msg.data = robot_targets_[i];
-        if ( robot_publishers_.count(joint_names_[i])>0 ) {
-            robot_publishers_[joint_names_[i]].publish( msg );
+        std::string jname = target_names_[i];
+        if ( robot_publishers_.count(jname)>0 ) {
+            robot_publishers_[jname].publish( msg );
         }
         else {
-            ROS_ERROR_STREAM("Attempt to move joint without publisher: " << joint_names_[i]);
+            ROS_ERROR_STREAM("Attempt to move joint without publisher: " << jname);
         }
       }
     }
