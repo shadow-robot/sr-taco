@@ -12,7 +12,6 @@ class SrArmAdapter(object):
     """
     def __init__(self):
         rospy.init_node('sr_arm_adapter')
-        rospy.loginfo("Starting " + rospy.get_name())
         self._rate = rospy.Rate(1) #hz
         self._robot = ShadowHand_ROS()
         self._targets = {
@@ -33,8 +32,9 @@ class SrArmAdapter(object):
                 val = self._robot.valueof(jname)
                 if val != 'NaN':
                     self._targets[jname] = val
+            rospy.loginfo("Found arm, read current joint positions: %s"%self._targets)
         else:
-            rospy.logwarn("Arm not found not reading current joint positions")
+            rospy.logwarn("Arm not found, can not read current joint positions")
 
     def run(self):
         while not rospy.is_shutdown():
