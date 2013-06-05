@@ -13,7 +13,7 @@ class SrArmAdapter(object):
     def __init__(self):
         rospy.init_node('sr_arm_adapter')
         rospy.loginfo("Starting " + rospy.get_name())
-        self._rate = rospy.Rate(1) #hz 
+        self._rate = rospy.Rate(1) #hz
         self._robot = ShadowHand_ROS()
         self._targets = {
                     'ShoulderJRotate': 0.0,
@@ -40,12 +40,12 @@ class SrArmAdapter(object):
         while not rospy.is_shutdown():
             #rospy.loginfo(": %s"%self._targets)
             self._robot.sendupdate_arm_from_dict(self._targets)
-            self._rate.sleep() 
+            self._rate.sleep()
 
     def _sr_cb(self, msg):
         """ShoulderJRotate"""
         self._targets["ShoulderJRotate"] = msg.data
-    
+
     def _ss_cb(self, msg):
         """ShoulderJSwing"""
         self._targets["ShoulderJSwing"] = msg.data
@@ -53,12 +53,12 @@ class SrArmAdapter(object):
     def _er_cb(self, msg):
         """"ElbowJRotate"""
         self._targets["ElbowJRotate"] = msg.data
-    
+
     def _es_cb(self, msg):
         """ElbowJSwing"""
         self._targets["ElbowJSwing"] = msg.data
-    
-    
+
+
 if __name__ == '__main__':
     try:
         node = SrArmAdapter()
