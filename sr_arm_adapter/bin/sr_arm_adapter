@@ -2,6 +2,7 @@
 
 import roslib; roslib.load_manifest('sr_arm_adapter')
 import rospy
+import math
 from std_msgs.msg import Float64
 from shadowhand_ros import ShadowHand_ROS
 
@@ -9,6 +10,9 @@ class SrArmAdapter(object):
     """Aggregate individual controller messages into single sendupdate message
     published at a fixed rate (sending messages to the arm too fast makes it
     unhappy).
+
+    Angles from the individual messages are in radians so we convert those to
+    degress which the sendupdate is expecting.
     """
     def __init__(self):
         rospy.init_node('sr_arm_adapter')
@@ -44,19 +48,19 @@ class SrArmAdapter(object):
 
     def _sr_cb(self, msg):
         """ShoulderJRotate"""
-        self._targets["ShoulderJRotate"] = msg.data
+        self._targets["ShoulderJRotate"] = math.degrees(msg.data)
 
     def _ss_cb(self, msg):
         """ShoulderJSwing"""
-        self._targets["ShoulderJSwing"] = msg.data
+        self._targets["ShoulderJSwing"] = math.degrees(msg.data)
 
     def _er_cb(self, msg):
         """"ElbowJRotate"""
-        self._targets["ElbowJRotate"] = msg.data
+        self._targets["ElbowJRotate"] = math.degrees(msg.data)
 
     def _es_cb(self, msg):
         """ElbowJSwing"""
-        self._targets["ElbowJSwing"] = msg.data
+        self._targets["ElbowJSwing"] = math.degrees(msg.data)
 
 
 if __name__ == '__main__':
