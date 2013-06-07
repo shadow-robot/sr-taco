@@ -1,14 +1,9 @@
 <launch>
-    <!-- Start the OpenNI camera -->
-    <!-- include file="$(find taco_sensor)/launch/taco.launch" / -->
+    <!-- Start the TACO sensor -->
+    <include file="$(find taco_sensor)/launch/taco.launch" />
 
-    <!-- Tracker using NI camera feed as input cloud -->
-    <node name="sr_pcl_tracker" pkg="sr_pcl_tracking" type="sr_pcl_tracker" launch-prefix="gdb -ex run -args" >
-        <!-- This fails with:
-        Failed to find a field named: 'rgb'. Cannot convert message to PCL
-        type.
-        -->
-        <!-- <remap from="~input/points" to="/camera/depth/points" /> -->
+    <!-- Tracker using TACO sensor feed as input cloud -->
+    <node name="sr_pcl_tracker" pkg="sr_pcl_tracking" type="sr_pcl_tracker">
         <remap from="~input/points" to="/taco_sensor/foveated" />
         <param name="downsampling_grid_size" value="0.005" />
         <param name="filter_z_max" value="1.6" />
