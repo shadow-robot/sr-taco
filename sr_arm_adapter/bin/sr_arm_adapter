@@ -16,7 +16,7 @@ class SrArmAdapter(object):
     """
     def __init__(self):
         rospy.init_node('sr_arm_adapter')
-        self._rate = rospy.Rate(1) #hz
+        self._rate = rospy.Rate( rospy.get_param('~rate', 1) ) #hz
         self._robot = ShadowHand_ROS()
         self._targets = {
                     'ShoulderJRotate': 0.0,
