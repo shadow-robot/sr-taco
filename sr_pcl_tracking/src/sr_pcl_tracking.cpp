@@ -73,7 +73,7 @@ namespace fs = boost::filesystem;
 class Tracker {
 
 public:
-    typedef pcl::PointXYZI PointType;
+    typedef pcl::PointXYZ PointType;
     typedef ParticleXYZRPY ParticleT;
     typedef pcl::PointCloud<PointType> Cloud;
     typedef typename Cloud::Ptr CloudPtr;
@@ -178,6 +178,9 @@ protected:
                 DistanceCoherence<PointType> >(new DistanceCoherence<PointType>());
         coherence->addPointCoherence(distance_coherence);
 /*
+ * If we use color coherance we must have and XYZRGB cloud coming in.
+ * If we dont use it then any cloud with XYZ should work.
+ * TODO: Can we detect RGB clounds and turn this on if it will work?
         boost::shared_ptr<HSVColorCoherence<PointType> > color_coherence = boost::shared_ptr<
                 HSVColorCoherence<PointType> >(new HSVColorCoherence<PointType>());
         color_coherence->setWeight(0.1);
