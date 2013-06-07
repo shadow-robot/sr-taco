@@ -21,6 +21,9 @@
   <depend package="actionlib"/>
   <depend package="actionlib_msgs"/>
 
+  <depend package="moveit_core"/>
+  <depend package="moveit_ros_planning_interface"/>
+
 </package>
 
 

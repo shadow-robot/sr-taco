@@ -33,3 +33,5 @@ SET( CMAKE_CXX_FLAGS "-D IKFAST_NO_MAIN -D IKFAST_CLIBRARY -D IKFAST_NAMESPACE=i
 rosbuild_add_executable(visual_servoing src/visual_servoing.cpp)
 #rosbuild_add_openmp_flags(visual_servoing)
 target_link_libraries(visual_servoing ${OpenRAVE_LIBRARIES} ${OpenRAVE_CORE_LIBRARIES})
+
+rosbuild_add_executable(visual_servoing_moveit src/visual_servoing_moveit.cpp)
