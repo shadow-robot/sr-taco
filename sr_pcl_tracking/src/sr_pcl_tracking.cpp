@@ -73,7 +73,7 @@ namespace fs = boost::filesystem;
 class Tracker {
 
 public:
-    typedef pcl::PointXYZRGB PointType;
+    typedef pcl::PointXYZ PointType;
     typedef ParticleXYZRPY ParticleT;
     typedef pcl::PointCloud<PointType> Cloud;
     typedef typename Cloud::Ptr CloudPtr;
@@ -177,12 +177,15 @@ protected:
         boost::shared_ptr<DistanceCoherence<PointType> > distance_coherence = boost::shared_ptr<
                 DistanceCoherence<PointType> >(new DistanceCoherence<PointType>());
         coherence->addPointCoherence(distance_coherence);
-
+/*
+ * If we use color coherance we must have and XYZRGB cloud coming in.
+ * If we dont use it then any cloud with XYZ should work.
+ * TODO: Can we detect RGB clounds and turn this on if it will work?
         boost::shared_ptr<HSVColorCoherence<PointType> > color_coherence = boost::shared_ptr<
                 HSVColorCoherence<PointType> >(new HSVColorCoherence<PointType>());
         color_coherence->setWeight(0.1);
         coherence->addPointCoherence(color_coherence);
-
+*/
         boost::shared_ptr<pcl::search::Octree<PointType> > search(new pcl::search::Octree<PointType>(0.01));
         coherence->setSearchMethod(search);
         coherence->setMaximumDistance(0.01);
@@ -434,7 +437,7 @@ protected:
     }
 
     // http://answers.ros.org/question/9515/how-to-convert-between-different-point-cloud-types-using-pcl/
-    void copyPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr src,
+    void copyPointCloud(pcl::PointCloud<PointType>::Ptr src,
                           pcl::PointCloud<pcl::PointXYZ>::Ptr dst)
     {
       dst->resize (src->size());
