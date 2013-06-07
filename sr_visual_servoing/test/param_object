@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+#
+# Copyright 2011 Shadow Robot Company Ltd.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the Free
+# Software Foundation, either version 2 of the License, or (at your option)
+# any later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+# more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+import roslib
+roslib.load_manifest('sr_visual_servoing')
+import rospy
+import random
+
+from geometry_msgs.msg import PoseStamped
+from std_srvs.srv import Empty
+
+class ParamObject(object):
+    """
+    This simply publishes a dummy object at a fixed point given in the params. 
+
+    e.g.
+        rosrun sr_visual_servoing param_object ~position:=/sr_pcl_tracker/result/pose _position/x:=0.5 _position/y:=-0.3
+    """
+
+    def __init__(self, ):
+        """
+        """
+        self.publisher = rospy.Publisher("~position", PoseStamped)
+        self.publish_rate = rospy.get_param("~publish_rate", 10)
+        self.msg = PoseStamped()
+        self.msg.header.frame_id = rospy.get_param('~frame_id', "/shadowarm_base")
+        self.msg.pose.orientation.w = 1.0
+        self.msg.pose.position.x = rospy.get_param('~position/x', 0.5)
+        self.msg.pose.position.y = rospy.get_param('~position/y', 0.0)
+        self.msg.pose.position.z = rospy.get_param('~position/z', 0.1)
+
+    def run(self):
+        rate = rospy.Rate(self.publish_rate)
+        while not rospy.is_shutdown():
+            self.publish()
+            rate.sleep()
+
+    def publish(self):
+        self.msg.header.stamp = rospy.Time.now()
+        self.publisher.publish(self.msg)
+
+
+if __name__ == "__main__":
+    rospy.init_node("object")
+    o = ParamObject()
+    o.run()
+    
