@@ -38,6 +38,6 @@
     <include file="$(find sr_taco_launch)/launch/static_tf_real_kinect.launch" />
   </group>
   
-
+  <include file="$(find sr_taco_launch)/launch/static_tf_real_taco_sensor.launch" />
 
 </launch>
