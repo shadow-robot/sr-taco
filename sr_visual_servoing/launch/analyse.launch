@@ -4,5 +4,5 @@
     <remap from="/object/position" to="/sr_pcl_tracker/result/pose"/>
   </node>
 
-  <node pkg="sr_visual_servoing" name="visual_servoing" type="visual_servoing" output="screen"/>
+  <node pkg="sr_visual_servoing" name="visual_servoing" type="visual_servoing_moveit" output="screen"/>
 </launch>

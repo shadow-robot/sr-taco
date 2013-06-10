@@ -35,6 +35,12 @@
 
 #include <boost/smart_ptr.hpp>
 #include <moveit/move_group_interface/move_group.h>
+#include <moveit/robot_model_loader/robot_model_loader.h>
+#include <moveit/robot_model/robot_model.h>
+#include <moveit/robot_state/robot_state.h>
+#include <moveit/robot_state/joint_state_group.h>
+
+#include <nav_msgs/Odometry.h>
 
 #include <sr_visual_servoing/VisualServoingFeedback.h>
 
@@ -50,8 +56,40 @@ namespace sr_taco
     sr_visual_servoing::VisualServoingFeedback get_closer();
 
   protected:
+    ros::NodeHandle nh_tilde_;
+
+    /// Interface to the arm for moveit
     boost::shared_ptr<move_group_interface::MoveGroup> right_arm_;
 
+    /// Interface to the hand for moveit
+    boost::shared_ptr<move_group_interface::MoveGroup> right_hand_;
+
+    ///The latest object position and twist
+    nav_msgs::Odometry tracked_object_;
+
+    ///Set to true once we've received a msg
+    bool object_msg_received_;
+
+    ///subscribes to the odometry messages coming from the object analyser
+    ros::Subscriber odom_sub_;
+    void new_odom_cb_(const nav_msgs::OdometryConstPtr& msg);
+
+    /// shared pointer to the kinematics model
+    robot_model::RobotModelPtr kinematic_model_;
+    /// Kinematic state
+    robot_state::RobotStatePtr kinematic_state_;
+
+    /**
+     * Generate different solutions aroung the current position
+     *  and keep the one closest to object position + twist
+     *  (the object is moving toward this point)
+     *
+     *  Updates the robot_targets_ vector.
+     */
+    void generate_best_solution_();
+
+    ///update the feedback for the action server
+    void update_feedback_();
     sr_visual_servoing::VisualServoingFeedback visual_servoing_feedback_;
   };
 } //end namespace sr_taco

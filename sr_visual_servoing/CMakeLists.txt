@@ -9,10 +9,10 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 #set(ROS_BUILD_TYPE RelWithDebInfo)
 
-find_package(OpenRAVE)
+#find_package(OpenRAVE)
 #-- Get the openrave share directory
-EXEC_PROGRAM("openrave-config --share-dir" OUTPUT_VARIABLE OpenRAVE_SHARE_DIR)
-include_directories(${OpenRAVE_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} )
+#EXEC_PROGRAM("openrave-config --share-dir" OUTPUT_VARIABLE OpenRAVE_SHARE_DIR)
+#include_directories(${OpenRAVE_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} )
 
 #generate actionlib messages
 rosbuild_find_ros_package(actionlib_msgs)
@@ -28,10 +28,10 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 rosbuild_genmsg()
 
-rosbuild_add_executable(analyse_moving_object src/analyse_moving_object.cpp src/prediction_model.cpp)
-SET( CMAKE_CXX_FLAGS "-D IKFAST_NO_MAIN -D IKFAST_CLIBRARY -D IKFAST_NAMESPACE=ik_fast")
-rosbuild_add_executable(visual_servoing src/visual_servoing.cpp)
-#rosbuild_add_openmp_flags(visual_servoing)
-target_link_libraries(visual_servoing ${OpenRAVE_LIBRARIES} ${OpenRAVE_CORE_LIBRARIES})
+#rosbuild_add_executable(analyse_moving_object src/analyse_moving_object.cpp src/prediction_model.cpp)
+#SET( CMAKE_CXX_FLAGS "-D IKFAST_NO_MAIN -D IKFAST_CLIBRARY -D IKFAST_NAMESPACE=ik_fast")
+#rosbuild_add_executable(visual_servoing src/visual_servoing.cpp)
+##rosbuild_add_openmp_flags(visual_servoing)
+#target_link_libraries(visual_servoing ${OpenRAVE_LIBRARIES} ${OpenRAVE_CORE_LIBRARIES})
 
-rosbuild_add_executable(visual_servoing_moveit src/visual_servoing_moveit.cpp)
+rosbuild_add_executable(visual_servoing_moveit src/visual_servoing_moveit.cpp src/visual_servoing_action_server.cpp)
