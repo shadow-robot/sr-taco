@@ -4,7 +4,7 @@
 
     <!-- Tracker using TACO sensor feed as input cloud -->
     <node name="sr_pcl_tracker" pkg="sr_pcl_tracking" type="sr_pcl_tracker">
-        <remap from="~input/points" to="/taco_sensor/foveated" />
+        <remap from="~input/points" to="/taco_sensor/combined" />
         <param name="downsampling_grid_size" value="0.005" />
         <param name="filter_z_max" value="2.0" />
     </node>
