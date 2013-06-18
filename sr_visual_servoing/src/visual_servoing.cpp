@@ -168,7 +168,11 @@ namespace sr_taco
     OpenRAVE::Transform target;
     // object + twist * time it would take to get to the object
     double reaching_time = distance / arm_velocity_;
-    target.trans = object.trans + twist.trans * reaching_time;
+    // XXX: This doesn't seem to work on the real hardware, the reaching time
+    // is always very high (60-600secs) for moving objects causing the arm to
+    // be to far away. Gets worse as the speed of the object increases.
+    //target.trans = object.trans + twist.trans * reaching_time;
+    target.trans = object.trans + twist.trans;
 
     ROS_DEBUG_STREAM("Distance = " << distance << " (reaching in approx "<< reaching_time
                      << "s at"<< arm_velocity_ <<"m.s-1), end effector: "<< end_effector.trans <<" / object: "<< object.trans
