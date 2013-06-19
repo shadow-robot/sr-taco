@@ -135,6 +135,7 @@ namespace sr_taco
   void VisualServoing::generate_best_solution_()
   {
     boost::mutex::scoped_lock l(mutex_);
+    OpenRAVE::EnvironmentMutex::scoped_lock lock(rave_env_->GetMutex());
 
     //TODO: use openmp for loop (https://computing.llnl.gov/tutorials/openMP/#DO)
 
@@ -266,6 +267,7 @@ namespace sr_taco
   void VisualServoing::joint_states_cb_(const sensor_msgs::JointStateConstPtr& msg)
   {
     boost::mutex::scoped_lock l(mutex_);
+    OpenRAVE::EnvironmentMutex::scoped_lock lock(rave_env_->GetMutex());
 
     if( !joint_states_msg_received_ )
     {
