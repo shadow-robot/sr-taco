@@ -100,6 +100,9 @@ namespace sr_taco
 
   void VisualServoing::update_feedback_()
   {
+    boost::mutex::scoped_lock l(mutex_);
+    OpenRAVE::EnvironmentMutex::scoped_lock lock(rave_env_->GetMutex());
+
     //update the feedback with the tracked object pose;
     visual_servoing_feedback_.object_pose.position.x = tracked_object_.pose.pose.position.x;
     visual_servoing_feedback_.object_pose.position.y = tracked_object_.pose.pose.position.y;
