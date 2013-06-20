@@ -73,6 +73,7 @@ namespace sr_taco
     ros::Subscriber joint_states_sub_;
     std::map<std::string, double> current_positions_;
     std::vector<std::string> joint_names_;
+    std::vector<size_t> joint_indexes_;
 
     void joint_states_cb_(const sensor_msgs::JointStateConstPtr& msg);
 

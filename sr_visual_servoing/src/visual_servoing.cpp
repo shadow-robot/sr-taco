@@ -274,20 +274,39 @@ namespace sr_taco
 
     if( !joint_states_msg_received_ )
     {
-      joint_names_ = msg->name;
+      joint_names_.push_back("ShoulderJRotate");
+      joint_names_.push_back("ShoulderJSwing");
+      joint_names_.push_back("ElbowJSwing");
+      joint_names_.push_back("ElbowJRotate");
+      joint_names_.push_back("WRJ2");
+      joint_names_.push_back("WRJ1");
+      //joint_names_ = msg->name;
 
-      joint_states_msg_received_ = true;
+      for(size_t i = 0; i < msg->name.size(); ++i)
+      {
+        for(size_t j = 0; j < joint_names_.size(); ++j )
+        {
+          if( joint_names_[j].compare( msg->name[i] ) == 0 )
+          {
+            joint_indexes_.push_back(i);
+            break;
+          }
+        }
+      }
+      ROS_ASSERT( joint_indexes_.size() == joint_names_.size() );
 
       //set the active DOFs for the robot the first time we receive a message.
       rave_manipulator_->GetRobot()->SetActiveDOFs(rave_manipulator_->GetArmIndices());
+
+      joint_states_msg_received_ = true;
     }
 
     std::vector<OpenRAVE::dReal> current_position;
-    ROS_ASSERT( msg->position.size() == joint_names_.size() );
+    //ROS_ASSERT( msg->position.size() == joint_names_.size() );
     for(unsigned int i=0; i < joint_names_.size(); ++i)
     {
-      current_positions_[ joint_names_[i] ] = msg->position[i];
-      current_position.push_back(OpenRAVE::dReal(msg->position[i]));
+      current_positions_[ joint_names_[i] ] = msg->position[ joint_indexes_[i] ];
+      current_position.push_back(OpenRAVE::dReal(msg->position[ joint_indexes_[i] ]));
     }
 
     try
