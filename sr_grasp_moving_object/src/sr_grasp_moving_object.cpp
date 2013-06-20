@@ -63,10 +63,10 @@ namespace sr_taco
     //close the grasp more or less depending on the distance to the object
     // may need to use another function to close faster when we get
     // really close to the object (so that the grasp stays opened longer).
-    if( feedback->distance < 0.2 )
+    if( feedback->distance < 0.15 )
     {
       close_grasp_( 1.0 - std::min((feedback->distance - 0.1) / 0.2, 1.0) );
-      if( feedback->distance < 0.1 )
+      if( feedback->distance < 0.12 )
       {
         close_grasp_( 1.0 );
         ROS_INFO_STREAM( "The object should have been caught." );
@@ -106,28 +106,28 @@ namespace sr_taco
   void SrGraspMovingObject::init_grasp_and_pub_()
   {
     //TODO: replace this ugly function by using a Cpp version of the grasp library.
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_ffj0_mixed_position_velocity_controller/command", 1));
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_ffj3_mixed_position_velocity_controller/command", 1));
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_ffj4_mixed_position_velocity_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_ffj0_position_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_ffj3_position_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_ffj4_position_controller/command", 1));
 
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_mfj0_mixed_position_velocity_controller/command", 1));
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_mfj3_mixed_position_velocity_controller/command", 1));
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_mfj4_mixed_position_velocity_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_mfj0_position_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_mfj3_position_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_mfj4_position_controller/command", 1));
 
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_rfj0_mixed_position_velocity_controller/command", 1));
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_rfj3_mixed_position_velocity_controller/command", 1));
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_rfj4_mixed_position_velocity_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_rfj0_position_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_rfj3_position_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_rfj4_position_controller/command", 1));
 
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_lfj0_mixed_position_velocity_controller/command", 1));
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_lfj3_mixed_position_velocity_controller/command", 1));
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_lfj4_mixed_position_velocity_controller/command", 1));
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_lfj5_mixed_position_velocity_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_lfj0_position_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_lfj3_position_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_lfj4_position_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_lfj5_position_controller/command", 1));
 
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_thj1_mixed_position_velocity_controller/command", 1));
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_thj2_mixed_position_velocity_controller/command", 1));
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_thj3_mixed_position_velocity_controller/command", 1));
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_thj4_mixed_position_velocity_controller/command", 1));
-    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_thj5_mixed_position_velocity_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_thj1_position_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_thj2_position_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_thj3_position_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_thj4_position_controller/command", 1));
+    hand_publishers_.push_back(nh_.advertise<std_msgs::Float64>("/sh_thj5_position_controller/command", 1));
 
     ///////
     // OPENED

@@ -53,6 +53,8 @@
 #include <sr_visual_servoing/VisualServoingFeedback.h>
 #include <actionlib/server/simple_action_server.h>
 
+#include <tf/transform_listener.h>
+
 namespace sr_taco
 {
   class VisualServoing
@@ -135,6 +137,8 @@ namespace sr_taco
     ///update the feedback for the action server
     void update_feedback_();
     sr_visual_servoing::VisualServoingFeedback visual_servoing_feedback_;
+
+    tf::TransformListener tf_listener_;
 
     static inline double compute_distance_(geometry_msgs::Point a, geometry_msgs::Point b)
     {

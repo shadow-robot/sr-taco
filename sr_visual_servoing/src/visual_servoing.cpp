@@ -103,6 +103,36 @@ namespace sr_taco
     boost::mutex::scoped_lock l(mutex_);
     OpenRAVE::EnvironmentMutex::scoped_lock lock(rave_env_->GetMutex());
 
+
+
+    //transform palm pose into world frame
+    geometry_msgs::PoseStamped palm_pose;
+    geometry_msgs::PoseStamped pose_in_base;
+
+    palm_pose.header.frame_id = "/palm";
+    palm_pose.pose.position.x = 0.0;
+    palm_pose.pose.position.y = 0.0;
+    palm_pose.pose.position.z = 0.0;
+    palm_pose.pose.orientation.x = 0.0;
+    palm_pose.pose.orientation.y = 0.0;
+    palm_pose.pose.orientation.z = 0.0;
+    palm_pose.pose.orientation.w = 1.0;
+
+    try
+    {
+      tf_listener_.waitForTransform("/world", palm_pose.header.frame_id, ros::Time(0), ros::Duration(0.1));
+      tf_listener_.transformPose("/world", palm_pose, pose_in_base);
+    }
+    catch(const tf::TransformException& ex)
+    {
+      ROS_ERROR("%s", ex.what());
+      return;
+    }
+
+    ROS_DEBUG_STREAM("PALM in world: " << pose_in_base );
+
+
+
     //update the feedback with the tracked object pose;
     visual_servoing_feedback_.object_pose.position.x = tracked_object_.pose.pose.position.x;
     visual_servoing_feedback_.object_pose.position.y = tracked_object_.pose.pose.position.y;
@@ -113,6 +143,23 @@ namespace sr_taco
     visual_servoing_feedback_.object_pose.orientation.z = tracked_object_.pose.pose.orientation.z;
     visual_servoing_feedback_.object_pose.orientation.w = tracked_object_.pose.pose.orientation.w;
 
+    //update the feedback with the grasping point transform
+    visual_servoing_feedback_.grasp_pose.position.x = pose_in_base.pose.position.x;
+    visual_servoing_feedback_.grasp_pose.position.y = pose_in_base.pose.position.y;
+
+    visual_servoing_feedback_.grasp_pose.position.z = pose_in_base.pose.position.z  - ARM_HEIGHT_CONST_;
+
+    visual_servoing_feedback_.grasp_pose.orientation.x = pose_in_base.pose.orientation.x;
+    visual_servoing_feedback_.grasp_pose.orientation.y = pose_in_base.pose.orientation.y;
+    visual_servoing_feedback_.grasp_pose.orientation.z = pose_in_base.pose.orientation.z;
+    visual_servoing_feedback_.grasp_pose.orientation.w = pose_in_base.pose.orientation.w;
+
+    visual_servoing_feedback_.cartesian_velocity = arm_velocity_;
+
+    //update the distance between the object and the tooltip in the feedback
+    visual_servoing_feedback_.distance = compute_distance_(visual_servoing_feedback_.grasp_pose.position, visual_servoing_feedback_.object_pose.position );
+
+    /*
     OpenRAVE::Transform trans = rave_manipulator_->GetEndEffectorTransform();
     //The local tool is where we want the grasping point to be (defined in arm_and_hand_motor.xml)
     trans.trans += rave_manipulator_->GetLocalToolTransform().trans;
@@ -132,7 +179,7 @@ namespace sr_taco
 
     //update the distance between the object and the tooltip in the feedback
     visual_servoing_feedback_.distance = compute_distance_(visual_servoing_feedback_.grasp_pose.position, visual_servoing_feedback_.object_pose.position );
-
+    */
   }
 
   void VisualServoing::generate_best_solution_()
@@ -195,7 +242,7 @@ namespace sr_taco
     target.rot.y = 0.4320;
     target.rot.z = 0.5599;
 
-
+    /*
     std::vector<OpenRAVE::dReal> current_state;
     rave_manipulator_->GetRobot()->GetActiveDOFValues(current_state);
     std::stringstream ss_DOF;
@@ -204,7 +251,7 @@ namespace sr_taco
       ss_DOF << current_state[i] << " ";
     }
     ROS_ERROR_STREAM("Active DOF values: " << ss_DOF.str());
-
+    */
 
 
     //We'll try to print the ik solution for the current end effector position (should be the current joints values)
