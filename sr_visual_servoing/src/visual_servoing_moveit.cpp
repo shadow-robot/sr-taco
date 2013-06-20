@@ -33,7 +33,10 @@ namespace sr_taco
     right_arm_.reset(new move_group_interface::MoveGroup("right_arm"));
     //move to the start pose
     right_arm_->setNamedTarget("default");
-    right_arm_->asyncMove();
+
+    ROS_ERROR("Starting plan");
+    right_arm_->plan(right_arm_plan_);
+    ROS_ERROR("Done planning");
 
     /* Load the robot model */
     robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
@@ -55,6 +58,7 @@ namespace sr_taco
 
     //initialises subscribers
     odom_sub_ = nh_tilde_.subscribe("/analyse_moving_object/odometry", 2, &VisualServoing::new_odom_cb_, this);
+    right_arm_timer_ = nh_tilde_.createTimer(ros::Duration(0.5), &VisualServoing::move_arm_, this);
   }
 
   VisualServoing::~VisualServoing()
@@ -88,13 +92,19 @@ namespace sr_taco
     //plan the move
     right_arm_->setPositionTarget( tracked_object_.pose.pose.position.x,
                                    tracked_object_.pose.pose.position.y,
-                                   1.2);//tracked_object_.pose.pose.position.z );
+                                   tracked_object_.pose.pose.position.z + 0.5);
 
-    ROS_DEBUG_STREAM("pose: " << right_arm_->getPoseTarget() << "\n  current pose: " << current_pose);
+    ROS_ERROR_STREAM("pose: " << right_arm_->getPoseTarget() << "\n  current pose: " << current_pose);
 
+    right_arm_->plan(right_arm_plan_);
+  }
+
+  void VisualServoing::move_arm_(const ros::TimerEvent&)
+  {
+    ROS_ERROR("move arm");
     //stop last step then move
     //right_arm_->stop();
-    right_arm_->asyncMove();
+    right_arm_->asyncExecute(right_arm_plan_);
   }
 
   void VisualServoing::new_odom_cb_(const nav_msgs::OdometryConstPtr& msg)

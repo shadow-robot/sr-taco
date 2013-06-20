@@ -54,7 +54,8 @@ namespace sr_taco
 
   void VisualServoingActionServer::execute(const sr_visual_servoing::VisualServoingGoalConstPtr& goal)
   {
-    ros::Rate rate(0.2);
+    ros::Rate rate(5.0);
+    ROS_ERROR("START");
     while( ros::ok() )
     {
       feedback_ = visual_servo_->get_closer();

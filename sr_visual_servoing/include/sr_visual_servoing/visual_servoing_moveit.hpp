@@ -60,6 +60,8 @@ namespace sr_taco
 
     /// Interface to the arm for moveit
     boost::shared_ptr<move_group_interface::MoveGroup> right_arm_;
+    move_group_interface::MoveGroup::Plan right_arm_plan_;
+    ros::Timer right_arm_timer_;
 
     /// Interface to the hand for moveit
     boost::shared_ptr<move_group_interface::MoveGroup> right_hand_;
@@ -87,6 +89,8 @@ namespace sr_taco
      *  Updates the robot_targets_ vector.
      */
     void generate_best_solution_();
+
+    void move_arm_(const ros::TimerEvent&);
 
     ///update the feedback for the action server
     void update_feedback_();
