@@ -7,6 +7,9 @@
             $ rosed sr_taco_launch static_tf_real_kinect.launch
             $ roslaunch sr_taco_launch static_tf_real_kinect.launch
     -->
+    <include file="$(find sr_moveit_config)/launch/move_group.launch">
+      <arg name="publish_monitored_planning_scene" value="true" />
+    </include>
 
     <include file="$(find sr_object_manipulation_launch)/launch/sr_object_manipulation.launch" />
     <include file="$(find sr_pcl_tracking)/launch/openni_tracker.launch" />

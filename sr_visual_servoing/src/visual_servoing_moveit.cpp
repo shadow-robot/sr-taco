@@ -88,11 +88,12 @@ namespace sr_taco
     //plan the move
     right_arm_->setPositionTarget( tracked_object_.pose.pose.position.x,
                                    tracked_object_.pose.pose.position.y,
-                                   tracked_object_.pose.pose.position.z );
+                                   1.2);//tracked_object_.pose.pose.position.z );
 
-    ROS_ERROR_STREAM("pose: " << right_arm_->getPoseTarget() );
+    ROS_DEBUG_STREAM("pose: " << right_arm_->getPoseTarget() << "\n  current pose: " << current_pose);
 
-    //move
+    //stop last step then move
+    //right_arm_->stop();
     right_arm_->asyncMove();
   }
 
@@ -106,7 +107,6 @@ namespace sr_taco
     tracked_object_.header.frame_id = "shadowarm_base";
     object_msg_received_ = true;
   }
-
 
   void VisualServoing::update_feedback_()
   {
