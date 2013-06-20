@@ -143,6 +143,7 @@ namespace sr_taco
     //TODO: use openmp for loop (https://computing.llnl.gov/tutorials/openMP/#DO)
 
     OpenRAVE::Transform end_effector = rave_manipulator_->GetEndEffectorTransform();
+    OpenRAVE::Transform end_effector_no_tool_trans = end_effector;
     end_effector.trans += rave_manipulator_->GetLocalToolTransform().trans;
 
     arm_velocity_ = compute_cartesian_velocity_(end_effector);
@@ -176,17 +177,66 @@ namespace sr_taco
     // is always very high (60-600secs) for moving objects causing the arm to
     // be to far away. Gets worse as the speed of the object increases.
     //target.trans = object.trans + twist.trans * reaching_time;
-    target.trans = object.trans + twist.trans;
+    //target.trans = object.trans + twist.trans;
+    target.trans = object.trans;
+    //target.trans.x = 0.378;
+    //target.trans.y = 0.092;
+    //target.trans.z = 0.885;
 
     ROS_DEBUG_STREAM("Distance = " << distance << " (reaching in approx "<< reaching_time
                      << "s at"<< arm_velocity_ <<"m.s-1), end effector: "<< end_effector.trans <<" / object: "<< object.trans
                      <<" / twist: " << twist.trans << "=> " << target.trans);
+
+    ROS_DEBUG_STREAM("End eff no tooltrans trans = " << end_effector_no_tool_trans.trans << "  rot = " << end_effector_no_tool_trans.rot);
 
     //Fixed orientation of the wrist
     target.rot.w = 0.5599;
     target.rot.x = 0.4320;
     target.rot.y = 0.4320;
     target.rot.z = 0.5599;
+
+
+    std::vector<OpenRAVE::dReal> current_state;
+    rave_manipulator_->GetRobot()->GetActiveDOFValues(current_state);
+    std::stringstream ss_DOF;
+    for(size_t i = 0; i < current_state.size(); ++i)
+    {
+      ss_DOF << current_state[i] << " ";
+    }
+    ROS_ERROR_STREAM("Active DOF values: " << ss_DOF.str());
+
+
+
+    //We'll try to print the ik solution for the current end effector position (should be the current joints values)
+    std::vector<OpenRAVE::dReal> current_ik_solution;
+    try
+    {
+      if( rave_manipulator_->FindIKSolution(OpenRAVE::IkParameterization(end_effector), current_ik_solution, OpenRAVE::IKFO_IgnoreEndEffectorCollisions) )
+      {
+        std::stringstream ss;
+        for(size_t i = 0; i < current_ik_solution.size(); ++i)
+        {
+          ss << current_ik_solution[i] << " ";
+        }
+
+        ROS_DEBUG_STREAM("The solution for (current end eff tool): " << end_effector << " \n  is: " << ss.str());
+
+        ROS_DEBUG_STREAM("Distance = " << distance << " (reaching in approx "<< reaching_time
+                           << "s at"<< arm_velocity_ <<"m.s-1), end effector: "<< end_effector.trans <<" / object: "<< object.trans
+                           <<" / twist: " << twist.trans << "=> " << target.trans);
+
+        return;
+      }
+    }
+    catch(OpenRAVE::openrave_exception& e)
+    {
+      ROS_ERROR_STREAM( "Caught Openrave exception[" << e.GetCode() << "]: " << e.message() );
+    }
+
+
+
+
+
 
     //TODO: should get closer to the target if it can't reach it.
 
@@ -215,7 +265,11 @@ namespace sr_taco
             ss << ik_solution[i] << " ";
           }
 
-          ROS_DEBUG_STREAM("The solution for: " << target << " \n  is: " << ss.str());
+          ROS_INFO_STREAM("The solution for: " << target << " \n  is: " << ss.str());
+
+          ROS_INFO_STREAM("Distance = " << distance << " (reaching in approx "<< reaching_time
+                           << "s at"<< arm_velocity_ <<"m.s-1), end effector: "<< end_effector.trans <<" / object: "<< object.trans
+                           <<" / twist: " << twist.trans << "=> " << target.trans);
 
           return;
         }
@@ -303,11 +357,16 @@ namespace sr_taco
 
     std::vector<OpenRAVE::dReal> current_position;
     //ROS_ASSERT( msg->position.size() == joint_names_.size() );
+    std::stringstream ss;
     for(unsigned int i=0; i < joint_names_.size(); ++i)
     {
       current_positions_[ joint_names_[i] ] = msg->position[ joint_indexes_[i] ];
       current_position.push_back(OpenRAVE::dReal(msg->position[ joint_indexes_[i] ]));
+
+      ss << joint_names_[i] << ": " << msg->position[i] << "  ";  
     }
+
+    ROS_DEBUG_STREAM("Joint states CB: " << ss.str());
 
     try
     {

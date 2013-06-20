@@ -46,7 +46,7 @@ class DummyMovingObject(object):
         self.msg.pose.position.y = 0.0
 
         self.velocity_x = 0.0
-        self.velocity_y = 0.0
+        self.velocity_y = 0.1
         self.velocity_z = 0.0
 
         self.timestep = 0.0
@@ -64,18 +64,17 @@ class DummyMovingObject(object):
 
     def publish(self):
         if self.publish_msg:
+            self.msg.header.stamp = rospy.Time.now()
             self.publisher.publish(self.msg)
         else:
             self.turns_without_pub_id += 1
             if self.turns_without_pub_id == NB_TURNS_WITHOUT_PUB:
                 self.publish_msg = True
 
-        self.msg.header.stamp = rospy.Time.now()
-
         #we randomize the velocity a bit
-        self.velocity_x += (random.random() - 0.5) / 500.0
-        self.velocity_y += (random.random() - 0.5) / 500.0
-        self.velocity_z += (random.random() - 0.5) / 500.0
+        #self.velocity_x += (random.random() - 0.5) / 500.0
+        #self.velocity_y += (random.random() - 0.5) / 500.0
+        #self.velocity_z += (random.random() - 0.5) / 500.0
 
         self.msg.pose.position.x = self.msg.pose.position.x + self.velocity_x * self.timestep
         #reverse the speed if we're out of a reasonable box
