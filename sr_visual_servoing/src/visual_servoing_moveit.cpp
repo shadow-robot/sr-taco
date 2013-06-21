@@ -25,18 +25,25 @@
  */
 
 #include <sr_visual_servoing/visual_servoing_moveit.hpp>
+#include <std_msgs/Float64.h>
+#include <eigen_conversions/eigen_msg.h>
 
 namespace sr_taco
 {
   VisualServoing::VisualServoing()
   {
-    right_arm_.reset(new move_group_interface::MoveGroup("right_arm"));
-    //move to the start pose
-    right_arm_->setNamedTarget("default");
 
-    ROS_ERROR("Starting plan");
-    right_arm_->plan(right_arm_plan_);
-    ROS_ERROR("Done planning");
+    robot_publishers_["WRJ1"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_wrj1_mixed_position_velocity_controller/command", 1);
+    robot_publishers_["WRJ2"] = nh_tilde_.advertise<std_msgs::Float64>("/sh_wrj2_mixed_position_velocity_controller/command", 1);
+
+    // for the arm
+    robot_publishers_["ShoulderJRotate"] = nh_tilde_.advertise<std_msgs::Float64>("/sa_sr_position_controller/command", 1);
+    robot_publishers_["ShoulderJSwing"] = nh_tilde_.advertise<std_msgs::Float64>("/sa_ss_position_controller/command", 1);
+    robot_publishers_["ElbowJRotate"] = nh_tilde_.advertise<std_msgs::Float64>("/sa_er_position_controller/command", 1);
+    robot_publishers_["ElbowJSwing"] = nh_tilde_.advertise<std_msgs::Float64>("/sa_es_position_controller/command", 1);
+
+
+    right_arm_.reset(new move_group_interface::MoveGroup("right_arm"));
 
     /* Load the robot model */
     robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
@@ -46,6 +53,14 @@ namespace sr_taco
     ROS_ERROR("Model frame: %s", kinematic_model_->getModelFrame().c_str());
 
     kinematic_state_.reset(new robot_state::RobotState(kinematic_model_));
+    joint_state_group_ = kinematic_state_->getJointStateGroup("right_arm");
+
+    planning_scene_.reset(new planning_scene::PlanningScene(kinematic_model_));
+
+    //plan for the start pose
+    joint_state_group_->setToDefaultState("default");
+    joint_state_group_->getVariableValues(joints_target_);
+    joint_names_ = joint_state_group_->getJointModelGroup()->getJointModelNames();
 
     //@todo: add traj controllers to the hand
     // right_hand_.reset(new move_group_interface::MoveGroup("right_hand"));
@@ -81,22 +96,12 @@ namespace sr_taco
   void VisualServoing::generate_best_solution_()
   {
     //get current arm pose
-    geometry_msgs::PoseStamped current_pose = right_arm_->getCurrentPose();
+    //geometry_msgs::PoseStamped current_pose = right_arm_->getCurrentPose();
 
-    current_pose.pose.position.x += 0.01;
-    current_pose.pose.position.y += 0.01;
-    current_pose.pose.position.z += 0.01;
-
-    right_arm_->setPoseTarget(current_pose.pose);
-
-    //plan the move
-    right_arm_->setPositionTarget( tracked_object_.pose.pose.position.x,
-                                   tracked_object_.pose.pose.position.y,
-                                   tracked_object_.pose.pose.position.z + 0.5);
-
-    ROS_ERROR_STREAM("pose: " << right_arm_->getPoseTarget() << "\n  current pose: " << current_pose);
-
-    right_arm_->plan(right_arm_plan_);
+    tf::poseMsgToEigen(tracked_object_.pose.pose, end_effector_target_);
+    bool found_ik = joint_state_group_->setFromIK(end_effector_target_, 10, 0.1);
+    if( found_ik )
+      ROS_INFO("IK Found");
   }
 
   void VisualServoing::move_arm_(const ros::TimerEvent&)
@@ -104,7 +109,15 @@ namespace sr_taco
     ROS_ERROR("move arm");
     //stop last step then move
     //right_arm_->stop();
-    right_arm_->asyncExecute(right_arm_plan_);
+
+    std_msgs::Float64 msg;
+    for (size_t i=0; i < joints_target_.size(); ++i)
+    {
+      ROS_ERROR_STREAM(" joint state[" << joint_names_[i] <<"]: " << joints_target_[i]);
+
+      msg.data = joints_target_[i];
+      robot_publishers_[joint_names_[i]].publish( msg );
+    }
   }
 
   void VisualServoing::new_odom_cb_(const nav_msgs::OdometryConstPtr& msg)
@@ -115,6 +128,13 @@ namespace sr_taco
     tracked_object_.child_frame_id = msg->child_frame_id;
     tracked_object_.header = msg->header;
     tracked_object_.header.frame_id = "shadowarm_base";
+
+    //Fixed orientation of the wrist
+    tracked_object_.pose.pose.orientation.w = 0.5599;
+    tracked_object_.pose.pose.orientation.x = 0.4320;
+    tracked_object_.pose.pose.orientation.y = 0.4320;
+    tracked_object_.pose.pose.orientation.z = 0.5599;
+
     object_msg_received_ = true;
   }
 

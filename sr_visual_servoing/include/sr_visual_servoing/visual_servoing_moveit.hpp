@@ -38,6 +38,7 @@
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/robot_model/robot_model.h>
 #include <moveit/robot_state/robot_state.h>
+#include <moveit/planning_scene/planning_scene.h>
 #include <moveit/robot_state/joint_state_group.h>
 
 #include <nav_msgs/Odometry.h>
@@ -58,9 +59,14 @@ namespace sr_taco
   protected:
     ros::NodeHandle nh_tilde_;
 
+    /**
+     * map containing the publishers for sending targets to the robot
+     */
+    std::map<std::string, ros::Publisher> robot_publishers_;
+
     /// Interface to the arm for moveit
     boost::shared_ptr<move_group_interface::MoveGroup> right_arm_;
-    move_group_interface::MoveGroup::Plan right_arm_plan_;
+    boost::shared_ptr<move_group_interface::MoveGroup::Plan> right_arm_plan_;
     ros::Timer right_arm_timer_;
 
     /// Interface to the hand for moveit
@@ -80,6 +86,17 @@ namespace sr_taco
     robot_model::RobotModelPtr kinematic_model_;
     /// Kinematic state
     robot_state::RobotStatePtr kinematic_state_;
+    ///Joints of the right_arm
+    robot_state::JointStateGroup* joint_state_group_;
+    ///Planning scene
+    boost::shared_ptr<planning_scene::PlanningScene> planning_scene_;
+
+    ///last (pose) target for the arm
+    Eigen::Affine3d end_effector_target_;
+    ///last (joints) target for the arm
+    std::vector<double> joints_target_;
+    ///joint names
+    std::vector<std::string> joint_names_;
 
     /**
      * Generate different solutions aroung the current position
