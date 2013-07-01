@@ -1,0 +1,17 @@
+<package>
+  <description brief="sr_taco_benchmarking">
+
+     sr_taco_benchmarking - Tools to help with bench mrking and result processing.
+
+  </description>
+  <author>Mark Pitchless</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/sr_taco_benchmarking</url>
+  <depend package="rospy"/>
+  <depend package="roscpp"/>
+  <depend package="rosbag"/>
+
+</package>
+
+
