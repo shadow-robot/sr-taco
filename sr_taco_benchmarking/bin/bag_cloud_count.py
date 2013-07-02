@@ -12,19 +12,16 @@ bag = rosbag.Bag(bag_file)
 results = []
 
 for topic, msg, t in bag.read_messages(topics=[result_topic, total_topic]):
-    row = { 't': t }
+    row = { 't': str(t.secs) + "." + str(t.nsecs), 'total': None, 'result': None  }
     if topic == result_topic:
-        row['result'] = len(msg.data) / len(msg.fields)
+        row['result'] = msg.height * msg.width
     elif topic == total_topic:
-        row['total'] = len(msg.data) / len(msg.fields)
+        row['total'] = msg.height * msg.width
     results.append(row)
 
 bag.close()
 
 writer = csv.writer(sys.stdout, delimiter=',')
 writer.writerow(['bag_time', 'total_points', 'result_points'])
-for res in results:
-    out_row = { 't': str(res['t'].secs) + "." + str(res['t'].nsecs) }
-    out_row['total'] = res['total'] if 'total' in res else None
-    out_row['result'] = res['result'] if 'result' in res else None
-    writer.writerow([out_row['t'], out_row['total'], out_row['result']])
+for row in results:
+    writer.writerow([row['t'], row['total'], row['result']])
